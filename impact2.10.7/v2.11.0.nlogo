@@ -69,7 +69,7 @@ __includes [ "config.nls" ]
 
 breed [staff staff_member]
 breed [agents agent]
-breed [sar-robot sar-robots]
+breed [sar-robots sar-robot]
 directed-link-breed [help-links help-link]
 
 
@@ -378,7 +378,7 @@ to setup
   ;version 2.11
   ;place-staff
   place-staff-random
-  place-sar-robot
+  place-sar-robots
 
   reset-ticks
   set-time   ;nw
@@ -703,6 +703,7 @@ to go
 
 
  ask staff [move-staff] ;nw
+ ask sar-robots [move-sar-robots]
  check-exit
  calculate-model  ; UPDATE THE MODEL]
 
@@ -1092,8 +1093,13 @@ to move-staff  ; staff behavior ;nw
   if [pcolor] of patch-here = EXIT_COLOR and count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
 end
 
-to place-sar-robot
-  create-sar-robot 1 [
+to move-sar-robots
+  set heading (heading + 45 - (random 90))
+  jump 1
+end
+
+to place-sar-robots
+  create-sar-robots 1 [
     set shape "car"
     move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
   ]
@@ -1887,7 +1893,7 @@ SWITCH
 108
 _fire_alarm
 _fire_alarm
-0
+1
 1
 -1000
 
@@ -1898,7 +1904,7 @@ SWITCH
 140
 _public_announcement
 _public_announcement
-0
+1
 1
 -1000
 
@@ -2420,7 +2426,7 @@ _percentage_people_traveling_alone
 _percentage_people_traveling_alone
 0
 100
-50
+53
 1
 1
 NIL
@@ -2457,7 +2463,7 @@ _percentage_eldery
 _percentage_eldery
 0
 100
-15
+18
 1
 1
 NIL
