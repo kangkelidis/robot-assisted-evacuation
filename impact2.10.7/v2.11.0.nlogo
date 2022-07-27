@@ -119,7 +119,7 @@ globals [; GLOBALS
 
          START_FIRE_ALARM_ACTION START_PA_ACTION START_FIRE_ACTION STAFF_CONVINCE_RATE
          END_OF_SIMULATION
-         EXIT_COLOR EXIT_LIGHTING_COLOR STAFF_COLOR PASSENGERS_COLOR DEAD_PASSENGERS_COLOR FALL_COLOR START_EVACUATE_COLOR FIRE_RADIUS FIRE_COLOR PROTOCOL_DISTANCE OBSERVATION_DISTANCE L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
+         EXIT_COLOR EXIT_LIGHTING_COLOR STAFF_COLOR SAR_ROBOT_COLOR PASSENGERS_COLOR DEAD_PASSENGERS_COLOR FALL_COLOR START_EVACUATE_COLOR FIRE_RADIUS FIRE_COLOR PROTOCOL_DISTANCE OBSERVATION_DISTANCE L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
 
          g_st_others_belief_dangerous
@@ -155,7 +155,10 @@ globals [; GLOBALS
 links-own [relationship_strenght]
 
 ; INTERNAL VARIABLES OF EACH STAFF MEMBER ;version 2.11x
-staff-own [ skill_convince_others target-patch danger] ; "The only differ- ences between them are the quantity and ability to convince people to evacuate."
+staff-own [ skill_convince_others target-patch danger] ; "The only differences between them are the quantity and ability to convince people to evacuate."
+
+; Agent variables for the sar-robot agents.
+sar-robots-own [ target-patch ]
 
 ; INTERNAL VARIABLES OF EACH AGENT
 agents-own [ nearest_exit_target speed speed_bkp ticks-since-fall start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
@@ -1094,12 +1097,42 @@ to move-staff  ; staff behavior ;nw
 end
 
 to move-sar-robots
+  ; Moving randomly
   set heading (heading + 45 - (random 90))
   jump 1
+
+  ; When all passangers have evacuated, the robot evacuates.
+  if count agents with [ color = PASSENGERS_COLOR ] = 0 [
+
+    if target-patch = nobody [
+      ; Obtaining the nearest exit.
+      let maximum-radius max-pxcor
+      if max-pycor > maximum-radius [
+        set maximum-radius max-pycor
+      ]
+      set maximum-radius maximum-radius * 2
+
+      set target-patch min-one-of (patches in-radius maximum-radius with [pcolor = EXIT_COLOR ]) [
+        distance myself
+      ]
+
+    ]
+
+    set heading towards target-patch
+    jump 1
+  ]
+
+  ; Remove the robot when reaching an exit and no passengers left.
+  if [ pcolor ] of patch-here = EXIT_COLOR and count agents with [ color != DEAD_PASSENGERS_COLOR ] = 0 [
+    die
+  ]
+
 end
 
 to place-sar-robots
   create-sar-robots 1 [
+    set target-patch nobody
+    set color SAR_ROBOT_COLOR
     set shape "car"
     move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
   ]
@@ -1893,7 +1926,7 @@ SWITCH
 108
 _fire_alarm
 _fire_alarm
-1
+0
 1
 -1000
 
@@ -1904,7 +1937,7 @@ SWITCH
 140
 _public_announcement
 _public_announcement
-1
+0
 1
 -1000
 

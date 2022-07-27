@@ -129,6 +129,7 @@ to setup-environment
   set EXIT_LIGHTING_COLOR   orange
   set PASSENGERS_COLOR      black 
   set STAFF_COLOR           green
+  set SAR_ROBOT_COLOR       brown
   set DEAD_PASSENGERS_COLOR grey
   set FIRE_COLOR            red
   set START_EVACUATE_COLOR  pink
