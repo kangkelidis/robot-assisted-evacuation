@@ -133,7 +133,7 @@ to setup-environment
   set FALL_COLOR            orange
 
   set FIRE_RADIUS           3
-  set OBSERVATION_DISTANCE  5
+  set OBSERVATION_DISTANCE  5 ; "it was decided to keep the observation distance (i.e. the maximum distance at which staff instructions could be understood) at 5 metres"
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
 end

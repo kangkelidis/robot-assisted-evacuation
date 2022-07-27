@@ -71,7 +71,8 @@ directed-link-breed [help-links help-link]
 
 globals [; GLOBALS
          helping_chance_matrix compliance_level_matrix
-         main_entrance_target total_number_of_survivors staff_instructions sound_fire_alarm sound_public_announcement room_environment_filename list_exits start_place_fire start_observation_fire start_fire_alarm place_fire_tick
+         main_entrance_target ; "If it is not familiar, it will trace a route to the main exit after it decides to evacuate."
+         total_number_of_survivors staff_instructions sound_fire_alarm sound_public_announcement room_environment_filename list_exits start_place_fire start_observation_fire start_fire_alarm place_fire_tick
          lighting_list ;nw
          ; _public_announcement _fire_alarm number_staff_members
          current_time days hours minutes seconds ;nw
@@ -111,7 +112,12 @@ globals [; GLOBALS
 
          START_FIRE_ALARM_ACTION START_PA_ACTION START_FIRE_ACTION
          END_OF_SIMULATION
-         EXIT_COLOR EXIT_LIGHTING_COLOR STAFF_COLOR PASSENGERS_COLOR DEAD_PASSENGERS_COLOR FALL_COLOR START_EVACUATE_COLOR FIRE_RADIUS FIRE_COLOR PROTOCOL_DISTANCE OBSERVATION_DISTANCE L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD
+
+         EXIT_COLOR EXIT_LIGHTING_COLOR STAFF_COLOR PASSENGERS_COLOR DEAD_PASSENGERS_COLOR FALL_COLOR START_EVACUATE_COLOR FIRE_RADIUS FIRE_COLOR PROTOCOL_DISTANCE
+         OBSERVATION_DISTANCE ; "Scope of vision of an agent"
+         L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD
+         ETA_MENTAL ; "speed factor, defines how smooth or abrupt changes in the calculations happen."
+         ETA_BODY CROWD_CONGESTION_THRESHOLD
 
 
          g_st_others_belief_dangerous
@@ -147,46 +153,47 @@ globals [; GLOBALS
 links-own [relationship_strenght]
 
 ; INTERNAL VARIABLES OF EACH AGENT
-agents-own [ nearest_exit_target speed speed_bkp ticks-since-fall start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
+agents-own [  nearest_exit_target ; "If it is familiar with the environment, then it always takes the nearest exit. "
+              speed speed_bkp ticks-since-fall start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
               agent_to_help
-              current_speed
+              current_speed ; "Maximum speed of the agent, depending on intensities of the intention. It varies from walking to running."
 
               st_others_belief_dangerous
               st_others_fear
 
-              st_observation_fire
-              st_observation_alarm
-              st_observation_others_belief_dangerous
-              st_observation_others_fear
+              st_observation_fire ; "Agents who observe dangerous events change their beliefs and immediately start to evacuate"
+              st_observation_alarm ; "When the alarm sounds, there is a 50% chance for each agent to start to evacuate."
+              st_observation_others_belief_dangerous ; "Agents can observe other’s ... belief expressions and decide to evacuate without seeing the danger him/herself."
+              st_observation_others_fear ; "Agents can observe other’s fear ... and decide to evacuate without seeing the danger him/herself"
               st_observation_staff_instr
               st_observation_pa
 
               st_agent_location
-              st_fear
+              st_fear ; "Internal state influenced by external factors and other internal states"
 
-              st_belief_dangerous
-              st_compliance
+              st_belief_dangerous ; "The level of this state directly influences the decision to evacuate or not. It is a combination of fear and external stimuli."
+              st_compliance ; "The compliance level of each agent can vary between 0 and 1 and has an effect on the agent’s desires"
               ;nw added gender and age and group
               st_gender ; can be a female or male passenger, male = 1; female = 0
               st_age    ; can be adult or child, child = 0; adult = 1;  eldery = 2
               st_cultural_cluster
-              st_english_proficiency
+              st_english_proficiency ; "to determine the percentage of passengers from each cluster who could understand an English instruction by a staff member"
               st_group_member ; 0 is not a group member, or 1 a group member
               st_leader ; 0 is not a leader, 1 is a leader, each group has only 1 leader and must be an adult.
 
               st_dead
-              st_fall
+              st_fall ; "Each agent can fall, spending some time before standing up and continuing its path."
               ;nw added st_helping
               st_helping ; 0=not helping; 1 = helping
-              st_desire_walkrand
-              st_desire_evacuate
+              st_desire_walkrand ; "Depending on the level of Fear and Belief of danger, an agent can have the desire to walk randomly in the environment ..."
+              st_desire_evacuate ; "Depending on the level of Fear and Belief of danger, an agent can have the desire ... to evacuate."
 
-              st_intention_walkrand
-              st_intention_evacuate
-              st_familiarity
+              st_intention_walkrand ; "Based on the desires, the agent creates an intention (decision) to perform walk randomly"
+              st_intention_evacuate ; "Based on the desires, the agent creates an intention (decision) to perform walk randomly"
+              st_familiarity ; "When an agent is familiar, he chooses the nearest exit otherwise, he always evacuates via the main exit"
 
               st_express_belief_dangerous
-              st_express_fear
+              st_express_fear ; "Expression of fear to other agents within observation distance"
               st_action_walkrandom
               st_action_movetoexit
           ]
@@ -373,7 +380,7 @@ to setup-passengers
     set start_evacuate 0
     set start_evacuate_flag 0
     set count_time_stoped_same_position 0
-    set congestion_speed_factor 1
+    set congestion_speed_factor 1 ; "a crowd congestion factor was added that reduces the speed according to the number of agents within the same square metre"
     set statistics_hist_counted 0
     set agent_to_help                          nobody
     set pa_count_seconds           0
@@ -501,6 +508,7 @@ to setup-passengers
   ask agents with [st_age = 0] [set children_list lput self children_list]
 
   ; groups of 2
+  ; "Currently, it supports the most frequent types of groups with 2, 3 and 4 people."
   let cnt 0
   repeat people_in_group2_child_plus_parent / 2 [ ; divided by 2 because every time in the loop we take 2 people, so to guarante the number of people in this group we have to run it half of the number of people in the group
     if length children_list > 0 [
@@ -617,6 +625,7 @@ to setup-passengers
   ask agents [
     ;nw adult females walk or run 10% less fast than adult males
     ;nw children walk or run 50% from the maximum speed = speed of adult males
+    ; "The walking speeds varied for each demographic group (children, adult males, adult females, elderly males, elderly females)"
     if st_gender = 0 and st_age = 1 ;female adult
     [set speed 0.9 + random-float 0.52]
 
@@ -739,6 +748,7 @@ to calculate-model
       set st_others_belief_dangerous 0
       set st_others_fear 0
     ]
+    ; "If the agent observes a staff agent, then it has a chance of accepting the staff instruction"
     ifelse st_desire_evacuate >= st_desire_walkrand and st_intention_evacuate > st_intention_walkrand and color = START_EVACUATE_COLOR and any? staff in-radius OBSERVATION_DISTANCE
     [set staff_instructions 1] ;nw
     [set staff_instructions 0] ;nw
@@ -832,6 +842,7 @@ to calculate-model
     ;set st_compliance
     ; compliance
     ;This is the row of the compliance table in the config file,
+    ; "The model has 6 compliance values according to the category of the agent: male or female, and child, adult, or elderly."
     let row 0                  ;children (st_age = 0) are at rows 0 and
     if st_age = 1 [set row 1]  ;adults   (st_age = 1) are at rows 1 and
     if st_age = 2 [set row 2]  ;eldery   (st_age = 2) are at rows 2
@@ -851,7 +862,9 @@ to calculate-model
     set st_desire_walkrand st_desire_walkrand + (ETA_MENTAL * ((st_compliance * (1 - (max list_aux)) - st_desire_walkrand)))
 
 
+    ; "shows how the desire to evacuate is calculated and how compliance influences this internal state."
     set list_aux []
+    ; "Omegas are predefined weights of the tuned model."
     set list_aux lput (W_amplifyingevacuation * st_belief_dangerous)        list_aux
     set list_aux lput (W_amplifyingevacuation * st_fear)                    list_aux
     set list_aux lput (W_amplifyingevacuation * st_observation_staff_instr) list_aux
@@ -891,7 +904,7 @@ to calculate-model
     ; ACTIONS
     ;
     set st_action_walkrandom st_intention_walkrand * speed
-    set st_action_movetoexit st_intention_evacuate * speed * 3
+    set st_action_movetoexit st_intention_evacuate * speed * 3 ; "We calculated running speeds by multiplying the walking speed for each demographic group by three."
   ]
 end
 
@@ -921,6 +934,8 @@ to move-agent
         ]
     ]
   ]
+  ; "An agent can decide to help other people that felt on the floor. That means, the agent stops in front of the fallen agent until 
+  ; it stands up and after that, each agent follows his own path. "
   if stops_to_help? = TRUE [stop]
 
   ; avoid passenger be stuck at same position between wall and fire
@@ -968,6 +983,8 @@ to move-agent
       let smin [speed] of one-of l_min_speed_members
       if smin > max_speed_in_group [set min_speed_in_group smin]
 
+      ; "Agents in a group always move together with the same speed. The group speed is 40% of the difference between the minimum 
+      ; and maximum speed of group’s members"
       let new_speed min_speed_in_group + (max_speed_in_group - min_speed_in_group) * 0.4
       set speed     new_speed
     ]
@@ -982,6 +999,7 @@ to move-agent
       ]
       [
         set current_speed st_action_movetoexit * congestion_speed_factor
+        ; "jump number ->  The turtle moves forward by number units all at once (rather than one step at a time as with the forward command)."
         jump st_action_movetoexit * congestion_speed_factor
       ]
     ]
@@ -993,6 +1011,7 @@ to move-agent
 
     ;nw if there are people linked to this guy, move them.
     let patch_of_leader patch-here
+    ; "One of the group members is always the leader, the others follow him."
     ask link-neighbors [move-to patch_of_leader]
 
 
@@ -1080,6 +1099,7 @@ to move-to-exit
     ifelse st_familiarity = 1
     [set exit_heading  nearest_exit_target]
     [set exit_heading  main_entrance_target]
+    ; "towards agent -> Reports the heading from this agent to the given agent."
     if patch-here != exit_heading [set heading towards exit_heading]
   ]
 end
@@ -1094,6 +1114,7 @@ to check-dead-by-fire ;nw
 end
 
 to check-fall
+  ; "if there are more than 4 people in the same square metre of the agent and if he is running more than 3 m/s, then there is a 0.5% chance of a fall for each new movement."
  if _falls = TRUE [
    if (((st_action_movetoexit * congestion_speed_factor) > 3) and (count agents-here >= CROWD_CONGESTION_THRESHOLD)) ;nw
    [
@@ -1149,6 +1170,7 @@ to check-decide-to-help ;nw
     if st_age = 1    [set col col + 1]           ;adults (st_age = 1) are at colum 1 (males) and colum 4 (females)
     if st_age = 2    [set col col + 2]           ;eldery (st_age = 2) are at colum 2 (males) and colum 5 (females)
 
+    ; "The decision to help another agent is a statistical combination of gender, age and group identity of the helpers and fallers."
     let helping_chance matrix:get helping_chance_matrix row col
 
     if (random 100 < helping_chance) [
@@ -2761,7 +2783,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.3
+NetLogo 5.3.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
