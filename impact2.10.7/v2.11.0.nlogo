@@ -69,6 +69,7 @@ __includes [ "config.nls" ]
 
 breed [staff staff_member]
 breed [agents agent]
+breed [sar-robot sar-robots]
 directed-link-breed [help-links help-link]
 
 
@@ -377,6 +378,7 @@ to setup
   ;version 2.11
   ;place-staff
   place-staff-random
+  place-sar-robot
 
   reset-ticks
   set-time   ;nw
@@ -1088,6 +1090,13 @@ to move-staff  ; staff behavior ;nw
 ;   if [pcolor] of patch-here = FIRE_COLOR or [pcolor] of patch-here = WALL_COLOR [move-to back_step]
 ;  ]
   if [pcolor] of patch-here = EXIT_COLOR and count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
+end
+
+to place-sar-robot
+  create-sar-robot 1 [
+    set shape "car"
+    move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
+  ]
 end
 
 to place-staff
