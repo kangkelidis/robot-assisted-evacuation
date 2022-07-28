@@ -119,7 +119,10 @@ globals [; GLOBALS
 
          START_FIRE_ALARM_ACTION START_PA_ACTION START_FIRE_ACTION STAFF_CONVINCE_RATE
          END_OF_SIMULATION
-         EXIT_COLOR EXIT_LIGHTING_COLOR STAFF_COLOR SAR_ROBOT_COLOR PASSENGERS_COLOR DEAD_PASSENGERS_COLOR FALL_COLOR START_EVACUATE_COLOR FIRE_RADIUS FIRE_COLOR PROTOCOL_DISTANCE OBSERVATION_DISTANCE L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
+         EXIT_COLOR EXIT_LIGHTING_COLOR STAFF_COLOR SAR_ROBOT_COLOR PASSENGERS_COLOR DEAD_PASSENGERS_COLOR FALL_COLOR START_EVACUATE_COLOR FIRE_RADIUS FIRE_COLOR PROTOCOL_DISTANCE
+         OBSERVATION_DISTANCE
+         SAR_ROBOT_OBSERVATION_DISTANCE
+         L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
 
          g_st_others_belief_dangerous
@@ -158,7 +161,10 @@ links-own [relationship_strenght]
 staff-own [ skill_convince_others target-patch danger] ; "The only differences between them are the quantity and ability to convince people to evacuate."
 
 ; Agent variables for the sar-robot agents.
-sar-robots-own [ target-patch ]
+sar-robots-own [
+  target-patch
+  victim-found
+]
 
 ; INTERNAL VARIABLES OF EACH AGENT
 agents-own [ nearest_exit_target speed speed_bkp ticks-since-fall start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
@@ -706,7 +712,14 @@ to go
 
 
  ask staff [move-staff] ;nw
- ask sar-robots [move-sar-robots]
+ ask sar-robots [
+   if victim-found = nobody [
+        ; Searching only when no victim in need
+        move-sar-robots
+        search-fallen-passengers
+   ]
+
+ ]
  check-exit
  calculate-model  ; UPDATE THE MODEL]
 
@@ -1132,9 +1145,23 @@ end
 to place-sar-robots
   create-sar-robots 1 [
     set target-patch nobody
+    set victim-found nobody
     set color SAR_ROBOT_COLOR
     set shape "car"
     move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
+  ]
+end
+
+to search-fallen-passengers
+  let list-fallen-passengers agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [ st_fall = 1 and color != DEAD_PASSENGERS_COLOR ]
+
+  if count list-fallen-passengers > 0 [
+    let passenger-to-help one-of list-fallen-passengers
+
+    move-to [ patch-here ] of passenger-to-help
+    set victim-found passenger-to-help
+
+    show victim-found
   ]
 end
 
@@ -1808,9 +1835,9 @@ to do-plots
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-395
+394
 10
-909
+908
 545
 10
 10
@@ -2169,10 +2196,10 @@ PENS
 "fire_alarm_event" 1.0 0 -12895429 true "" ""
 
 PLOT
-0
-793
-312
-1024
+922
+247
+1234
+478
 Evacuation2
 state of passengers
 evacuation (seconds)

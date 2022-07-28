@@ -138,6 +138,7 @@ to setup-environment
 
   set FIRE_RADIUS           2
   set OBSERVATION_DISTANCE  5
+  set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 1.5
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
 end
