@@ -122,6 +122,7 @@ globals [; GLOBALS
          EXIT_COLOR EXIT_LIGHTING_COLOR STAFF_COLOR SAR_ROBOT_COLOR PASSENGERS_COLOR DEAD_PASSENGERS_COLOR FALL_COLOR START_EVACUATE_COLOR FIRE_RADIUS FIRE_COLOR PROTOCOL_DISTANCE
          OBSERVATION_DISTANCE
          SAR_ROBOT_OBSERVATION_DISTANCE
+         DEFAULT_FALL_LENGTH
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
 
@@ -167,7 +168,10 @@ sar-robots-own [
 ]
 
 ; INTERNAL VARIABLES OF EACH AGENT
-agents-own [ nearest_exit_target speed speed_bkp ticks-since-fall start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
+agents-own [ nearest_exit_target speed speed_bkp
+              ticks-since-fall
+              fall-length
+              start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
               agent_to_help
               current_speed
 
@@ -378,7 +382,10 @@ to setup
     set color PASSENGERS_COLOR
     set heading random 360
   ]
-  ask agents [set ticks-since-fall 0 ]
+  ask agents [
+    set ticks-since-fall 0
+    set fall-length DEFAULT_FALL_LENGTH
+  ]
 
   ; MODEL INITIAL CONDITION
   setup-passengers
@@ -1155,13 +1162,14 @@ end
 to search-fallen-passengers
   let list-fallen-passengers agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [ st_fall = 1 and color != DEAD_PASSENGERS_COLOR ]
 
-  if count list-fallen-passengers > 0 [
+  ifelse count list-fallen-passengers > 0 [
     let passenger-to-help one-of list-fallen-passengers
 
     move-to [ patch-here ] of passenger-to-help
     set victim-found passenger-to-help
 
-    show victim-found
+  ][
+    set victim-found nobody
   ]
 end
 
@@ -1343,14 +1351,17 @@ end
 
 to check-get-up
   if ( color = FALL_COLOR ) [
-    ifelse ticks-since-fall = 30
-      [ set color FALL_COLOR + 1]
-      [ set ticks-since-fall ticks-since-fall + 1
-        stop ]
+    ifelse ticks-since-fall = fall-length [
+      set color FALL_COLOR + 1
+    ][
+      set ticks-since-fall ticks-since-fall + 1
+      stop
+    ]
   ]
 
-  if ticks - ticks-since-fall > 30 [
+  if ticks - ticks-since-fall > fall-length [
     set ticks-since-fall 0
+    set fall-length DEFAULT_FALL_LENGTH
     set speed speed_bkp ; after getup, it is back the original speed of this agent
     set st_fall 0
 

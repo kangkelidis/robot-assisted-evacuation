@@ -139,6 +139,7 @@ to setup-environment
   set FIRE_RADIUS           2
   set OBSERVATION_DISTANCE  5
   set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 1.5
+  set DEFAULT_FALL_LENGTH 30 ; Fall is 30 seconds on the original paper
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
 end
