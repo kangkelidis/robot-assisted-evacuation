@@ -159,7 +159,10 @@ globals [; GLOBALS
 links-own [relationship_strenght]
 
 ; INTERNAL VARIABLES OF EACH STAFF MEMBER ;version 2.11x
-staff-own [ skill_convince_others target-patch danger] ; "The only differences between them are the quantity and ability to convince people to evacuate."
+staff-own [
+  assistance-required
+  skill_convince_others
+  target-patch danger] ; "The only differences between them are the quantity and ability to convince people to evacuate."
 
 ; Agent variables for the sar-robot agents.
 sar-robots-own [
@@ -718,7 +721,10 @@ to go
  ]
 
 
- ask staff [move-staff] ;nw
+ ask staff [
+   move-staff
+   check-request-for-support
+ ] ;nw
  ask sar-robots [
    if victim-found = nobody [
         ; Searching only when no victim in need
@@ -1116,6 +1122,34 @@ to move-staff  ; staff behavior ;nw
   if [pcolor] of patch-here = EXIT_COLOR and count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
 end
 
+to request-staff-support
+  ; Calling nearest staff member
+  let nearest-staff-member min-one-of staff [
+    distance myself
+  ]
+
+  let target-victim victim-found
+  ask nearest-staff-member [
+    set assistance-required target-victim
+  ]
+end
+
+to check-request-for-support
+  if assistance-required != nobody [
+
+    ifelse distance assistance-required < OBSERVATION_DISTANCE [
+      ; Victim detected
+      move-to [patch-here] of assistance-required
+      set assistance-required nobody
+    ][
+      ; Approaching victim
+      set heading towards assistance-required
+      jump 1
+    ]
+
+  ]
+end
+
 to move-sar-robots
   ; Moving randomly
   set heading (heading + 45 - (random 90))
@@ -1126,16 +1160,9 @@ to move-sar-robots
 
     if target-patch = nobody [
       ; Obtaining the nearest exit.
-      let maximum-radius max-pxcor
-      if max-pycor > maximum-radius [
-        set maximum-radius max-pycor
-      ]
-      set maximum-radius maximum-radius * 2
-
       set target-patch min-one-of (patches in-radius maximum-radius with [pcolor = EXIT_COLOR ]) [
         distance myself
       ]
-
     ]
 
     set heading towards target-patch
@@ -1168,9 +1195,22 @@ to search-fallen-passengers
     move-to [ patch-here ] of passenger-to-help
     set victim-found passenger-to-help
 
+    ; TODO: Temporary workaround. Always calling for staff support
+    request-staff-support
+
   ][
     set victim-found nobody
   ]
+end
+
+to-report maximum-radius
+  let result max-pxcor
+
+  if max-pycor > result [
+    set result max-pycor
+  ]
+
+  report result
 end
 
 to place-staff
@@ -1196,6 +1236,7 @@ to place-staff-random
     create-staff _number_staff_members [
         set skill_convince_others _staff_skill
         set target-patch nobody
+        set assistance-required nobody
         set color STAFF_COLOR
         set shape "person"
         move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
@@ -1204,6 +1245,7 @@ to place-staff-random
     create-staff _number_normal_staff_members [
         set skill_convince_others _normal_staff_skill
         set target-patch nobody
+        set assistance-required nobody
         set color STAFF_COLOR
         set shape "person"
         move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
