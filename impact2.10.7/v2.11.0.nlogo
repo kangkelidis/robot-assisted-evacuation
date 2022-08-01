@@ -992,8 +992,10 @@ to move-agent
   ]
   if agent_to_help != nobody [                     ;this is the mechanism for when a non-group member falls that you want to help: when fallen, do nothing, when he/she stands up, you and your group members pick up the old speed
     ask agent_to_help [
-      ifelse st_fall = 1 [set stops_to_help? TRUE] ; if the person still needs help, it continues stoped to help him.
-        [
+      ifelse st_fall = 1 [
+        set stops_to_help? TRUE ; if the person still needs help, it continues stoped to help him.
+        receive-support
+        ][
           set agent_to_help nobody                 ; if the person is already ok, he continues his path, and removes from his mind the intention to help that person.
           set speed speed_bkp
           ask link-neighbors [
@@ -1134,12 +1136,20 @@ to request-staff-support
   ]
 end
 
+to receive-support
+  ; TODO: Temporarirly, help means stop the fall entirely.
+  set fall-length 0
+end
+
 to check-request-for-support
   if assistance-required != nobody [
 
     ifelse distance assistance-required < OBSERVATION_DISTANCE [
       ; Victim detected
       move-to [patch-here] of assistance-required
+      ask assistance-required [
+        receive-support
+      ]
       set assistance-required nobody
     ][
       ; Approaching victim
@@ -1196,6 +1206,7 @@ to search-fallen-passengers
     set victim-found passenger-to-help
 
     ; TODO: Temporary workaround. Always calling for staff support
+    show victim-found
     request-staff-support
 
   ][
@@ -1393,7 +1404,7 @@ end
 
 to check-get-up
   if ( color = FALL_COLOR ) [
-    ifelse ticks-since-fall = fall-length [
+    ifelse ticks-since-fall >= fall-length [
       set color FALL_COLOR + 1
     ][
       set ticks-since-fall ticks-since-fall + 1
@@ -2599,7 +2610,7 @@ INPUTBOX
 389
 454
 room_environment_type
-2
+8
 1
 0
 Number
@@ -2675,7 +2686,7 @@ INPUTBOX
 160
 210
 _normal_staff_skill
-50
+1
 1
 0
 Number
