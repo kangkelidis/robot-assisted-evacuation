@@ -994,7 +994,8 @@ to move-agent
     ask agent_to_help [
       ifelse st_fall = 1 [
         set stops_to_help? TRUE ; if the person still needs help, it continues stoped to help him.
-        receive-support
+        ; TODO Temporarirly disabling help from bystanders
+        ;set fall-length -1 ; Here we apply the effects of helping.
         ][
           set agent_to_help nobody                 ; if the person is already ok, he continues his path, and removes from his mind the intention to help that person.
           set speed speed_bkp
@@ -1125,6 +1126,10 @@ to move-staff  ; staff behavior ;nw
 end
 
 to request-staff-support
+  ; TODO: Remove later
+  show "Requesting staff support. Victim:"
+  show victim-found
+
   ; Calling nearest staff member
   let nearest-staff-member min-one-of staff [
     distance myself
@@ -1136,9 +1141,33 @@ to request-staff-support
   ]
 end
 
-to receive-support
-  ; TODO: Temporarirly, help means stop the fall entirely.
-  set fall-length 0
+to request-bystander-support
+  ; TODO: Remove later
+  show "Requesting bystander support.Victim: "
+  show victim-found
+
+  let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0]
+  ifelse count list-passengers-around > 0 [
+    ; TODO We need a criteria for selecting bystander. This should be a call to Python code.
+    let passenger-to-contact one-of list-passengers-around
+    move-to [patch-here] of passenger-to-contact
+
+    let selected_fallen_person victim-found
+    let do-help offer-help? passenger-to-contact selected_fallen_person
+    if do-help [
+      ; TODO Remove later
+      show "Agreed to help. Agent:"
+      show passenger-to-contact
+      ask passenger-to-contact [
+        set agent_to_help selected_fallen_person
+        start-helping
+      ]
+    ]
+  ][
+    ; if no one around, call staff
+    request-staff-support
+  ]
+
 end
 
 to check-request-for-support
@@ -1147,8 +1176,12 @@ to check-request-for-support
     ifelse distance assistance-required < OBSERVATION_DISTANCE [
       ; Victim detected
       move-to [patch-here] of assistance-required
+      ; TODO Remove later
+      show "Providing staff support. Victim"
+      show assistance-required
+
       ask assistance-required [
-        receive-support
+        set fall-length 0
       ]
       set assistance-required nobody
     ][
@@ -1175,8 +1208,10 @@ to move-sar-robots
       ]
     ]
 
-    set heading towards target-patch
-    jump 1
+    if target-patch != nobody [
+      set heading towards target-patch
+      jump 1
+    ]
   ]
 
   ; Remove the robot when reaching an exit and no passengers left.
@@ -1205,10 +1240,16 @@ to search-fallen-passengers
     move-to [ patch-here ] of passenger-to-help
     set victim-found passenger-to-help
 
-    ; TODO: Temporary workaround. Always calling for staff support
+    ; TODO: Temporary workaround. Alternating calls
+    show "Requesting help for Victim:"
     show victim-found
+    ; TODO Temporarirly disabling help from bystanders
     request-staff-support
-
+    ; ifelse random 100 < 50 [
+    ;  request-staff-support
+    ; ][
+     ; request-bystander-support
+    ; ]
   ][
     set victim-found nobody
   ]
@@ -1371,6 +1412,39 @@ to-report get_social_identity [agent1 agent2] ;nw
   report soc_id
 end
 
+to-report offer-help? [passenger selected_fallen_person]
+
+  let result FALSE
+
+  if [st_age] of passenger != 0 [                               ; only men, women, eldery help, children do not help (children follow the actions of the parent, do not decide themselves)
+
+    let social_identity get_social_identity passenger selected_fallen_person
+
+    let row 0                                    ; This is the row of the helping table in the config file,
+    if [st_gender] of passenger = 0 [set row 4]                 ; males are at rows 0 to 3 and women are at rows 4 to 7.
+    if social_identity = 0 [set row row + 2]     ; social_identity = 1 are at rows 0-1 (males) and 4-5(females)
+    if [st_age] of passenger = 2 [set row row + 1]              ;adults (st_age = 1) are at rows 0 and 2 (males) and rows 4 and 6 (females)
+    let col 0
+    if [st_gender] of passenger = 0 [set col 3]                 ; males are at columns 0 to 2 and women are at columns 3 to 5.
+    if [st_age] of passenger = 1    [set col col + 1]           ;adults (st_age = 1) are at colum 1 (males) and colum 4 (females)
+    if [st_age] of passenger = 2    [set col col + 2]           ;eldery (st_age = 2) are at colum 2 (males) and colum 5 (females)
+
+    let helping_chance matrix:get helping_chance_matrix row col
+
+    if (random 100 < helping_chance) [
+      set result TRUE
+    ]
+  ]
+
+  report result
+end
+
+to start-helping
+  move-to [patch-here] of agent_to_help
+  set speed 0
+  ask link-neighbors [set speed 0]
+end
+
 to check-decide-to-help ;nw
   if st_leader = 0 and st_group_member = 1 [stop]
 
@@ -1378,26 +1452,13 @@ to check-decide-to-help ;nw
   let list_agents_around agents in-radius OBSERVATION_DISTANCE with [st_fall = 0]
   let num_agent_around count list_agents_around
 
-  if count list_agents_falled > 0 and st_age != 0 [ ; only men, women, eldery help, children do not help (children follow the actions of the parent, do not decide themselves)
+  if count list_agents_falled > 0 [
     let selected_fallen_person one-of list_agents_falled
-    let social_identity get_social_identity self selected_fallen_person
 
-    let row 0                                    ; This is the row of the helping table in the config file,
-    if st_gender = 0 [set row 4]                 ; males are at rows 0 to 3 and women are at rows 4 to 7.
-    if social_identity = 0 [set row row + 2]     ; social_identity = 1 are at rows 0-1 (males) and 4-5(females)
-    if st_age = 2 [set row row + 1]              ;adults (st_age = 1) are at rows 0 and 2 (males) and rows 4 and 6 (females)
-    let col 0
-    if st_gender = 0 [set col 3]                 ; males are at columns 0 to 2 and women are at columns 3 to 5.
-    if st_age = 1    [set col col + 1]           ;adults (st_age = 1) are at colum 1 (males) and colum 4 (females)
-    if st_age = 2    [set col col + 2]           ;eldery (st_age = 2) are at colum 2 (males) and colum 5 (females)
-
-    let helping_chance matrix:get helping_chance_matrix row col
-
-    if (random 100 < helping_chance) [
-      move-to [patch-here] of selected_fallen_person
+    let do-help offer-help? self selected_fallen_person
+    if do-help [
       set agent_to_help selected_fallen_person
-      set speed 0
-      ask link-neighbors [set speed 0]
+      start-helping
     ]
   ]
 end
@@ -1406,6 +1467,10 @@ to check-get-up
   if ( color = FALL_COLOR ) [
     ifelse ticks-since-fall >= fall-length [
       set color FALL_COLOR + 1
+
+      ; TODO: Remove later
+      show "Getting up. Fall length"
+      show fall-length
     ][
       set ticks-since-fall ticks-since-fall + 1
       stop
@@ -1413,6 +1478,7 @@ to check-get-up
   ]
 
   if ticks - ticks-since-fall > fall-length [
+
     set ticks-since-fall 0
     set fall-length DEFAULT_FALL_LENGTH
     set speed speed_bkp ; after getup, it is back the original speed of this agent
