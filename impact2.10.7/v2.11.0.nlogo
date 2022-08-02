@@ -123,6 +123,8 @@ globals [; GLOBALS
          OBSERVATION_DISTANCE
          SAR_ROBOT_OBSERVATION_DISTANCE
          DEFAULT_FALL_LENGTH
+         STAFF_HELP_FACTOR
+         PASSENGER_HELP_FACTOR
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
 
@@ -161,8 +163,11 @@ links-own [relationship_strenght]
 ; INTERNAL VARIABLES OF EACH STAFF MEMBER ;version 2.11x
 staff-own [
   assistance-required
-  skill_convince_others
-  target-patch danger] ; "The only differences between them are the quantity and ability to convince people to evacuate."
+  skill_convince_others  ; "The only differences between them are the quantity and ability to convince people to evacuate."
+  target-patch
+  danger
+  help-factor
+]
 
 ; Agent variables for the sar-robot agents.
 sar-robots-own [
@@ -174,6 +179,7 @@ sar-robots-own [
 agents-own [ nearest_exit_target speed speed_bkp
               ticks-since-fall
               fall-length
+              help-factor
               start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
               agent_to_help
               current_speed
@@ -388,6 +394,7 @@ to setup
   ask agents [
     set ticks-since-fall 0
     set fall-length DEFAULT_FALL_LENGTH
+    set help-factor PASSENGER_HELP_FACTOR
   ]
 
   ; MODEL INITIAL CONDITION
@@ -993,16 +1000,17 @@ to move-agent
   if agent_to_help != nobody [                     ;this is the mechanism for when a non-group member falls that you want to help: when fallen, do nothing, when he/she stands up, you and your group members pick up the old speed
     ask agent_to_help [
       ifelse st_fall = 1 [
+        ; This is the effect of helping
+        receive-help myself
+
         set stops_to_help? TRUE ; if the person still needs help, it continues stoped to help him.
-        ; TODO Temporarirly disabling help from bystanders
-        ;set fall-length -1 ; Here we apply the effects of helping.
-        ][
-          set agent_to_help nobody                 ; if the person is already ok, he continues his path, and removes from his mind the intention to help that person.
+      ][
+        set agent_to_help nobody                 ; if the person is already ok, he continues his path, and removes from his mind the intention to help that person.
+        set speed speed_bkp
+        ask link-neighbors [
           set speed speed_bkp
-          ask link-neighbors [
-            set speed speed_bkp
-          ]
         ]
+      ]
     ]
   ]
   if stops_to_help? = TRUE [stop]
@@ -1180,13 +1188,17 @@ to check-request-for-support
     ifelse distance assistance-required < OBSERVATION_DISTANCE [
       ; Victim detected
       move-to [patch-here] of assistance-required
-      ; TODO Remove later
-      log-turtle "Providing staff support. Victim" assistance-required
 
-      ask assistance-required [
-        set fall-length 0
+
+      ifelse [st_fall] of assistance-required = 1 [
+        ; TODO Remove later
+        log-turtle "Providing staff support. Victim" assistance-required
+        ask assistance-required [
+          receive-help myself
+        ]
+      ][
+        set assistance-required nobody
       ]
-      set assistance-required nobody
     ][
       ; Approaching victim
       set heading towards assistance-required
@@ -1292,6 +1304,7 @@ to place-staff-random
         set skill_convince_others _staff_skill
         set target-patch nobody
         set assistance-required nobody
+        set help-factor STAFF_HELP_FACTOR
         set color STAFF_COLOR
         set shape "person"
         move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
@@ -1459,11 +1472,33 @@ to check-decide-to-help ;nw
     let selected_fallen_person one-of list_agents_falled
 
     let do-help offer-help? self selected_fallen_person
-    if do-help [
+    ifelse do-help [
       set agent_to_help selected_fallen_person
       start-helping
+    ] [
+      ;TODO Remove later
+      ;log-turtle "Rejecting help to passenger" selected_fallen_person
     ]
   ]
+end
+
+to receive-help [ helping-agent ]
+  let factor [help-factor] of helping-agent
+
+  ;log-turtle " Ticks since fall: " ticks-since-fall
+  ;log-turtle " Helper factor: " factor
+  ;log-turtle " Current Fall Length: " fall-length
+
+  set fall-length fall-length * factor
+
+  ;log-turtle " New Fall Length: " fall-length
+  ;log-turtle " Helper: " helping-agent
+
+  if ticks-since-fall >= fall-length [
+    ; TODO: Temporarirly logging. Later it should update stats.
+    log-turtle " Fallen passanger recovered. Helper: " helping-agent
+  ]
+
 end
 
 to check-get-up
@@ -2570,7 +2605,7 @@ _percentage_children
 _percentage_children
 0
 50
-15
+20
 1
 1
 NIL
@@ -2618,7 +2653,7 @@ _percentage_people_traveling_alone
 _percentage_people_traveling_alone
 0
 100
-53
+57
 1
 1
 NIL

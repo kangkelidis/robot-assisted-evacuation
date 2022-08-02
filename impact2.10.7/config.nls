@@ -140,6 +140,8 @@ to setup-environment
   set OBSERVATION_DISTANCE  5
   set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 1.5
   set DEFAULT_FALL_LENGTH 200 ; Fall is 30 seconds on the original paper
+  set STAFF_HELP_FACTOR 0.5
+  set PASSENGER_HELP_FACTOR 0.90
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
 end
