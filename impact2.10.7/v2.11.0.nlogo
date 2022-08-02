@@ -1125,10 +1125,15 @@ to move-staff  ; staff behavior ;nw
   if [pcolor] of patch-here = EXIT_COLOR and count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
 end
 
+to log-turtle [prefix turtle-to-log]
+  show ticks
+  show prefix
+  show turtle-to-log
+end
+
 to request-staff-support
   ; TODO: Remove later
-  show "Requesting staff support. Victim:"
-  show victim-found
+  log-turtle "Requesting staff support. Victim:" victim-found
 
   ; Calling nearest staff member
   let nearest-staff-member min-one-of staff [
@@ -1143,8 +1148,7 @@ end
 
 to request-bystander-support
   ; TODO: Remove later
-  show "Requesting bystander support.Victim: "
-  show victim-found
+  log-turtle "Requesting bystander support.Victim: " victim-found
 
   let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0]
   ifelse count list-passengers-around > 0 [
@@ -1156,8 +1160,8 @@ to request-bystander-support
     let do-help offer-help? passenger-to-contact selected_fallen_person
     if do-help [
       ; TODO Remove later
-      show "Agreed to help. Agent:"
-      show passenger-to-contact
+      log-turtle "Agreed to help. Agent:" passenger-to-contact
+
       ask passenger-to-contact [
         set agent_to_help selected_fallen_person
         start-helping
@@ -1177,8 +1181,7 @@ to check-request-for-support
       ; Victim detected
       move-to [patch-here] of assistance-required
       ; TODO Remove later
-      show "Providing staff support. Victim"
-      show assistance-required
+      log-turtle "Providing staff support. Victim" assistance-required
 
       ask assistance-required [
         set fall-length 0
@@ -1241,8 +1244,8 @@ to search-fallen-passengers
     set victim-found passenger-to-help
 
     ; TODO: Temporary workaround. Alternating calls
-    show "Requesting help for Victim:"
-    show victim-found
+    log-turtle "Requesting help for Victim:" victim-found
+
     ; TODO Temporarirly disabling help from bystanders
     request-staff-support
     ; ifelse random 100 < 50 [
@@ -1469,8 +1472,7 @@ to check-get-up
       set color FALL_COLOR + 1
 
       ; TODO: Remove later
-      show "Getting up. Fall length"
-      show fall-length
+      log-turtle "Getting up. Fall length" fall-length
     ][
       set ticks-since-fall ticks-since-fall + 1
       stop
@@ -2752,7 +2754,7 @@ INPUTBOX
 160
 210
 _normal_staff_skill
-1
+50
 1
 0
 Number
