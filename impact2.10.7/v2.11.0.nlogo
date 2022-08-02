@@ -716,9 +716,9 @@ to go
    check-dead-by-fire
    if st_dead = 0 [
       if st_group_member = 0 or st_leader = 1 [;nw do it for alone passengers or to leader group. In a group just the leaders moves, others follow it.
-      if start_evacuate > 0 [ move-to-exit ];nw
-       move-agent
-     ]
+        if start_evacuate > 0 [ move-to-exit ];nw
+        move-agent
+      ]
       check-fall
       check-get-up
       express
@@ -1314,6 +1314,7 @@ to place-staff-random
         set skill_convince_others _normal_staff_skill
         set target-patch nobody
         set assistance-required nobody
+        set help-factor STAFF_HELP_FACTOR
         set color STAFF_COLOR
         set shape "person"
         move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
@@ -1359,7 +1360,7 @@ end
 
 to move-to-exit
   ; passengers
-  if breed != staff and st_dead = 0 [
+  if breed != staff and st_dead = 0 and st_fall = 0 [   ; Fallen people cannot evacuate
 
     set nearest_exit_target item 0 list_exits
     foreach list_exits [
