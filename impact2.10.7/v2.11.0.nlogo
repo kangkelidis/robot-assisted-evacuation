@@ -125,6 +125,8 @@ globals [; GLOBALS
          DEFAULT_FALL_LENGTH
          STAFF_HELP_FACTOR
          PASSENGER_HELP_FACTOR
+         REQUEST_STAFF_SUPPORT
+         REQUEST_BYSATNDER_SUPPORT
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
 
@@ -764,7 +766,9 @@ to go
 
  ask agents with [color = START_EVACUATE_COLOR and (xcor < -6 or xcor > 6)] [set stat_assembly_area_flag 1]
 
- if count turtles with [color != DEAD_PASSENGERS_COLOR] =  0 [stop]  ;nw
+ if evacuation-finished? [
+   stop
+ ]  ;nw
 
  check-fire-alarm ; UPDATE ENVIRONMENT
  check-public-announcement
@@ -772,6 +776,9 @@ to go
  tick
 end
 
+to-report evacuation-finished?
+  report count turtles with [color != DEAD_PASSENGERS_COLOR] =  0
+end
 
 ;-----------------------------------------
 ;MODEL
@@ -1246,6 +1253,17 @@ to place-sar-robots
   ]
 end
 
+to request-support
+  ; TODO Implement python calls
+  if REQUEST_STAFF_SUPPORT [
+    request-staff-support
+  ]
+
+  if REQUEST_BYSATNDER_SUPPORT [
+    request-bystander-support
+  ]
+end
+
 to search-fallen-passengers
   let list-fallen-passengers agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [ st_fall = 1 and color != DEAD_PASSENGERS_COLOR ]
 
@@ -1255,16 +1273,9 @@ to search-fallen-passengers
     move-to [ patch-here ] of passenger-to-help
     set victim-found passenger-to-help
 
-    ; TODO: Temporary workaround. Alternating calls
     log-turtle "Requesting help for Victim:" victim-found
+    request-support
 
-    ; TODO Temporarirly disabling help from bystanders
-    request-staff-support
-    ; ifelse random 100 < 50 [
-    ;  request-staff-support
-    ; ][
-     ; request-bystander-support
-    ; ]
   ][
     set victim-found nobody
   ]

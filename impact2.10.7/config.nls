@@ -142,6 +142,8 @@ to setup-environment
   set DEFAULT_FALL_LENGTH 200 ; Fall is 30 seconds on the original paper
   set STAFF_HELP_FACTOR 0.50
   set PASSENGER_HELP_FACTOR 0.90
+  set REQUEST_STAFF_SUPPORT FALSE
+  set REQUEST_BYSATNDER_SUPPORT FALSE
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
 end
