@@ -129,7 +129,9 @@ to setup-environment
   set EXIT_LIGHTING_COLOR   orange
   set PASSENGERS_COLOR      black 
   set STAFF_COLOR           green
-  set SAR_ROBOT_COLOR       brown
+  set SAR_ROBOT_COLOR       turquoise
+  set STAFF_SUPPORT_COLOR   cyan
+  set BYSTANDER_SUPPORT_COLOR sky
   set DEAD_PASSENGERS_COLOR grey
   set FIRE_COLOR            red
   set START_EVACUATE_COLOR  pink
@@ -138,12 +140,14 @@ to setup-environment
 
   set FIRE_RADIUS           2
   set OBSERVATION_DISTANCE  5
-  set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 1.5
+  set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 3
   set DEFAULT_FALL_LENGTH 200 ; Fall is 30 seconds on the original paper
   set STAFF_HELP_FACTOR 0.50
-  set PASSENGER_HELP_FACTOR 0.90
+  set PASSENGER_HELP_FACTOR 0.95
+  set ROBOT_REQUEST_BONUS 0.20
   set REQUEST_STAFF_SUPPORT FALSE
-  set REQUEST_BYSATNDER_SUPPORT FALSE
+  set REQUEST_BYSTANDER_SUPPORT FALSE
+  set ENABLE_LOGGING FALSE
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
 end
