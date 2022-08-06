@@ -181,6 +181,7 @@ staff-own [
 sar-robots-own [
   target-patch
   victim-found
+  candidate-helper
 ]
 
 ; INTERNAL VARIABLES OF EACH AGENT
@@ -740,7 +741,7 @@ to go
 
  ask staff [
    move-staff
-   check-request-for-support
+   check-staff-request-for-support
  ] ;nw
  ask sar-robots [
    ifelse victim-found = nobody [
@@ -751,6 +752,7 @@ to go
    ][
      ; Requesting help for victim found
      log-turtle "Requesting help for Victim:" victim-found
+     approach-agent victim-found
      request-support
    ]
 
@@ -1165,6 +1167,14 @@ to log-turtle [prefix turtle-to-log]
 
 end
 
+to approach-agent [target-agent]
+  if patch-here != [patch-here] of target-agent [
+      set heading towards target-agent
+      jump 1
+  ]
+
+end
+
 to request-staff-support
   ; TODO: Remove later
   log-turtle "Requesting staff support. Victim:" victim-found
@@ -1172,9 +1182,9 @@ to request-staff-support
   set color STAFF_SUPPORT_COLOR
 
   ; Stop request is victim is already up
-  if still-in-need? victim-found [
-    set victim-found nobody
-    stop
+  if passenger-recovered? victim-found [
+     set victim-found nobody
+     stop
   ]
 
   ; Calling nearest staff member
@@ -1190,8 +1200,8 @@ to request-staff-support
   set victim-found nobody
 end
 
-to-report still-in-need? [fallen-passenger]
-  report victim-found = nobody or [st_fall] of victim-found = 0
+to-report passenger-recovered? [fallen-passenger]
+  report fallen-passenger = nobody or [st_fall] of fallen-passenger = 0
 end
 
 to request-bystander-support
@@ -1201,58 +1211,71 @@ to request-bystander-support
   set color BYSTANDER_SUPPORT_COLOR
 
   ; Stop request is victim is already up
-  if still-in-need? victim-found [
+  if passenger-recovered? victim-found [
     set victim-found nobody
     stop
   ]
 
-  let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0]
-  if count list-passengers-around > 0 [
-    ; TODO We need a criteria for selecting bystander. This should be a call to Python code.
-    let passenger-to-contact one-of list-passengers-around
-    move-to [patch-here] of passenger-to-contact
+  if candidate-helper = nobody [
+    ; Look for a passager to request help
+      let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0]
+      if count list-passengers-around > 0 [
+        let passenger-to-contact one-of list-passengers-around
+        set candidate-helper passenger-to-contact
+      ]
+  ]
 
+  ; Approach agent if still far
+  if candidate-helper != nobody and distance candidate-helper > OBSERVATION_DISTANCE [
+    approach-agent candidate-helper
+  ]
+
+  ; Request help
+  if candidate-helper != nobody and distance candidate-helper <= OBSERVATION_DISTANCE [
     let selected_fallen_person victim-found
-    let do-help offer-help? passenger-to-contact selected_fallen_person
-    if do-help [
+    let do-help offer-help? candidate-helper selected_fallen_person
+    ifelse do-help [
       ; TODO Remove later
-      log-turtle "Agreed to help. Agent:" passenger-to-contact
+      log-turtle "Agreed to help. Agent:" candidate-helper
 
-      ask passenger-to-contact [
+      ask candidate-helper [
         set agent_to_help selected_fallen_person
         set help-bonus ROBOT_REQUEST_BONUS
         start-helping
       ]
 
       set victim-found nobody
+    ][
+    ; Look for a new candidate
+      set candidate-helper nobody
     ]
   ]
 
 end
 
-to check-request-for-support
-  if assistance-required != nobody [
+to check-staff-request-for-support
 
-    ifelse distance assistance-required < OBSERVATION_DISTANCE [
-      ; Victim detected
-      move-to [patch-here] of assistance-required
+  if passenger-recovered? assistance-required [
+   ; Cancelling since victim not in need
+   set assistance-required nobody
+   stop
+  ]
 
+  ifelse distance assistance-required < OBSERVATION_DISTANCE [
+    ; Victim in proximity
+    move-to [patch-here] of assistance-required
 
-      ifelse [st_fall] of assistance-required = 1 [
-        ; TODO Remove later
-        log-turtle "Providing staff support. Victim" assistance-required
-        ask assistance-required [
-          receive-staff-help myself
-        ]
-      ][
-        set assistance-required nobody
-      ]
-    ][
-      ; Approaching victim
-      set heading towards assistance-required
-      jump 1
+    ; TODO Remove later
+    log-turtle "Providing staff support. Victim" assistance-required
+
+    ask assistance-required [
+      receive-staff-help myself
     ]
 
+    set assistance-required nobody
+  ][
+    ; Still far, approach to victim
+    approach-agent assistance-required
   ]
 end
 
@@ -1289,6 +1312,7 @@ to place-sar-robots
   create-sar-robots 1 [
     set target-patch nobody
     set victim-found nobody
+    set candidate-helper nobody
     set color SAR_ROBOT_COLOR
     set shape "car"
     move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
@@ -1311,8 +1335,6 @@ to search-fallen-passengers
 
   ifelse count list-fallen-passengers > 0 [
     let passenger-to-help one-of list-fallen-passengers
-
-    move-to [ patch-here ] of passenger-to-help
     set victim-found passenger-to-help
 
   ][
