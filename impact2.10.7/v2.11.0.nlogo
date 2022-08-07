@@ -1168,9 +1168,11 @@ to log-turtle [prefix turtle-to-log]
 end
 
 to approach-agent [target-agent]
-  if patch-here != [patch-here] of target-agent [
+  ifelse patch-here != [patch-here] of target-agent [
       set heading towards target-agent
       jump 1
+  ][
+      log-turtle "Not moving. Already with agent" target-agent
   ]
 
 end
@@ -1183,42 +1185,59 @@ to request-staff-support
 
   ; Stop request is victim is already up
   if passenger-recovered? victim-found [
-     set victim-found nobody
+     prepare-new-search
      stop
   ]
 
-  ; Calling nearest staff member
-  let nearest-staff-member min-one-of staff [
-    distance myself
+  let target-victim  victim-found
+  let available-staff staff with [assistance-required = nobody]
+
+  ifelse any? available-staff [
+    ; Calling nearest staff member
+    let nearest-staff-member min-one-of available-staff [
+      distance myself
+    ]
+
+    ask nearest-staff-member [
+      set assistance-required target-victim
+    ]
+
+    ; TODO Remove later
+    log-turtle "Staff contacted:" nearest-staff-member
+    prepare-new-search
+  ][
+    ; No staff available for help. Waiting.
+    log-turtle "No staff available. Victim waiting: " target-victim
   ]
 
-  let target-victim victim-found
-  ask nearest-staff-member [
-    set assistance-required target-victim
-  ]
 
-  set victim-found nobody
 end
 
 to-report passenger-recovered? [fallen-passenger]
   report fallen-passenger = nobody or [st_fall] of fallen-passenger = 0
 end
 
+to prepare-new-search
+  set victim-found nobody
+  set candidate-helper nobody
+end
+
 to request-bystander-support
-  ; TODO: Remove later
-  log-turtle "Requesting bystander support.Victim: " victim-found
 
   set color BYSTANDER_SUPPORT_COLOR
 
   ; Stop request is victim is already up
   if passenger-recovered? victim-found [
-    set victim-found nobody
+    prepare-new-search
     stop
   ]
 
   if candidate-helper = nobody [
-    ; Look for a passager to request help
-      let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0]
+      ; TODO: Remove later
+      log-turtle "Searching for bystander support.Victim: " victim-found
+
+      ; Look for a passager to request help
+      let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0 and st_dead = 0]
       if count list-passengers-around > 0 [
         let passenger-to-contact one-of list-passengers-around
         set candidate-helper passenger-to-contact
@@ -1227,6 +1246,8 @@ to request-bystander-support
 
   ; Approach agent if still far
   if candidate-helper != nobody and distance candidate-helper > OBSERVATION_DISTANCE [
+    ; TODO: Remove later
+    log-turtle "Approaching bystander. Bystander: " candidate-helper
     approach-agent candidate-helper
   ]
 
@@ -1234,9 +1255,13 @@ to request-bystander-support
   if candidate-helper != nobody and distance candidate-helper <= OBSERVATION_DISTANCE [
     let selected_fallen_person victim-found
     let do-help offer-help? candidate-helper selected_fallen_person
+
+    ; TODO: Remove later
+    log-turtle "Requesting help. Bystander: " candidate-helper
+
     ifelse do-help [
       ; TODO Remove later
-      log-turtle "Agreed to help. Agent:" candidate-helper
+      log-turtle "Agreed to help. Bystander:" candidate-helper
 
       ask candidate-helper [
         set agent_to_help selected_fallen_person
@@ -1244,9 +1269,10 @@ to request-bystander-support
         start-helping
       ]
 
-      set victim-found nobody
+      prepare-new-search
     ][
     ; Look for a new candidate
+      log-turtle "Help rejected. Bystander:" candidate-helper
       set candidate-helper nobody
     ]
   ]
@@ -1271,9 +1297,10 @@ to check-staff-request-for-support
     ask assistance-required [
       receive-staff-help myself
     ]
-
-    set assistance-required nobody
   ][
+    ; TODO remove later.
+    log-turtle "Staff approaching to support. Victim " assistance-required
+
     ; Still far, approach to victim
     approach-agent assistance-required
   ]
@@ -1337,8 +1364,11 @@ to search-fallen-passengers
     let passenger-to-help one-of list-fallen-passengers
     set victim-found passenger-to-help
 
+    ; TODO: Remove later
+    ; user-message "Passanger found"
+
   ][
-    set victim-found nobody
+    prepare-new-search
   ]
 end
 
@@ -1633,12 +1663,13 @@ to check-exit
   let escape_rate 1;df
 
   ;nw
-  let num_people_door1 agents with [is-patch? nearest_exit_target and start_evacuate > 0 and breed != staff and [pcolor] of patch-here = EXIT_COLOR and pxcor < (min-pxcor + 3) and ((st_familiarity = 1 and [pxcor] of nearest_exit_target < (min-pxcor + 3)) or st_familiarity = 0)]
-  let num_people_door2 agents with [is-patch? nearest_exit_target and start_evacuate > 0 and breed != staff and [pcolor] of patch-here = EXIT_COLOR and pxcor > (max-pxcor - 3) and ((st_familiarity = 1 and [pxcor] of nearest_exit_target > (min-pxcor + 3)) or st_familiarity = 0)]
-  let num_people_door3 agents with [is-patch? nearest_exit_target and start_evacuate > 0 and breed != staff and [pcolor] of patch-here = EXIT_COLOR and pycor < (min-pycor + 3) and ((st_familiarity = 1 and [pycor] of nearest_exit_target < (min-pycor + 3)) or st_familiarity = 0)]
-  let num_people_door4 agents with [is-patch? nearest_exit_target and start_evacuate > 0 and breed != staff and [pcolor] of patch-here = EXIT_COLOR and pycor > (max-pycor - 3) and ((st_familiarity = 1 and [pycor] of nearest_exit_target > (max-pycor - 3)) or st_familiarity = 0)]
+  let num_people_door1 agents with [is-patch? nearest_exit_target and start_evacuate > 0 and breed != staff and st_fall = 0 and [pcolor] of patch-here = EXIT_COLOR and pxcor < (min-pxcor + 3) and ((st_familiarity = 1 and [pxcor] of nearest_exit_target < (min-pxcor + 3)) or st_familiarity = 0)]
+  let num_people_door2 agents with [is-patch? nearest_exit_target and start_evacuate > 0 and breed != staff and st_fall = 0 and [pcolor] of patch-here = EXIT_COLOR and pxcor > (max-pxcor - 3) and ((st_familiarity = 1 and [pxcor] of nearest_exit_target > (min-pxcor + 3)) or st_familiarity = 0)]
+  let num_people_door3 agents with [is-patch? nearest_exit_target and start_evacuate > 0 and breed != staff and st_fall = 0 and [pcolor] of patch-here = EXIT_COLOR and pycor < (min-pycor + 3) and ((st_familiarity = 1 and [pycor] of nearest_exit_target < (min-pycor + 3)) or st_familiarity = 0)]
+  let num_people_door4 agents with [is-patch? nearest_exit_target and start_evacuate > 0 and breed != staff and st_fall = 0 and [pcolor] of patch-here = EXIT_COLOR and pycor > (max-pycor - 3) and ((st_familiarity = 1 and [pycor] of nearest_exit_target > (max-pycor - 3)) or st_familiarity = 0)]
 
-  if count num_people_door1 <= 5 [ ask num_people_door1 [
+  if count num_people_door1 <= 5 [
+    ask num_people_door1 [
       if statistics_hist_counted = 2 [
         set statistics_average_resp_time_from_contagion_died statistics_average_resp_time_from_contagion_died + start_evacuate - start_place_fire
         set divisor_after_contagion divisor_after_contagion + 1
@@ -1659,7 +1690,8 @@ to check-exit
       die
     ]
   ]
-  if count num_people_door1  > 5 [ ask n-of (5 + escape_rate) num_people_door1 [
+  if count num_people_door1  > 5 [
+    ask n-of (5 + escape_rate) num_people_door1 [
       if statistics_hist_counted = 2 [
         set statistics_average_resp_time_from_contagion_died statistics_average_resp_time_from_contagion_died + start_evacuate - start_place_fire
         set divisor_after_contagion divisor_after_contagion + 1
@@ -1680,7 +1712,8 @@ to check-exit
     ]
   ]
 
-  if count num_people_door2 <= 5 [ask num_people_door2 [
+  if count num_people_door2 <= 5 [
+    ask num_people_door2 [
       if statistics_hist_counted = 2 [
         set statistics_average_resp_time_from_contagion_died statistics_average_resp_time_from_contagion_died + start_evacuate - start_place_fire
         set divisor_after_contagion divisor_after_contagion + 1
@@ -1701,7 +1734,8 @@ to check-exit
       die
     ]
   ]
-  if count num_people_door2  > 5 [ask n-of (5 + escape_rate) num_people_door2 [
+  if count num_people_door2  > 5 [
+    ask n-of (5 + escape_rate) num_people_door2 [
       if statistics_hist_counted = 2 [
         set statistics_average_resp_time_from_contagion_died statistics_average_resp_time_from_contagion_died + start_evacuate - start_place_fire
         set divisor_after_contagion divisor_after_contagion + 1
@@ -1744,7 +1778,8 @@ to check-exit
       die
     ]
   ]
-  if count num_people_door3  > 5 [ask n-of (5 + escape_rate) num_people_door3 [
+  if count num_people_door3  > 5 [
+    ask n-of (5 + escape_rate) num_people_door3 [
       if statistics_hist_counted = 2 [
         set statistics_average_resp_time_from_contagion_died statistics_average_resp_time_from_contagion_died + start_evacuate - start_place_fire
         set divisor_after_contagion divisor_after_contagion + 1
@@ -1787,7 +1822,8 @@ to check-exit
       die
     ]
   ]
-  if count num_people_door4  > 5 [ask n-of (5 + escape_rate) num_people_door4 [
+  if count num_people_door4  > 5 [
+    ask n-of (5 + escape_rate) num_people_door4 [
       if statistics_hist_counted = 2 [
         set statistics_average_resp_time_from_contagion_died statistics_average_resp_time_from_contagion_died + start_evacuate - start_place_fire
         set divisor_after_contagion divisor_after_contagion + 1
@@ -2906,6 +2942,23 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot statistics_assembly_counting"
+
+BUTTON
+4
+472
+101
+505
+One-step
+go
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
