@@ -1239,7 +1239,9 @@ to request-bystander-support
       ; Look for a passager to request help
       let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0 and st_dead = 0]
       if count list-passengers-around > 0 [
-        let passenger-to-contact one-of list-passengers-around
+        let passenger-to-contact min-one-of list-passengers-around [
+          distance myself
+        ]
         set candidate-helper passenger-to-contact
       ]
   ]
@@ -1365,7 +1367,7 @@ to search-fallen-passengers
     set victim-found passenger-to-help
 
     ; TODO: Remove later
-    ; user-message "Passanger found"
+    user-message "Fallen passanger found"
 
   ][
     prepare-new-search
@@ -1612,7 +1614,7 @@ to receive-bystander-help [ helping-bystander ]
   ;log-turtle " Helper factor: " factor
   ;log-turtle " Current Fall Length: " fall-length
 
-  set fall-length fall-length * (factor + bonus)
+  set fall-length fall-length * (factor - bonus)
 
   ;log-turtle " New Fall Length: " fall-length
   ;log-turtle " Helper: " helping-agent
