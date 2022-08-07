@@ -185,56 +185,58 @@ sar-robots-own [
 ]
 
 ; INTERNAL VARIABLES OF EACH AGENT
-agents-own [ nearest_exit_target speed speed_bkp
-              ticks-since-fall
-              fall-length
-              help-factor
-              help-bonus
-              start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
-              agent_to_help
-              current_speed
+agents-own [
+  nearest_exit_target speed speed_bkp
+  ticks-since-fall
+  fall-length
+  help-factor
+  help-bonus
+  help-in-progress
+  start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
+  agent_to_help
+  current_speed
 
-              st_others_belief_dangerous
-              st_others_fear
+  st_others_belief_dangerous
+  st_others_fear
 
-              st_observation_fire
-              st_observation_alarm
-              st_observation_others_belief_dangerous
-              st_observation_others_fear
-              st_observation_staff_instr
-              st_observation_pa
+  st_observation_fire
+  st_observation_alarm
+  st_observation_others_belief_dangerous
+  st_observation_others_fear
+  st_observation_staff_instr
+  st_observation_pa
 
-              st_agent_location
-              st_fear
+  st_agent_location
+  st_fear
 
-              st_belief_dangerous
-              st_compliance
-              ;nw added gender and age and group
-              st_gender ; can be a female or male passenger, male = 1; female = 0
-              st_age    ; can be adult or child, child = 0; adult = 1;  eldery = 2
-              st_cultural_cluster
-              st_english_proficiency
-              st_group_member ; 0 is not a group member, or 1 a group member
-              st_leader ; 0 is not a leader, 1 is a leader, each group has only 1 leader and must be an adult.
+  st_belief_dangerous
+  st_compliance
+  ;nw added gender and age and group
+  st_gender ; can be a female or male passenger, male = 1; female = 0
+  st_age    ; can be adult or child, child = 0; adult = 1;  eldery = 2
+  st_cultural_cluster
+  st_english_proficiency
+  st_group_member ; 0 is not a group member, or 1 a group member
+  st_leader ; 0 is not a leader, 1 is a leader, each group has only 1 leader and must be an adult.
 
-              st_dead
-              st_fall
-              ;nw added st_helping
-              st_helping ; 0=not helping; 1 = helping
-              st_desire_walkrand
-              st_desire_evacuate
+  st_dead
+  st_fall
+  ;nw added st_helping
+  st_helping ; 0=not helping; 1 = helping
+  st_desire_walkrand
+  st_desire_evacuate
 
-              st_intention_walkrand
-              st_intention_evacuate
-              st_familiarity
+  st_intention_walkrand
+  st_intention_evacuate
+  st_familiarity
 
-              st_express_belief_dangerous
-              st_express_fear
-              st_action_walkrandom
-              st_action_movetoexit
+  st_express_belief_dangerous
+  st_express_fear
+  st_action_walkrandom
+  st_action_movetoexit
 
-              stat_assembly_area_flag
-          ]
+  stat_assembly_area_flag
+]
 
 
 
@@ -406,6 +408,7 @@ to setup
     set fall-length DEFAULT_FALL_LENGTH
     set help-factor PASSENGER_HELP_FACTOR
     set help-bonus 0
+    set help-in-progress FALSE
   ]
 
   ; MODEL INITIAL CONDITION
@@ -1027,7 +1030,10 @@ to move-agent
 
         set stops_to_help? TRUE ; if the person still needs help, it continues stoped to help him.
       ][
-        set agent_to_help nobody                 ; if the person is already ok, he continues his path, and removes from his mind the intention to help that person.
+        ask myself [
+          log-turtle "Clearing agent to help" myself
+          set agent_to_help nobody
+        ]                ; if the person is already ok, he continues his path, and removes from his mind the intention to help that person.
         set speed speed_bkp
         ask link-neighbors [
           set speed speed_bkp
@@ -1222,6 +1228,52 @@ to prepare-new-search
   set candidate-helper nobody
 end
 
+to look-for-helper
+  ; Look for a passager to request help
+  let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0 and st_dead = 0 and (st_group_member = 0 or st_leader = 1) and agent_to_help = nobody]
+  if count list-passengers-around > 0 [
+    let passenger-to-contact min-one-of list-passengers-around [
+      distance myself
+    ]
+
+    set candidate-helper passenger-to-contact
+  ]
+end
+
+to request-passanger-help
+  let selected_fallen_person victim-found
+  let do-help offer-help? candidate-helper selected_fallen_person
+
+  ; TODO: Remove later
+  log-turtle "Requesting help. Bystander: " candidate-helper
+
+  ifelse do-help [
+    ; TODO Remove later
+    log-turtle "Agreed to help. Bystander:" candidate-helper
+
+    ask candidate-helper [
+
+      set agent_to_help selected_fallen_person
+
+      ; TODO: Remove later
+      if ENABLE_LOGGING [
+        user-message "Fallen passanger found"
+      ]
+
+      log-turtle "Assigning agent to help:" selected_fallen_person
+
+      set help-bonus ROBOT_REQUEST_BONUS
+      start-helping
+    ]
+
+    prepare-new-search
+  ][
+    ; Look for a new candidate
+    log-turtle "Help rejected. Bystander:" candidate-helper
+    set candidate-helper nobody
+  ]
+end
+
 to request-bystander-support
 
   set color BYSTANDER_SUPPORT_COLOR
@@ -1233,17 +1285,9 @@ to request-bystander-support
   ]
 
   if candidate-helper = nobody [
-      ; TODO: Remove later
-      log-turtle "Searching for bystander support.Victim: " victim-found
-
-      ; Look for a passager to request help
-      let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0 and st_dead = 0]
-      if count list-passengers-around > 0 [
-        let passenger-to-contact min-one-of list-passengers-around [
-          distance myself
-        ]
-        set candidate-helper passenger-to-contact
-      ]
+    ; TODO: Remove later
+    log-turtle "Searching for bystander support.Victim: " victim-found
+    look-for-helper
   ]
 
   ; Approach agent if still far
@@ -1255,28 +1299,7 @@ to request-bystander-support
 
   ; Request help
   if candidate-helper != nobody and distance candidate-helper <= OBSERVATION_DISTANCE [
-    let selected_fallen_person victim-found
-    let do-help offer-help? candidate-helper selected_fallen_person
-
-    ; TODO: Remove later
-    log-turtle "Requesting help. Bystander: " candidate-helper
-
-    ifelse do-help [
-      ; TODO Remove later
-      log-turtle "Agreed to help. Bystander:" candidate-helper
-
-      ask candidate-helper [
-        set agent_to_help selected_fallen_person
-        set help-bonus ROBOT_REQUEST_BONUS
-        start-helping
-      ]
-
-      prepare-new-search
-    ][
-    ; Look for a new candidate
-      log-turtle "Help rejected. Bystander:" candidate-helper
-      set candidate-helper nobody
-    ]
+    request-passanger-help
   ]
 
 end
@@ -1360,14 +1383,15 @@ to request-support
 end
 
 to search-fallen-passengers
-  let list-fallen-passengers agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [ st_fall = 1 and color != DEAD_PASSENGERS_COLOR ]
+  let list-fallen-passengers agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [ st_fall = 1 and color != DEAD_PASSENGERS_COLOR and help-in-progress = FALSE]
 
   ifelse count list-fallen-passengers > 0 [
     let passenger-to-help one-of list-fallen-passengers
     set victim-found passenger-to-help
 
-    ; TODO: Remove later
-    user-message "Fallen passanger found"
+    ask passenger-to-help [
+      set help-in-progress TRUE
+    ]
 
   ][
     prepare-new-search
@@ -1537,7 +1561,7 @@ to-report offer-help? [passenger selected_fallen_person]
 
   let result FALSE
 
-  if [st_age] of passenger != 0 [                               ; only men, women, eldery help, children do not help (children follow the actions of the parent, do not decide themselves)
+  if ([st_age] of passenger != 0) and passenger != selected_fallen_person [                               ; only men, women, eldery help, children do not help (children follow the actions of the parent, do not decide themselves)
 
     let social_identity get_social_identity passenger selected_fallen_person
 
@@ -1550,15 +1574,21 @@ to-report offer-help? [passenger selected_fallen_person]
     if [st_age] of passenger = 1    [set col col + 1]           ;adults (st_age = 1) are at colum 1 (males) and colum 4 (females)
     if [st_age] of passenger = 2    [set col col + 2]           ;eldery (st_age = 2) are at colum 2 (males) and colum 5 (females)
 
+
     let helping_chance matrix:get helping_chance_matrix row col
 
-    if (random 100 < helping_chance) [
+
+    ; TODO: REMOVE THIS!!! Only for pre-eliminary experiments
+    let random-number random-float 1.0
+
+    if (random-number < helping_chance) [
       set result TRUE
     ]
   ]
 
   report result
 end
+
 
 to start-helping
   move-to [patch-here] of agent_to_help
@@ -1602,6 +1632,7 @@ to receive-staff-help [ helping-staff ]
   if ticks-since-fall >= fall-length [
     ; TODO: Temporarirly logging. Later it should update stats.
     log-turtle "Staff finished helping passenger. Staff: " helping-staff
+    set help-in-progress FALSE
   ]
 
 end
@@ -1622,6 +1653,7 @@ to receive-bystander-help [ helping-bystander ]
   if ticks-since-fall >= fall-length [
     ; TODO: Temporarirly logging. Later it should update stats.
     log-turtle "Bystander finished helping passenger. Bystander: " helping-bystander
+    set help-in-progress FALSE
     ask helping-bystander [
       set help-bonus 0
     ]
