@@ -148,6 +148,8 @@ to setup-environment
   set REQUEST_STAFF_SUPPORT FALSE
   set REQUEST_BYSTANDER_SUPPORT FALSE
   set ENABLE_LOGGING FALSE
+  set ENABLE_DATA_COLLECTION FALSE
+  
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
 end

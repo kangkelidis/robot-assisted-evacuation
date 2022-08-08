@@ -64,7 +64,10 @@
 ;PLOTS
 ;-----------------------------------------
 
-extensions [matrix] ; extension to add helping chance matrix.
+extensions [
+  matrix ; extension to add helping chance matrix.
+  csv
+]
 __includes [ "config.nls" ]
 
 breed [staff staff_member]
@@ -103,6 +106,8 @@ globals [; GLOBALS
          W_amplifyingintention
          W_decreasingfear
 
+         request-for-help-results
+
          ; STATISTICS
          statistics_evacuated_door1 statistics_evacuated_door2 statistics_evacuated_door3 statistics_evacuated_door4
          statistics_average_walking_speed statistics_average_running_speed statistics_maximum_running_speed statistics_minimum_running_speed statistics_maximum_walking_speed  statistics_minimum_walking_speed
@@ -133,6 +138,7 @@ globals [; GLOBALS
          REQUEST_STAFF_SUPPORT
          REQUEST_BYSTANDER_SUPPORT
          ENABLE_LOGGING
+         ENABLE_DATA_COLLECTION
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
 
@@ -249,6 +255,7 @@ to setup
   ;random-seed
 
   set list_exits []
+  set request-for-help-results (list (list "helper_gender" "helper_culture" "helper_age" "fallen_gender" "fallen_culture" "fallen_age" "offer-help"))
   set start_place_fire 0
   set start_observation_fire 0
   set start_fire_alarm 0
@@ -790,6 +797,7 @@ to go
  ask agents with [color = START_EVACUATE_COLOR and (xcor < -6 or xcor > 6)] [set stat_assembly_area_flag 1]
 
  if evacuation-finished? [
+   write-csv-report
    stop
  ]  ;nw
 
@@ -797,6 +805,13 @@ to go
  check-public-announcement
 
  tick
+end
+
+to write-csv-report
+   if ENABLE_DATA_COLLECTION [
+     csv:to-file "request-for-help-results.csv" request-for-help-results
+     log-turtle "Report written at request-for-help-results.csv" nobody
+   ]
 end
 
 to-report evacuation-finished?
@@ -1593,6 +1608,8 @@ to-report get_social_identity [agent1 agent2] ;nw
 end
 
 to-report offer-help? [passenger selected_fallen_person]
+  ; This reporter determines if a passanger (first parameter) with help a fellow survivor (second parameter).
+  ; Factor include social identity, gender, age.
 
   let result FALSE
 
@@ -1621,8 +1638,17 @@ to-report offer-help? [passenger selected_fallen_person]
     ]
   ]
 
+  if ENABLE_DATA_COLLECTION [
+    let output (list [st_gender] of passenger [st_cultural_cluster] of passenger [st_age] of passenger
+      [st_gender] of selected_fallen_person [st_cultural_cluster] of selected_fallen_person [st_age] of selected_fallen_person
+      result)
+    set request-for-help-results lput output request-for-help-results
+  ]
+
   report result
 end
+
+
 
 
 to start-helping
