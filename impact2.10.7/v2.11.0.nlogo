@@ -730,8 +730,13 @@ to go
    check-dead-by-fire
    if st_dead = 0 [
       if st_group_member = 0 or st_leader = 1 [;nw do it for alone passengers or to leader group. In a group just the leaders moves, others follow it.
-        if start_evacuate > 0 [ move-to-exit ];nw
+        if start_evacuate > 0
+        [
+          move-to-exit
+        ];nw
         move-agent
+        check-robot-request-for-support
+
       ]
       check-fall
       check-get-up
@@ -1024,16 +1029,11 @@ to move-agent
   ]
   if agent_to_help != nobody [                     ;this is the mechanism for when a non-group member falls that you want to help: when fallen, do nothing, when he/she stands up, you and your group members pick up the old speed
     ask agent_to_help [
-      ifelse st_fall = 1 [
-        ; This is the effect of helping
-        receive-bystander-help myself
 
+      ifelse st_fall = 1 [
         set stops_to_help? TRUE ; if the person still needs help, it continues stoped to help him.
       ][
-        ask myself [
-          log-turtle "Clearing agent to help" myself
-          set agent_to_help nobody
-        ]                ; if the person is already ok, he continues his path, and removes from his mind the intention to help that person.
+        set agent_to_help nobody ; if the person is already ok, he continues his path, and removes from his mind the intention to help that person.
         set speed speed_bkp
         ask link-neighbors [
           set speed speed_bkp
@@ -1174,6 +1174,8 @@ to log-turtle [prefix turtle-to-log]
 end
 
 to approach-agent [target-agent]
+  ; For any agent, to move towards a target agent.
+
   ifelse patch-here != [patch-here] of target-agent [
       set heading towards target-agent
       jump 1
@@ -1184,6 +1186,8 @@ to approach-agent [target-agent]
 end
 
 to request-staff-support
+  ; For the SAR robot, to manage the process of requesting help from staff.
+
   ; TODO: Remove later
   log-turtle "Requesting staff support. Victim:" victim-found
 
@@ -1224,12 +1228,21 @@ to-report passenger-recovered? [fallen-passenger]
 end
 
 to prepare-new-search
+  ; For the SAR robot, to prepare to locate a new passanger to help.
+
   set victim-found nobody
   set candidate-helper nobody
 end
 
+to bystander-support-done
+  ; For a helping bystander, to clear its related helping information
+  set help-bonus 0
+  set agent_to_help nobody
+end
+
 to look-for-helper
-  ; Look for a passager to request help
+  ; For the SAR robot, to look around for a bystander to help.
+
   let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0 and st_dead = 0 and (st_group_member = 0 or st_leader = 1) and agent_to_help = nobody]
   if count list-passengers-around > 0 [
     let passenger-to-contact min-one-of list-passengers-around [
@@ -1241,6 +1254,8 @@ to look-for-helper
 end
 
 to request-passanger-help
+  ; For the SAR robot, to request help from a bystander.
+
   let selected_fallen_person victim-found
   let do-help offer-help? candidate-helper selected_fallen_person
 
@@ -1255,14 +1270,10 @@ to request-passanger-help
 
       set agent_to_help selected_fallen_person
 
-      ; TODO: Remove later
-      if ENABLE_LOGGING [
-        user-message "Fallen passanger found"
-      ]
-
       log-turtle "Assigning agent to help:" selected_fallen_person
-
       set help-bonus ROBOT_REQUEST_BONUS
+
+      ; user-message "Agent helping!"
       start-helping
     ]
 
@@ -1275,6 +1286,7 @@ to request-passanger-help
 end
 
 to request-bystander-support
+  ; For the SAR robot, to manage the process of requesting help from bystanders.
 
   set color BYSTANDER_SUPPORT_COLOR
 
@@ -1304,7 +1316,26 @@ to request-bystander-support
 
 end
 
+to check-robot-request-for-support
+  ; For a passanger, to check if has assigned a help request from the SAR robot
+
+  if passenger-recovered? agent_to_help [
+   ; Cancelling since victim not in need
+   bystander-support-done
+  ]
+
+  if agent_to_help = nobody or help-bonus = 0 [
+    stop
+  ]
+
+  ask agent_to_help [
+    receive-bystander-help myself
+  ]
+
+end
+
 to check-staff-request-for-support
+  ; For the staff, to check if there's a SAR robot request for helping a passanger.
 
   if passenger-recovered? assistance-required [
    ; Cancelling since victim not in need
@@ -1332,6 +1363,8 @@ to check-staff-request-for-support
 end
 
 to move-sar-robots
+  ; For the SAR robot, to manage movement when not helping passangers.
+
   ; Moving randomly
   set heading (heading + 45 - (random 90))
   jump 1
@@ -1361,6 +1394,8 @@ to move-sar-robots
 end
 
 to place-sar-robots
+  ; For placing SAR robots in the area.
+
   create-sar-robots 1 [
     set target-patch nobody
     set victim-found nobody
@@ -1591,12 +1626,15 @@ end
 
 
 to start-helping
+  ; For a helping passanger, to approach the agent they will help.
+
   move-to [patch-here] of agent_to_help
   set speed 0
   ask link-neighbors [set speed 0]
 end
 
 to check-decide-to-help ;nw
+
   if st_leader = 0 and st_group_member = 1 [stop]
 
   let list_agents_falled agents in-radius OBSERVATION_DISTANCE with [st_fall = 1 and color != DEAD_PASSENGERS_COLOR]
@@ -1618,6 +1656,8 @@ to check-decide-to-help ;nw
 end
 
 to receive-staff-help [ helping-staff ]
+  ; For a fallen passanger, to receive help from staff.
+
   let factor [help-factor] of helping-staff
 
   ;log-turtle " Ticks since fall: " ticks-since-fall
@@ -1638,6 +1678,8 @@ to receive-staff-help [ helping-staff ]
 end
 
 to receive-bystander-help [ helping-bystander ]
+  ; For a fallen passenger, to receive help from a bystander.
+
   let factor [help-factor] of helping-bystander
   let bonus [help-bonus] of helping-bystander
 
@@ -1647,6 +1689,11 @@ to receive-bystander-help [ helping-bystander ]
 
   set fall-length fall-length * (factor - bonus)
 
+  ;if bonus > 0 [
+  ;  user-message "Applying bystander help"
+  ;]
+
+
   ;log-turtle " New Fall Length: " fall-length
   ;log-turtle " Helper: " helping-agent
 
@@ -1655,7 +1702,7 @@ to receive-bystander-help [ helping-bystander ]
     log-turtle "Bystander finished helping passenger. Bystander: " helping-bystander
     set help-in-progress FALSE
     ask helping-bystander [
-      set help-bonus 0
+      bystander-support-done
     ]
   ]
 end
@@ -2285,7 +2332,7 @@ SWITCH
 108
 _fire_alarm
 _fire_alarm
-1
+0
 1
 -1000
 
@@ -2296,7 +2343,7 @@ SWITCH
 140
 _public_announcement
 _public_announcement
-1
+0
 1
 -1000
 
