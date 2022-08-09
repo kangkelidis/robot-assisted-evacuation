@@ -132,6 +132,7 @@ globals [; GLOBALS
          OBSERVATION_DISTANCE
          SAR_ROBOT_OBSERVATION_DISTANCE
          DEFAULT_FALL_LENGTH
+         SIMULATION_ID
          STAFF_HELP_FACTOR
          PASSENGER_HELP_FACTOR
          ROBOT_REQUEST_BONUS
@@ -809,7 +810,7 @@ end
 
 to write-csv-report
    if ENABLE_DATA_COLLECTION [
-     csv:to-file "request-for-help-results.csv" request-for-help-results
+     csv:to-file (word SIMULATION_ID "_request-for-help-results.csv") request-for-help-results
      log-turtle "Report written at request-for-help-results.csv" nobody
    ]
 end
@@ -1629,8 +1630,6 @@ to-report offer-help? [passenger selected_fallen_person]
 
     let helping_chance matrix:get helping_chance_matrix row col
 
-
-    ; TODO: REMOVE THIS!!! Only for pre-eliminary experiments
     let random-number random-float 1.0
 
     if (random-number < helping_chance) [
