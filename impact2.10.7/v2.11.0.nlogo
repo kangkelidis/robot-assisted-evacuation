@@ -2370,7 +2370,7 @@ number_passengers
 number_passengers
 1
 6743
-1509
+800
 1
 1
 NIL
@@ -2952,7 +2952,7 @@ _percentage_people_traveling_alone
 _percentage_people_traveling_alone
 0
 100
-70
+50
 1
 1
 NIL
@@ -2989,7 +2989,7 @@ _percentage_eldery
 _percentage_eldery
 0
 100
-18
+15
 1
 1
 NIL
@@ -3012,7 +3012,7 @@ INPUTBOX
 389
 454
 room_environment_type
-8
+2
 1
 0
 Number
@@ -3048,7 +3048,7 @@ _number_normal_staff_members
 _number_normal_staff_members
 0
 64
-2
+8
 1
 1
 NIL
