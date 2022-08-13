@@ -67,6 +67,7 @@
 extensions [
   matrix ; extension to add helping chance matrix.
   csv
+  shell
 ]
 __includes [ "config.nls" ]
 
@@ -140,6 +141,8 @@ globals [; GLOBALS
          REQUEST_BYSTANDER_SUPPORT
          ENABLE_LOGGING
          ENABLE_DATA_COLLECTION
+         CONTROLLER_PYTHON_COMMAND
+         CONTROLLER_PYTHON_SCRIPT
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
 
@@ -189,6 +192,7 @@ sar-robots-own [
   target-patch
   victim-found
   candidate-helper
+  support-strategy
 ]
 
 ; INTERNAL VARIABLES OF EACH AGENT
@@ -1248,6 +1252,21 @@ to prepare-new-search
 
   set victim-found nobody
   set candidate-helper nobody
+
+  set support-strategy get-support-strategy
+end
+
+to-report get-support-strategy
+  let result ""
+
+  if REQUEST_STAFF_SUPPORT and not REQUEST_BYSTANDER_SUPPORT [
+    set result "call-staff"
+  ]
+
+  if REQUEST_BYSTANDER_SUPPORT [
+    set result "ask-help"
+  ]
+  report result
 end
 
 to bystander-support-done
@@ -1316,6 +1335,14 @@ to request-bystander-support
     ; TODO: Remove later
     log-turtle "Searching for bystander support.Victim: " victim-found
     look-for-helper
+  ]
+
+  ; Assessing the payoff of requesting passanger help.
+  if candidate-helper != nobody and REQUEST_STAFF_SUPPORT and REQUEST_BYSTANDER_SUPPORT [
+    if not request-candidate-help? [
+      set support-strategy "call-staff"
+      stop
+    ]
   ]
 
   ; Approach agent if still far
@@ -1416,21 +1443,54 @@ to place-sar-robots
     set target-patch nobody
     set victim-found nobody
     set candidate-helper nobody
+    set support-strategy get-support-strategy
     set color SAR_ROBOT_COLOR
     set shape "car"
     move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
   ]
 end
 
+to-report request-candidate-help?
+  ; For the SAR robot, to reason about a potential candidate helper.
+
+  let simulation-id (word SIMULATION_ID)
+
+  let helper-gender (word [st_gender] of candidate-helper)
+  let helper-culture (word [st_cultural_cluster] of candidate-helper)
+  let helper-age (word [st_age] of candidate-helper)
+
+  let fallen-gender (word [st_gender] of victim-found)
+  let fallen-culture (word [st_cultural_cluster] of victim-found)
+  let fallen-age (word [st_age] of victim-found)
+
+  ; Calling the adaptive controller using Python
+  let controller-response (shell:exec
+    (item 0 CONTROLLER_PYTHON_COMMAND) (item 1 CONTROLLER_PYTHON_COMMAND) (item 2 CONTROLLER_PYTHON_COMMAND) (item 3 CONTROLLER_PYTHON_COMMAND) (item 4 CONTROLLER_PYTHON_COMMAND)
+    CONTROLLER_PYTHON_SCRIPT
+    simulation-id helper-gender helper-culture helper-age fallen-gender fallen-culture fallen-age
+  )
+
+  log-turtle "Response from controller " controller-response
+
+  let result FALSE
+  if member? "ask-help" controller-response [
+    set result TRUE
+  ]
+
+  report result
+
+end
+
 to request-support
   ; TODO Implement python calls
-  if REQUEST_STAFF_SUPPORT [
+  if support-strategy = "call-staff" [
     request-staff-support
   ]
 
-  if REQUEST_BYSTANDER_SUPPORT [
+  if support-strategy = "ask-help" [
     request-bystander-support
   ]
+
 end
 
 to search-fallen-passengers
@@ -1443,6 +1503,8 @@ to search-fallen-passengers
     ask passenger-to-help [
       set help-in-progress TRUE
     ]
+
+    ; user-message "Victim found!"
 
   ][
     prepare-new-search
