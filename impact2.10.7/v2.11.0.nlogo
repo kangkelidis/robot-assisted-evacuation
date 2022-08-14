@@ -1184,6 +1184,13 @@ to move-staff  ; staff behavior ;nw
   if [pcolor] of patch-here = EXIT_COLOR and count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
 end
 
+to-report seed-simulation
+  let current-seed new-seed
+  random-seed current-seed
+
+  report current-seed
+end
+
 to log-turtle [prefix turtle-to-log]
   if ENABLE_LOGGING [
       show ticks
@@ -2377,10 +2384,10 @@ NIL
 HORIZONTAL
 
 PLOT
-1
-556
-312
-793
+939
+288
+1250
+525
 Evacuation1
 time (seconds)
 state of passengers
@@ -2662,10 +2669,10 @@ PENS
 "fire_alarm_event" 1.0 0 -12895429 true "" ""
 
 PLOT
-922
-247
-1234
-478
+923
+15
+1235
+246
 Evacuation2
 state of passengers
 evacuation (seconds)
@@ -3094,10 +3101,10 @@ _normal_staff_skill
 Number
 
 PLOT
-919
-10
-1191
-197
+1
+531
+273
+718
 assembly areas counting
 time
 # of people
