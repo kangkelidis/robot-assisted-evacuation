@@ -136,7 +136,6 @@ globals [; GLOBALS
          SIMULATION_ID
          STAFF_HELP_FACTOR
          PASSENGER_HELP_FACTOR
-         ROBOT_REQUEST_BONUS
          REQUEST_STAFF_SUPPORT
          REQUEST_BYSTANDER_SUPPORT
          ENABLE_LOGGING
@@ -193,6 +192,8 @@ sar-robots-own [
   victim-found
   candidate-helper
   support-strategy
+  bystander-requests
+  staff-requests
 ]
 
 ; INTERNAL VARIABLES OF EACH AGENT
@@ -201,7 +202,6 @@ agents-own [
   ticks-since-fall
   fall-length
   help-factor
-  help-bonus
   help-in-progress
   start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
   agent_to_help
@@ -419,7 +419,6 @@ to setup
     set ticks-since-fall 0
     set fall-length DEFAULT_FALL_LENGTH
     set help-factor PASSENGER_HELP_FACTOR
-    set help-bonus 0
     set help-in-progress FALSE
   ]
 
@@ -1241,6 +1240,7 @@ to request-staff-support
 
     ; TODO Remove later
     log-turtle "Staff contacted:" nearest-staff-member
+    set staff-requests (staff-requests + 1)
     prepare-new-search
   ][
     ; No staff available for help. Waiting.
@@ -1276,9 +1276,30 @@ to-report get-support-strategy
   report result
 end
 
+to-report get-bystander-requests
+  let result -1
+
+  let sar-robot one-of sar-robots
+  if sar-robot != nobody [
+    set result [bystander-requests] of sar-robot
+  ]
+
+  report result
+end
+
+to-report get-staff-requests
+  let result -1
+
+  let sar-robot one-of sar-robots
+  if sar-robot != nobody [
+    set result [staff-requests] of sar-robot
+  ]
+
+  report result
+end
+
 to bystander-support-done
   ; For a helping bystander, to clear its related helping information
-  set help-bonus 0
   set agent_to_help nobody
 end
 
@@ -1307,13 +1328,13 @@ to request-passanger-help
   ifelse do-help [
     ; TODO Remove later
     log-turtle "Agreed to help. Bystander:" candidate-helper
+    set bystander-requests (bystander-requests + 1)
 
     ask candidate-helper [
 
       set agent_to_help selected_fallen_person
 
       log-turtle "Assigning agent to help:" selected_fallen_person
-      set help-bonus ROBOT_REQUEST_BONUS
 
       ; user-message "Agent helping!"
       start-helping
@@ -1374,7 +1395,7 @@ to check-robot-request-for-support
    bystander-support-done
   ]
 
-  if agent_to_help = nobody or help-bonus = 0 [
+  if agent_to_help = nobody [
     stop
   ]
 
@@ -1450,6 +1471,8 @@ to place-sar-robots
     set target-patch nobody
     set victim-found nobody
     set candidate-helper nobody
+    set bystander-requests 0
+    set staff-requests 0
     set support-strategy get-support-strategy
     set color SAR_ROBOT_COLOR
     set shape "car"
@@ -1766,6 +1789,7 @@ to receive-staff-help [ helping-staff ]
   if ticks-since-fall >= fall-length [
     ; TODO: Temporarirly logging. Later it should update stats.
     log-turtle "Staff finished helping passenger. Staff: " helping-staff
+    set st_familiarity 1
     set help-in-progress FALSE
   ]
 
@@ -1775,18 +1799,12 @@ to receive-bystander-help [ helping-bystander ]
   ; For a fallen passenger, to receive help from a bystander.
 
   let factor [help-factor] of helping-bystander
-  let bonus [help-bonus] of helping-bystander
 
   ;log-turtle " Ticks since fall: " ticks-since-fall
   ;log-turtle " Helper factor: " factor
   ;log-turtle " Current Fall Length: " fall-length
 
-  set fall-length fall-length * (factor - bonus)
-
-  ;if bonus > 0 [
-  ;  user-message "Applying bystander help"
-  ;]
-
+  set fall-length fall-length * factor
 
   ;log-turtle " New Fall Length: " fall-length
   ;log-turtle " Helper: " helping-agent
@@ -2603,10 +2621,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot statistics_average_desire_evacuate"
 
 PLOT
-1413
-15
-1673
-213
+-19
+647
+241
+845
 desire walkrand
 time (seconds)
 intensity desire walk randomly
@@ -3134,6 +3152,25 @@ NIL
 NIL
 NIL
 1
+
+PLOT
+1241
+12
+1648
+198
+Strategy tracker
+time
+Requests
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"bystanders" 1.0 0 -5298144 true "" "plot get-bystander-requests"
+"staff" 1.0 0 -13345367 true "" "plot get-staff-requests"
 
 @#$#@#$#@
 ## WHAT IS IT?
