@@ -136,6 +136,7 @@ globals [; GLOBALS
          SIMULATION_ID
          STAFF_HELP_FACTOR
          PASSENGER_HELP_FACTOR
+         ROBOT_REQUEST_BONUS
          REQUEST_STAFF_SUPPORT
          REQUEST_BYSTANDER_SUPPORT
          ENABLE_LOGGING
@@ -202,6 +203,7 @@ agents-own [
   ticks-since-fall
   fall-length
   help-factor
+  help-bonus
   help-in-progress
   start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
   agent_to_help
@@ -419,6 +421,7 @@ to setup
     set ticks-since-fall 0
     set fall-length DEFAULT_FALL_LENGTH
     set help-factor PASSENGER_HELP_FACTOR
+    set help-bonus 0
     set help-in-progress FALSE
   ]
 
@@ -1242,8 +1245,6 @@ to request-staff-support
   ]
 
   let target-victim  victim-found
-  let available-staff staff with [assistance-required = nobody]
-
   let nearest-staff-member get-nearest-staff-member
 
   ifelse nearest-staff-member != nobody [
@@ -1316,6 +1317,7 @@ end
 
 to bystander-support-done
   ; For a helping bystander, to clear its related helping information
+  set help-bonus 0
   set agent_to_help nobody
 end
 
@@ -1349,6 +1351,7 @@ to request-passanger-help
     ask candidate-helper [
 
       set agent_to_help selected_fallen_person
+      set help-bonus ROBOT_REQUEST_BONUS
 
       log-turtle "Assigning agent to help:" selected_fallen_person
 
@@ -1385,6 +1388,7 @@ to request-bystander-support
   if candidate-helper != nobody and REQUEST_STAFF_SUPPORT and REQUEST_BYSTANDER_SUPPORT [
     if not request-candidate-help? [
       set support-strategy "call-staff"
+      set candidate-helper nobody
       stop
     ]
   ]
@@ -1411,7 +1415,7 @@ to check-robot-request-for-support
    bystander-support-done
   ]
 
-  if agent_to_help = nobody [
+  if agent_to_help = nobody or help-bonus = 0 [
     stop
   ]
 
@@ -1830,12 +1834,17 @@ to receive-bystander-help [ helping-bystander ]
   ; For a fallen passenger, to receive help from a bystander.
 
   let factor [help-factor] of helping-bystander
+  let bonus [help-bonus] of helping-bystander
 
   ;log-turtle " Ticks since fall: " ticks-since-fall
   ;log-turtle " Helper factor: " factor
   ;log-turtle " Current Fall Length: " fall-length
 
-  set fall-length fall-length * factor
+  set fall-length fall-length * (factor - bonus)
+
+  ;if bonus > 0 [
+  ;  user-message "Applying bystander help"
+  ;]
 
   ;log-turtle " New Fall Length: " fall-length
   ;log-turtle " Helper: " helping-agent
@@ -2426,7 +2435,7 @@ number_passengers
 number_passengers
 1
 6743
-1500
+800
 1
 1
 NIL
@@ -3068,7 +3077,7 @@ INPUTBOX
 389
 454
 room_environment_type
-2
+8
 1
 0
 Number
@@ -3104,7 +3113,7 @@ _number_normal_staff_members
 _number_normal_staff_members
 0
 64
-8
+1
 1
 1
 NIL
