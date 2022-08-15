@@ -1211,6 +1211,22 @@ to approach-agent [target-agent]
 
 end
 
+to-report get-nearest-staff-member
+  ; For the SAR robot, to get the closest available staff
+  let result nobody
+  let available-staff staff with [assistance-required = nobody]
+
+  if any? available-staff [
+    let nearest-staff-member min-one-of available-staff [
+      distance myself
+    ]
+
+    set result nearest-staff-member
+  ]
+
+  report result
+end
+
 to request-staff-support
   ; For the SAR robot, to manage the process of requesting help from staff.
 
@@ -1228,18 +1244,18 @@ to request-staff-support
   let target-victim  victim-found
   let available-staff staff with [assistance-required = nobody]
 
-  ifelse any? available-staff [
-    ; Calling nearest staff member
-    let nearest-staff-member min-one-of available-staff [
-      distance myself
-    ]
+  let nearest-staff-member get-nearest-staff-member
 
+  ifelse nearest-staff-member != nobody [
+
+    ; Calling nearest staff member
     ask nearest-staff-member [
       set assistance-required target-victim
     ]
 
     ; TODO Remove later
     log-turtle "Staff contacted:" nearest-staff-member
+
     set staff-requests (staff-requests + 1)
     prepare-new-search
   ][
@@ -1493,13 +1509,28 @@ to-report request-candidate-help?
   let fallen-culture (word [st_cultural_cluster] of victim-found)
   let fallen-age (word [st_age] of victim-found)
 
+  let the-helper candidate-helper
+  let the-victim victim-found
+
+  let helper-fallen-distance (word [distance the-helper] of victim-found)
+  let staff-fallen-distance "-1"
+
+  ask victim-found [
+    let closest-staff get-nearest-staff-member
+    if closest-staff != nobody [
+      set staff-fallen-distance (word [distance the-victim] of closest-staff)
+    ]
+  ]
+
   ; Calling the adaptive controller using Python
   let controller-response (shell:exec
     (item 0 CONTROLLER_PYTHON_COMMAND) (item 1 CONTROLLER_PYTHON_COMMAND) (item 2 CONTROLLER_PYTHON_COMMAND) (item 3 CONTROLLER_PYTHON_COMMAND) (item 4 CONTROLLER_PYTHON_COMMAND)
     CONTROLLER_PYTHON_SCRIPT
-    simulation-id helper-gender helper-culture helper-age fallen-gender fallen-culture fallen-age
+    simulation-id helper-gender helper-culture helper-age fallen-gender fallen-culture fallen-age helper-fallen-distance staff-fallen-distance
   )
 
+  log-turtle "staff-fallen-distance " staff-fallen-distance
+  log-turtle "helper-fallen-distance " helper-fallen-distance
   log-turtle "Response from controller " controller-response
 
   let result FALSE
@@ -2395,7 +2426,7 @@ number_passengers
 number_passengers
 1
 6743
-800
+1500
 1
 1
 NIL
