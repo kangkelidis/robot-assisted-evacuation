@@ -3113,7 +3113,7 @@ _number_normal_staff_members
 _number_normal_staff_members
 0
 64
-1
+8
 1
 1
 NIL
