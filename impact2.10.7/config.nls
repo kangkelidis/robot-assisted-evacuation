@@ -141,21 +141,22 @@ to setup-environment
   set FIRE_RADIUS           2
   set OBSERVATION_DISTANCE  5
   
-  set DEFAULT_FALL_LENGTH 180 ; Fall is 30 seconds on the original paper
+  set DEFAULT_FALL_LENGTH 60 ; Fall is 30 seconds on the original paper
   set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 3
   set STAFF_HELP_FACTOR 0.50
   set PASSENGER_HELP_FACTOR 0.98
   set ROBOT_REQUEST_BONUS 0.20
   
 
-  set REQUEST_STAFF_SUPPORT FALSE
-  set REQUEST_BYSTANDER_SUPPORT FALSE
+  set REQUEST_STAFF_SUPPORT TRUE
+  set REQUEST_BYSTANDER_SUPPORT TRUE
   set ENABLE_LOGGING FALSE
   
   set SIMULATION_ID 0
   set CONTROLLER_PYTHON_COMMAND (list"/home/cgc87/anaconda3/bin/conda" "run" "-n" "wdywfm-adaptive-robot" "python")
   set CONTROLLER_PYTHON_SCRIPT "/home/cgc87/github/wdywfm-adaptive-robot/abm_runner.py"
   set ENABLE_DATA_COLLECTION FALSE
+  set ENABLE_FRAME_GENERATION TRUE
   
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
@@ -168,21 +169,14 @@ to control-experiments
    set _fire_alarm FALSE
  ]
 
- set-current-plot "average response time"
- set-current-plot-pen "fire_event"
  if ticks = START_FIRE_ACTION [ 
    place-fire
-   plot 200
  ]     
- plot 0 
- 
- set-current-plot "average response time"
- set-current-plot-pen "fire_alarm_event"
+
  if ticks = START_FIRE_ALARM_ACTION [
    set _fire_alarm TRUE
-   plot 200
+
  ]
  if ticks = START_PA_ACTION [set _public_announcement TRUE]
  
- plot 0  
 end

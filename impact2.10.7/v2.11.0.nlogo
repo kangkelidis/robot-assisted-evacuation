@@ -141,6 +141,7 @@ globals [; GLOBALS
          REQUEST_BYSTANDER_SUPPORT
          ENABLE_LOGGING
          ENABLE_DATA_COLLECTION
+         ENABLE_FRAME_GENERATION
          CONTROLLER_PYTHON_COMMAND
          CONTROLLER_PYTHON_SCRIPT
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
@@ -436,6 +437,10 @@ to setup
 
   reset-ticks
   set-time   ;nw
+
+  if ENABLE_FRAME_GENERATION [
+    let errasing_frames (shell:exec "rm" "frames/*")
+  ]
 end
 
 ;-----------------------------------------
@@ -812,6 +817,16 @@ to go
  check-public-announcement
 
  tick
+ write-png-frame
+end
+
+to write-png-frame
+   if ENABLE_FRAME_GENERATION [
+     let frame-name (word "frames/" word ticks ".png")
+     ;export-view frame-name
+     export-interface frame-name
+     log-turtle (word "Frame written: " frame-name) nobody
+ ]
 end
 
 to write-csv-report
@@ -2442,10 +2457,10 @@ NIL
 HORIZONTAL
 
 PLOT
-939
-288
-1250
-525
+918
+249
+1229
+486
 Evacuation1
 time (seconds)
 state of passengers
@@ -2514,117 +2529,6 @@ _number_staff_members
 NIL
 HORIZONTAL
 
-PLOT
-316
-556
-679
-799
-average fear
-time (seconds)
-level of fear
-0.0
-1.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"plot_fear" 1.0 0 -16777216 true "" "plot statistics_average_fear"
-
-PLOT
-688
-558
-1027
-798
-average belief dangerous
-time (seconds)
-intensity belief dangerous
-0.0
-10.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"plot_belief_dangerous" 1.0 0 -16777216 true "" "plot statistics_average_belief_dangerous"
-
-PLOT
-1673
-215
-1930
-424
-average intention evacuate
-time (seconds)
-intensity intention to evacuate
-0.0
-10.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"plot intention evacuate" 1.0 0 -16777216 true "" "plot statistics_average_intention_evacuate"
-
-PLOT
-1413
-215
-1673
-424
-average intention walkrand
-time (seconds)
-intensity intention walk randomly
-0.0
-10.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"plot_intention_walkrand" 1.0 0 -16777216 true "" "plot statistics_average_intention_walkrand"
-
-PLOT
-1413
-428
-2258
-850
-plot model
-time
-value
-0.0
-10.0
--1.0
-1.0
-false
-true
-"" ""
-PENS
-"g_st_others_belief_dangerous" 1.0 0 -7500403 true "" "plot g_st_others_belief_dangerous"
-"g_st_others_fear" 1.0 0 -2674135 true "" "plot g_st_others_fear"
-"g_st_observation_fire" 1.0 0 -955883 true "" "plot g_st_observation_fire"
-"g_st_observation_alarm" 1.0 0 -6459832 true "" "plot g_st_observation_alarm"
-"g_st_observation_others_belief_dangerous" 1.0 0 -1184463 true "" "plot g_st_observation_others_belief_dangerous"
-"g_st_observation_others_fear" 1.0 0 -10899396 true "" "plot g_st_observation_others_fear"
-"g_st_observation_staff_instr " 1.0 0 -13840069 true "" "plot g_st_observation_staff_instr"
-"g_st_observation_pa" 1.0 0 -14835848 true "" "plot g_st_observation_pa"
-"g_st_fear" 1.0 0 -13791810 true "" "plot g_st_fear"
-"g_st_belief_dangerous" 1.0 0 -13345367 true "" "plot g_st_belief_dangerous"
-"g_st_compliance" 1.0 0 -8630108 true "" "plot g_st_compliance"
-"g_st_dead" 1.0 0 -5825686 true "" "plot g_st_dead"
-"g_st_fall" 1.0 0 -2064490 true "" "plot g_st_fall"
-"g_st_desire_walkrand" 1.0 0 -16777216 true "" "plot g_st_desire_walkrand"
-"g_st_desire_evacuate" 1.0 0 -1069655 true "" "plot g_st_desire_evacuate"
-"g_st_intention_walkrand" 1.0 0 -408670 true "" "plot g_st_intention_walkrand"
-"g_st_intention_evacuate" 1.0 0 -4399183 true "" "plot g_st_intention_evacuate"
-"g_st_familiarity" 1.0 0 -5516827 true "" "plot g_st_familiarity"
-"g_st_express_belief_dangerous" 1.0 0 -3425830 true "" "plot g_st_express_belief_dangerous"
-"g_st_express_fear" 1.0 0 -10603201 true "" "plot g_st_express_fear"
-"g_st_action_walkrandom" 1.0 0 -15390905 true "" "plot g_st_action_walkrandom"
-"g_st_action_movetoexit" 1.0 0 -14333415 true "" "plot g_st_action_movetoexit"
-
 BUTTON
 2
 258
@@ -2641,42 +2545,6 @@ NIL
 NIL
 NIL
 1
-
-PLOT
-1673
-15
-1930
-213
-average desire evacuate
-time (seconds)
-intensity desire to evacuate
-0.0
-10.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot statistics_average_desire_evacuate"
-
-PLOT
--19
-647
-241
-845
-desire walkrand
-time (seconds)
-intensity desire walk randomly
-0.0
-10.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot statistics_average_desire_walkrand"
 
 SWITCH
 0
@@ -2705,28 +2573,6 @@ NIL
 HORIZONTAL
 
 PLOT
-1932
-15
-2256
-214
-average response time
-time (seconds)
-response time
-0.0
-10.0
-0.0
-10.0
-true
-true
-"" ""
-PENS
-"resp_time_observation" 1.0 0 -5298144 true "" "plot statistics_average_resp_time_from_observation_fire"
-"resp_time_contagion" 1.0 0 -14070903 true "" "plot statistics_average_resp_time_from_contagion"
-"resp_time_fire_alarm" 1.0 0 -7500403 true "" "plot statistics_average_resp_time_from_fire_alarm"
-"fire_event" 1.0 0 -12186836 true "" ""
-"fire_alarm_event" 1.0 0 -12895429 true "" ""
-
-PLOT
 923
 15
 1235
@@ -2746,26 +2592,6 @@ PENS
 "fallen_total" 1.0 0 -7858858 true "" ""
 "dead" 1.0 0 -7500403 true "" ""
 
-PLOT
-1932
-215
-2256
-424
-Histrogram: start evacuation cause
-time slices
-number of passengers
-0.0
-250.0
-0.0
-500.0
-true
-true
-"" ""
-PENS
-"observe_fire" 5.0 1 -13345367 true "" "histogram statistics_hist_observeFire"
-"contagion" 5.0 1 -2064490 true "" "histogram statistics_hist_contagion"
-"fire_alarm" 5.0 1 -13840069 true "" "histogram statistics_hist_fireAlarm"
-
 SWITCH
 274
 75
@@ -2777,34 +2603,11 @@ _falls
 1
 -1000
 
-PLOT
-1029
-558
-1409
-799
-Average speed
-time
-speed (m/s)
-0.0
-500.0
-0.0
-1.0
-true
-true
-"" ""
-PENS
-"walking" 1.0 0 -16777216 true "" "plot statistics_average_walking_speed"
-"running" 1.0 0 -7500403 true "" "plot statistics_average_running_speed"
-"max walking" 1.0 0 -2674135 true "" "plot statistics_maximum_walking_speed"
-"min walking" 1.0 0 -955883 true "" "plot statistics_minimum_walking_speed"
-"max running" 1.0 0 -6459832 true "" "plot statistics_maximum_running_speed"
-"min running" 1.0 0 -1184463 true "" "plot statistics_minimum_running_speed"
-
 MONITOR
-319
-828
-439
-873
+6
+617
+126
+662
 evacuated door 1
 statistics_evacuated_door1
 17
@@ -2812,10 +2615,10 @@ statistics_evacuated_door1
 11
 
 MONITOR
-442
-829
-562
-874
+129
+618
+249
+663
 evacuated door 2
 statistics_evacuated_door2
 17
@@ -2823,10 +2626,10 @@ statistics_evacuated_door2
 11
 
 MONITOR
-563
-829
-683
-874
+250
+618
+370
+663
 evacuated door 3
 statistics_evacuated_door3
 17
@@ -2834,10 +2637,10 @@ statistics_evacuated_door3
 11
 
 MONITOR
-686
-829
-806
-874
+373
+618
+493
+663
 evacuated door 4
 statistics_evacuated_door4
 17
@@ -2845,105 +2648,15 @@ statistics_evacuated_door4
 11
 
 MONITOR
-812
-829
-964
-874
+496
+622
+648
+667
 number of people died
 count turtles with [color = grey]
 17
 1
 11
-
-PLOT
-318
-878
-518
-1028
-Flowrate  of egress door 1
-Time (sec)
-Flowrate (people per meter per second)
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot statistics_evacuated_door1 / (ticks + 1)"
-
-PLOT
-520
-878
-720
-1028
-Flowrate  of egress door 2
-Time (sec)
-Flowrate (people per meter per second)
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot statistics_evacuated_door2 / (ticks + 1)"
-
-PLOT
-725
-878
-925
-1028
-Flowrate  of egress door 3
-Time (sec)
-Flowrate (people per meter per second)
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot statistics_evacuated_door3 / (ticks + 1)"
-
-PLOT
-928
-878
-1128
-1028
-Flowrate  of egress door 4
-Time (sec)
-Flowrate (people per meter per second)
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot statistics_evacuated_door4 / (ticks + 1)"
-
-PLOT
-1128
-823
-1411
-1026
-Average flowrate of egress through all doors
-Time (sec)
-Flowrate (people per meter per second)
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot (statistics_evacuated_door1 + statistics_evacuated_door2 + statistics_evacuated_door3 + statistics_evacuated_door4 )/ ((ticks + 1) * 4)"
 
 SLIDER
 163
@@ -3159,45 +2872,10 @@ _normal_staff_skill
 Number
 
 PLOT
-1
-531
-273
-718
-assembly areas counting
-time
-# of people
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot statistics_assembly_counting"
-
-BUTTON
-4
-472
-101
-505
-One-step
-go
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-PLOT
-1241
-12
-1648
-198
+915
+491
+1322
+677
 Strategy tracker
 time
 Requests
