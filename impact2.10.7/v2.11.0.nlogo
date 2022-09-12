@@ -186,6 +186,7 @@ staff-own [
   target-patch
   danger
   help-factor
+  previous-color
 ]
 
 ; Agent variables for the sar-robot agents.
@@ -206,6 +207,7 @@ agents-own [
   help-factor
   help-bonus
   help-in-progress
+  previous-color
   start_evacuate start_evacuate_flag count_time_stoped_same_position congestion_speed_factor statistics_hist_counted
   agent_to_help
   current_speed
@@ -1267,6 +1269,8 @@ to request-staff-support
     ; Calling nearest staff member
     ask nearest-staff-member [
       set assistance-required target-victim
+      set previous-color color
+      set color STAFF_SUPPORT_COLOR
     ]
 
     ; TODO Remove later
@@ -1334,6 +1338,7 @@ to bystander-support-done
   ; For a helping bystander, to clear its related helping information
   set help-bonus 0
   set agent_to_help nobody
+  set color previous-color
 end
 
 to look-for-helper
@@ -1350,7 +1355,8 @@ to look-for-helper
 end
 
 to request-passanger-help
-  ; For the SAR robot, to request help from a bystander.
+  ; For the SAR robot, to request help from a bystander. If the passenger
+  ; accepts the request, they are assigned a help bonus (ROBOT_REQUEST_BONUS)
 
   let selected_fallen_person victim-found
   let do-help offer-help? candidate-helper selected_fallen_person
@@ -1367,6 +1373,8 @@ to request-passanger-help
 
       set agent_to_help selected_fallen_person
       set help-bonus ROBOT_REQUEST_BONUS
+      set previous-color color
+      set color BYSTANDER_SUPPORT_COLOR
 
       log-turtle "Assigning agent to help:" selected_fallen_person
 
@@ -1446,6 +1454,7 @@ to check-staff-request-for-support
   if passenger-recovered? assistance-required [
    ; Cancelling since victim not in need
    set assistance-required nobody
+   set color previous-color
    stop
   ]
 
@@ -2381,9 +2390,9 @@ to do-plots
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-394
+440
 10
-908
+954
 545
 10
 10
@@ -2457,10 +2466,10 @@ NIL
 HORIZONTAL
 
 PLOT
-918
-249
-1229
-486
+987
+244
+1298
+481
 Evacuation1
 time (seconds)
 state of passengers
@@ -2558,10 +2567,10 @@ _contagion_model
 -1000
 
 SLIDER
-163
-199
-390
-232
+170
+205
+397
+238
 _percentage_familiarity
 _percentage_familiarity
 0
@@ -2573,10 +2582,10 @@ NIL
 HORIZONTAL
 
 PLOT
-923
-15
-1235
-246
+992
+10
+1304
+241
 Evacuation2
 state of passengers
 evacuation (seconds)
@@ -2604,10 +2613,10 @@ _falls
 -1000
 
 MONITOR
-6
-617
-126
-662
+313
+594
+433
+639
 evacuated door 1
 statistics_evacuated_door1
 17
@@ -2615,10 +2624,10 @@ statistics_evacuated_door1
 11
 
 MONITOR
-129
-618
-249
-663
+436
+595
+556
+640
 evacuated door 2
 statistics_evacuated_door2
 17
@@ -2626,10 +2635,10 @@ statistics_evacuated_door2
 11
 
 MONITOR
-250
-618
-370
-663
+557
+595
+677
+640
 evacuated door 3
 statistics_evacuated_door3
 17
@@ -2637,10 +2646,10 @@ statistics_evacuated_door3
 11
 
 MONITOR
-373
-618
-493
-663
+680
+595
+800
+640
 evacuated door 4
 statistics_evacuated_door4
 17
@@ -2648,10 +2657,10 @@ statistics_evacuated_door4
 11
 
 MONITOR
-496
-622
-648
-667
+803
+599
+955
+644
 number of people died
 count turtles with [color = grey]
 17
@@ -2659,10 +2668,10 @@ count turtles with [color = grey]
 11
 
 SLIDER
-163
-168
-390
-201
+170
+174
+397
+207
 _percentage_females
 _percentage_females
 0
@@ -2674,10 +2683,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-163
-232
-390
-265
+170
+238
+397
+271
 _percentage_children
 _percentage_children
 0
@@ -2689,10 +2698,10 @@ NIL
 HORIZONTAL
 
 INPUTBOX
-63
-328
-172
-388
+78
+354
+187
+414
 _groups_of_2_ratio
 33
 1
@@ -2700,10 +2709,10 @@ _groups_of_2_ratio
 Number
 
 INPUTBOX
-172
-328
-281
-388
+187
+354
+296
+414
 _groups_of_3_ratio
 33
 1
@@ -2711,10 +2720,10 @@ _groups_of_3_ratio
 Number
 
 INPUTBOX
-281
-328
-390
-388
+296
+354
+405
+414
 _groups_of_4_ratio
 34
 1
@@ -2722,10 +2731,10 @@ _groups_of_4_ratio
 Number
 
 SLIDER
-163
-295
-390
-328
+170
+301
+397
+334
 _percentage_people_traveling_alone
 _percentage_people_traveling_alone
 0
@@ -2737,10 +2746,10 @@ NIL
 HORIZONTAL
 
 MONITOR
--1
-394
-133
-467
+144
+576
+278
+649
 TIME
 current_time
 17
@@ -2759,10 +2768,10 @@ _help
 -1000
 
 SLIDER
-163
-264
-390
-297
+170
+270
+397
+303
 _percentage_eldery
 _percentage_eldery
 0
@@ -2785,10 +2794,10 @@ _exit_lighting
 -1000
 
 INPUTBOX
-260
-394
-389
-454
+275
+420
+404
+480
 room_environment_type
 8
 1
@@ -2796,10 +2805,10 @@ room_environment_type
 Number
 
 INPUTBOX
-128
-394
-260
-454
+143
+420
+275
+480
 PLACE_FIRE_POSITION
 6
 1
@@ -2807,10 +2816,10 @@ PLACE_FIRE_POSITION
 Number
 
 INPUTBOX
-128
-453
-389
-513
+143
+479
+404
+539
 setting_cultural_cluster_distribution
 1
 1
@@ -2872,10 +2881,10 @@ _normal_staff_skill
 Number
 
 PLOT
-915
-491
-1322
-677
+984
+486
+1306
+672
 Strategy tracker
 time
 Requests
