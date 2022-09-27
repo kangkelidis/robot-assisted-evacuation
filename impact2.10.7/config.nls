@@ -141,7 +141,7 @@ to setup-environment
   set FIRE_RADIUS           2
   set OBSERVATION_DISTANCE  5
   
-  set DEFAULT_FALL_LENGTH 600 ; Fall is 30 seconds on the original paper
+  set DEFAULT_FALL_LENGTH 240 ; Fall is 30 seconds on the original paper
   set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 3
   set STAFF_HELP_FACTOR 0.50
   set PASSENGER_HELP_FACTOR 0.98

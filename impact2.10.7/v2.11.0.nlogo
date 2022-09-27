@@ -833,7 +833,7 @@ end
 
 to write-csv-report
    if ENABLE_DATA_COLLECTION [
-     csv:to-file (word SIMULATION_ID "_request-for-help-results.csv") request-for-help-results
+     csv:to-file (word "csv/" SIMULATION_ID "_request-for-help-results.csv") request-for-help-results
      log-turtle "Report written at request-for-help-results.csv" nobody
    ]
 end
@@ -1562,6 +1562,11 @@ to-report request-candidate-help?
   log-turtle "Response from controller " controller-response
 
   let result FALSE
+
+  if member? "ERROR" controller-response [
+    error (word "Problems invoking Python: " controller-response)
+  ]
+
   if member? "ask-help" controller-response [
     set result TRUE
   ]
@@ -1571,7 +1576,7 @@ to-report request-candidate-help?
 end
 
 to request-support
-  ; TODO Implement python calls
+  ; For the SAR robot, to invoke logic according to its helping strategy.
   if support-strategy = "call-staff" [
     request-staff-support
   ]
