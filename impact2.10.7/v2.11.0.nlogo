@@ -1339,12 +1339,17 @@ to bystander-support-done
   set help-bonus 0
   set agent_to_help nobody
   set color previous-color
+
+  set speed speed_bkp
+  ask link-neighbors [
+    set speed speed_bkp
+  ]
 end
 
 to look-for-helper
   ; For the SAR robot, to look around for a bystander to help.
 
-  let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0 and st_dead = 0 and (st_group_member = 0 or st_leader = 1) and agent_to_help = nobody]
+  let list-passengers-around agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [st_fall = 0 and st_dead = 0 and (st_leader = 1) and agent_to_help = nobody]
   if count list-passengers-around > 0 [
     let passenger-to-contact min-one-of list-passengers-around [
       distance myself
@@ -1865,18 +1870,22 @@ to receive-bystander-help [ helping-bystander ]
   let factor [help-factor] of helping-bystander
   let bonus [help-bonus] of helping-bystander
 
-  ;log-turtle " Ticks since fall: " ticks-since-fall
-  ;log-turtle " Helper factor: " factor
-  ;log-turtle " Current Fall Length: " fall-length
+  log-turtle " Ticks since fall: " ticks-since-fall
+  log-turtle " Helper factor: " factor
+  log-turtle " Bonus: " bonus
+  log-turtle " Current Fall Length: " fall-length
 
   set fall-length fall-length * (factor - bonus)
 
-  ;if bonus > 0 [
-  ;  user-message "Applying bystander help"
-  ;]
 
-  ;log-turtle " New Fall Length: " fall-length
-  ;log-turtle " Helper: " helping-agent
+
+  log-turtle " New Fall Length: " fall-length
+  log-turtle " Helper: " helping-bystander
+
+  if bonus > 0 [
+    log-turtle "Applied bystander help" helping-bystander
+    ; user-message "Applied bystander help"
+  ]
 
   if ticks-since-fall >= fall-length [
     ; TODO: Temporarirly logging. Later it should update stats.
@@ -1889,34 +1898,33 @@ to receive-bystander-help [ helping-bystander ]
 end
 
 to check-get-up
-  if ( color = FALL_COLOR ) [
-    ifelse ticks-since-fall >= fall-length [
+  if ( st_fall = 1 ) [
+    if ticks-since-fall < fall-length [
       set color FALL_COLOR + 1
-
-      ; TODO: Remove later
-      log-turtle "Getting up. Fall length" fall-length
-    ][
       set ticks-since-fall ticks-since-fall + 1
       stop
     ]
-  ]
 
-  if ticks - ticks-since-fall > fall-length [
+    if ticks-since-fall >= fall-length [
+      ; TODO: Remove later
+      log-turtle "Getting up. Fall length" fall-length
 
-    set ticks-since-fall 0
-    set fall-length DEFAULT_FALL_LENGTH
-    set speed speed_bkp ; after getup, it is back the original speed of this agent
-    set st_fall 0
+      set ticks-since-fall 0
+      set fall-length DEFAULT_FALL_LENGTH
+      set speed speed_bkp ; after getup, it is back the original speed of this agent
+      set st_fall 0
 
-    ;nw
-    if st_fall = 1 [
+      ;nw
+
       ask link-neighbors [
         set speed speed_bkp
       ]
+
+      ;nw
+      set color PASSENGERS_COLOR
     ]
-    ;nw
-    set color PASSENGERS_COLOR
   ]
+
 end
 
 

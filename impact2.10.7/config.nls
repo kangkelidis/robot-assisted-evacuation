@@ -145,7 +145,7 @@ to setup-environment
   set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 3
   set STAFF_HELP_FACTOR 0.50
   set PASSENGER_HELP_FACTOR 0.98
-  set ROBOT_REQUEST_BONUS 0.20
+  set ROBOT_REQUEST_BONUS 0.2
   
   ; For evacuation time experiments, keep them all false.
   set REQUEST_STAFF_SUPPORT FALSE
