@@ -148,10 +148,10 @@ to setup-environment
   set ROBOT_REQUEST_BONUS 0.2
   
   ; For evacuation time experiments, keep them all false.
-  set REQUEST_STAFF_SUPPORT FALSE
-  set REQUEST_BYSTANDER_SUPPORT FALSE
+  set REQUEST_STAFF_SUPPORT TRUE
+  set REQUEST_BYSTANDER_SUPPORT TRUE
   set ENABLE_LOGGING FALSE
-  set ENABLE_FRAME_GENERATION FALSE
+  set ENABLE_FRAME_GENERATION TRUE
   
   set SIMULATION_ID 0
   ; Change these according to your Anaconda installation.

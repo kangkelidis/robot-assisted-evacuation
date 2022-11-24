@@ -824,10 +824,9 @@ end
 
 to write-png-frame
    if ENABLE_FRAME_GENERATION [
-     let frame-name (word "frames/" word ticks ".png")
-     ;export-view frame-name
-     export-interface frame-name
-     log-turtle (word "Frame written: " frame-name) nobody
+     export-view (word "frames/view_" word ticks ".png")
+     export-interface (word "frames/interface_" word ticks ".png")
+     log-turtle (word "Frames written at /frames") nobody
  ]
 end
 
