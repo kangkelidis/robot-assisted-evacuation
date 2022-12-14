@@ -1,0 +1,1 @@
+docker run -dit robot-assisted-evacuation
