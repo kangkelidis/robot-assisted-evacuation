@@ -36,3 +36,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-py27_4.8.3-Linux
 # Put conda in path so we can use conda activate
 ENV PATH=$CONDA_DIR/bin:$PATH
 
+# Creating the conda environment
+RUN conda env create -f /home/python/environment.yml
+
+
