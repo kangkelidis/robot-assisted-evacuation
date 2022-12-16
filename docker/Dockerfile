@@ -19,6 +19,11 @@ RUN mkdir /home/netlogo \
 
 COPY . /home/
 
+# Folders for storing results
+RUN mkdir -p /home/results/data \
+    && mkdir -p /home/results/frames \
+    && mkdir -p /home/results/img
+
 # Installing Anaconda
 
 # Install base utilities
@@ -38,5 +43,12 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 
 # Creating the conda environment
 RUN conda env create -f /home/python/environment.yml
+
+# Unsetting to avoid a Netlogo error.
+ENV DISPLAY=
+
+# Executing evacuation simulations
+WORKDIR "/home/python"
+ENTRYPOINT ["conda", "run", "-n", "robot-assisted-evacuation", "python", "evacuation.py"]
 
 

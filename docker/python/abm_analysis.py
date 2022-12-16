@@ -24,37 +24,36 @@ PLOT_STYLE = 'seaborn-darkgrid'
 NETLOGO_PROJECT_DIRECTORY = "/home/src/"  # type:str
 NETLOGO_MODEL_FILE = NETLOGO_PROJECT_DIRECTORY + "v2.11.0.nlogo"  # type:str
 NETLOGO_HOME = "/home/netlogo"  # type:str
-RESULTS_CSV_FILE = "/home/results/{}_fall_{}_samples_experiment_results.csv"  # type:str
+RESULTS_FOLDER = "/home/results/"
+RESULTS_CSV_FILE = RESULTS_FOLDER + "data/{}_fall_{}_samples_experiment_results.csv"  # type:str
 
 NETLOGO_VERSION = "5"  # type:str
 
 TURTLE_PRESENT_REPORTER = "count turtles"  # type:str
 EVACUATED_REPORTER = "number_passengers - count agents + 1"  # type:str
 DEAD_REPORTER = "count agents with [ st_dead = 1 ]"  # type:str
-
 SEED_SIMULATION_REPORTER = "seed-simulation"
-
 SET_SIMULATION_ID_COMMAND = "set SIMULATION_ID {}"  # type:str
-SET_STAFF_SUPPORT_COMMAND = "set REQUEST_STAFF_SUPPORT {}"  # type: str
-SET_PASSENGER_SUPPORT_COMMAND = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
-SET_FALL_LENGTH_COMMAND = "set DEFAULT_FALL_LENGTH {}"  # type:str
 
-ENABLE_STAFF_COMMAND = SET_STAFF_SUPPORT_COMMAND.format("TRUE")  # type:str
-ENABLE_PASSENGER_COMMAND = SET_PASSENGER_SUPPORT_COMMAND.format("TRUE")  # type:str
+# SET_STAFF_SUPPORT_COMMAND = "set REQUEST_STAFF_SUPPORT {}"  # type: str
+# SET_PASSENGER_SUPPORT_COMMAND = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
+# SET_FALL_LENGTH_COMMAND = "set DEFAULT_FALL_LENGTH {}"  # type:str
+#
+# ENABLE_STAFF_COMMAND = SET_STAFF_SUPPORT_COMMAND.format("TRUE")  # type:str
+# ENABLE_PASSENGER_COMMAND = SET_PASSENGER_SUPPORT_COMMAND.format("TRUE")  # type:str
 
-NO_SUPPORT_COLUMN = "no-support"  # type:str
-ONLY_STAFF_SUPPORT_COLUMN = "staff-support"  # type:str
-ONLY_PASSENGER_SUPPORT_COLUMN = "passenger-support"  # type:str
-ADAPTIVE_SUPPORT_COLUMN = "adaptive-support"
+# NO_SUPPORT_COLUMN = "no-support"  # type:str
+# ONLY_STAFF_SUPPORT_COLUMN = "staff-support"  # type:str
+# ONLY_PASSENGER_SUPPORT_COLUMN = "passenger-support"  # type:str
+# ADAPTIVE_SUPPORT_COLUMN = "adaptive-support"
 
-SIMULATION_SCENARIOS = {NO_SUPPORT_COLUMN: [],
-                        ONLY_STAFF_SUPPORT_COLUMN: [ENABLE_STAFF_COMMAND],
-                        ONLY_PASSENGER_SUPPORT_COLUMN: [ENABLE_PASSENGER_COMMAND],
-                        ADAPTIVE_SUPPORT_COLUMN: [ENABLE_PASSENGER_COMMAND,
-                                                  ENABLE_STAFF_COMMAND]}  # type: Dict[str, List[str]]
+# SIMULATION_SCENARIOS = {NO_SUPPORT_COLUMN: [],
+#                         ONLY_STAFF_SUPPORT_COLUMN: [ENABLE_STAFF_COMMAND],
+#                         ONLY_PASSENGER_SUPPORT_COLUMN: [ENABLE_PASSENGER_COMMAND],
+#                         ADAPTIVE_SUPPORT_COLUMN: [ENABLE_PASSENGER_COMMAND,
+#                                                   ENABLE_STAFF_COMMAND]}  # type: Dict[str, List[str]]
 
 # SAMPLES = 100  # type:int
-SAMPLES = 1
 MAX_NETLOGO_TICKS = 2000  # type: int
 
 
@@ -129,14 +128,14 @@ def initialize(gui):
     netlogo_link.load_model(NETLOGO_MODEL_FILE)
 
 
-def start_experiments(experiment_configurations, results_file):
-    # type: (Dict[str, List[str]], str) -> None
+def start_experiments(experiment_configurations, results_file, samples):
+    # type: (Dict[str, List[str]], str, int) -> None
 
     start_time = time.time()  # type: float
 
     experiment_data = {}  # type: Dict[str, List[float]]
     for experiment_name, experiment_commands in experiment_configurations.items():
-        scenario_times = run_parallel_simulations(SAMPLES,
+        scenario_times = run_parallel_simulations(samples,
                                                   post_setup_commands=experiment_commands)  # type:List[float]
         experiment_data[experiment_name] = scenario_times
 
@@ -188,27 +187,29 @@ def plot_results(csv_file, samples_in_title=False):
     # type: (str, bool) -> None
     file_description = Path(csv_file).stem  # type: str
     results_dataframe = get_dataframe(csv_file)  # type: pd.DataFrame
-    results_dataframe = results_dataframe.rename(columns={
-        NO_SUPPORT_COLUMN: "No Support",
-        ONLY_STAFF_SUPPORT_COLUMN: "Proself-Oriented",
-        ONLY_PASSENGER_SUPPORT_COLUMN: "Prosocial-Oriented",
-        ADAPTIVE_SUPPORT_COLUMN: "Adaptive"
-    })
+    # results_dataframe = results_dataframe.rename(columns={
+    #     NO_SUPPORT_COLUMN: "No Support",
+    #     ONLY_STAFF_SUPPORT_COLUMN: "Proself-Oriented",
+    #     ONLY_PASSENGER_SUPPORT_COLUMN: "Prosocial-Oriented",
+    #     ADAPTIVE_SUPPORT_COLUMN: "Adaptive"
+    # })
 
     print(results_dataframe.describe())
 
     title = ""
-    order = ["No Support", "Prosocial-Oriented", "Proself-Oriented", "Adaptive"]  # type: List[str]
+    # order = ["No Support", "Prosocial-Oriented", "Proself-Oriented", "Adaptive"]  # type: List[str]
+    order = None
+
     if samples_in_title:
         title = "{} samples".format(len(results_dataframe))
     _ = sns.violinplot(data=results_dataframe, order=order).set_title(title)
-    plt.savefig("img/" + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig("img/" + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig(RESULTS_FOLDER + "img/" + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
+    plt.savefig(RESULTS_FOLDER + "img/" + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
     plt.show()
 
     _ = sns.stripplot(data=results_dataframe, order=order, jitter=True).set_title(title)
-    plt.savefig("img/" + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig("img/" + file_description + "_strip_plot.eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig(RESULTS_FOLDER + "img/" + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
+    plt.savefig(RESULTS_FOLDER + "img/" + file_description + "_strip_plot.eps", bbox_inches='tight', pad_inches=0)
     plt.show()
 
 
@@ -250,23 +251,21 @@ def test_hypothesis(first_scenario_column, second_scenario_column, csv_file, alt
         print(alternative_hypothesis)
 
 
-def simulate_and_store(fall_length):
-    # type: (int) -> None
-    results_file_name = RESULTS_CSV_FILE.format(fall_length, SAMPLES)  # type:str
-    update_fall_length = SET_FALL_LENGTH_COMMAND.format(fall_length)  # type: str
+def simulate_and_store(simulation_scenarios, results_file_name, samples):
+    # type: (Dict[str, List[str]],str, int) -> None
 
-    updated_simulation_scenarios = {scenario_name: commands + [update_fall_length]
+    updated_simulation_scenarios = {scenario_name: commands
                                     for scenario_name, commands in
-                                    SIMULATION_SCENARIOS.iteritems()}  # type: Dict[str, List[str]]
-    start_experiments(updated_simulation_scenarios, results_file_name)
+                                    simulation_scenarios.iteritems()}  # type: Dict[str, List[str]]
+    start_experiments(updated_simulation_scenarios, results_file_name, samples)
 
 
-def get_current_file_metrics(current_file):
-    # type: (str) -> Dict[str, float]
+def get_current_file_metrics(simulation_scenarios, current_file):
+    # type: (Dict[str, List[str]], str) -> Dict[str, float]
     results_dataframe = get_dataframe(current_file)  # type: pd.DataFrame
     metrics_dict = {}  # type: Dict[str, float]
 
-    for scenario in SIMULATION_SCENARIOS.keys():
+    for scenario in simulation_scenarios.keys():
         metrics_dict["{}_mean".format(scenario)] = results_dataframe[scenario].mean()
         metrics_dict["{}_std".format(scenario)] = results_dataframe[scenario].std()
         metrics_dict["{}_median".format(scenario)] = results_dataframe[scenario].median()
@@ -276,32 +275,29 @@ def get_current_file_metrics(current_file):
     return metrics_dict
 
 
-def perform_analysis(fall_length):
-    # type: (int) -> Dict[str, float]
+def perform_analysis(target_scenario, simulation_scenarios, current_file):
+    # type: (str, Dict[str, List[str]], str) -> Dict[str, float]
 
-    current_file = RESULTS_CSV_FILE.format(fall_length, SAMPLES)  # type:str
     plt.style.use(PLOT_STYLE)
     plot_results(csv_file=current_file)
-    current_file_metrics = get_current_file_metrics(current_file)  # type: Dict[str, float]
-    current_file_metrics["fall_length"] = fall_length
+    current_file_metrics = get_current_file_metrics(simulation_scenarios, current_file)  # type: Dict[str, float]
+    # current_file_metrics["fall_length"] = fall_length
 
-    for alternative_scenario in SIMULATION_SCENARIOS.keys():
-        if alternative_scenario != ADAPTIVE_SUPPORT_COLUMN:
-            test_hypothesis(first_scenario_column=ADAPTIVE_SUPPORT_COLUMN,
+    for alternative_scenario in simulation_scenarios.keys():
+        if alternative_scenario != target_scenario:
+            test_hypothesis(first_scenario_column=target_scenario,
                             second_scenario_column=alternative_scenario,
                             alternative="less",
                             csv_file=current_file)
 
     return current_file_metrics
 
-
-if __name__ == "__main__":
-    # fall_lengths = [minutes * 60 for minutes in range(1, 11)]  # type: List[int]
-
-    fall_lengths = [60]
-
-    for length in fall_lengths:
-        simulate_and_store(length)
-
-    metrics = pd.DataFrame([perform_analysis(length) for length in fall_lengths])  # type: pd.DataFrame
-    metrics.to_csv("data/metrics.csv")
+# if __name__ == "__main__":
+#     fall_lengths = [minutes * 60 for minutes in range(1, 11)]  # type: List[int]
+#
+#
+#     for length in fall_lengths:
+#         simulate_and_store(length)
+#
+#     metrics = pd.DataFrame([perform_analysis(length) for length in fall_lengths])  # type: pd.DataFrame
+#     metrics.to_csv(RESULTS_FOLDER + "data/metrics.csv")

@@ -441,7 +441,7 @@ to setup
   set-time   ;nw
 
   if ENABLE_FRAME_GENERATION [
-    let errasing_frames (shell:exec "rm" "frames/*")
+    let errasing_frames (shell:exec "rm" "/home/results/frames/*")
   ]
 end
 
@@ -824,8 +824,9 @@ end
 
 to write-png-frame
    if ENABLE_FRAME_GENERATION [
-     export-view (word "frames/view_" word ticks ".png")
-     export-interface (word "frames/interface_" word ticks ".png")
+     export-view (word "/home/results/frames/view_" word ticks ".png")
+     ; Uncomment only when using the GUI
+     ;export-interface (word "/home/results/frames/interface_" word ticks ".png")
      log-turtle (word "Frames written at /frames") nobody
  ]
 end
