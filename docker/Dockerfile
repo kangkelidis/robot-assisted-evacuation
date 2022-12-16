@@ -20,9 +20,9 @@ RUN mkdir /home/netlogo \
 COPY . /home/
 
 # Folders for storing results
-RUN mkdir -p /home/results/data \
-    && mkdir -p /home/results/frames \
-    && mkdir -p /home/results/img
+RUN mkdir -p /home/workspace/data \
+    && mkdir -p /home/workspace/frames \
+    && mkdir -p /home/workspace/img
 
 # Installing Anaconda
 
@@ -42,13 +42,13 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-py27_4.8.3-Linux
 ENV PATH=$CONDA_DIR/bin:$PATH
 
 # Creating the conda environment
-RUN conda env create -f /home/python/environment.yml
+RUN conda env create -f /home/env/environment.yml
 
 # Unsetting to avoid a Netlogo error.
 ENV DISPLAY=
 
 # Executing evacuation simulations
-WORKDIR "/home/python"
-ENTRYPOINT ["conda", "run", "-n", "robot-assisted-evacuation", "python", "evacuation.py"]
+WORKDIR "/home/workspace"
+ENTRYPOINT ["conda", "run", "-n", "robot-assisted-evacuation", "python", "start.py"]
 
 

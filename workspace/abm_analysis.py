@@ -24,8 +24,8 @@ PLOT_STYLE = 'seaborn-darkgrid'
 NETLOGO_PROJECT_DIRECTORY = "/home/src/"  # type:str
 NETLOGO_MODEL_FILE = NETLOGO_PROJECT_DIRECTORY + "v2.11.0.nlogo"  # type:str
 NETLOGO_HOME = "/home/netlogo"  # type:str
-RESULTS_FOLDER = "/home/results/"
-RESULTS_CSV_FILE = RESULTS_FOLDER + "data/{}_fall_{}_samples_experiment_results.csv"  # type:str
+WORKSPACE_FOLDER = "/home/workspace/"
+RESULTS_CSV_FILE = WORKSPACE_FOLDER + "data/{}_fall_{}_samples_experiment_results.csv"  # type:str
 
 NETLOGO_VERSION = "5"  # type:str
 
@@ -203,13 +203,13 @@ def plot_results(csv_file, samples_in_title=False):
     if samples_in_title:
         title = "{} samples".format(len(results_dataframe))
     _ = sns.violinplot(data=results_dataframe, order=order).set_title(title)
-    plt.savefig(RESULTS_FOLDER + "img/" + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(RESULTS_FOLDER + "img/" + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
+    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
     plt.show()
 
     _ = sns.stripplot(data=results_dataframe, order=order, jitter=True).set_title(title)
-    plt.savefig(RESULTS_FOLDER + "img/" + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(RESULTS_FOLDER + "img/" + file_description + "_strip_plot.eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
+    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_strip_plot.eps", bbox_inches='tight', pad_inches=0)
     plt.show()
 
 
