@@ -17,11 +17,11 @@ def main():
     }  # type: Dict[str, List[str]]
 
     results_file_name = WORKSPACE_FOLDER + "data/experiments.csv"  # type:str
-    samples = 3  # type: int
+    samples = 30  # type: int
 
     simulate_and_store(simulation_scenarios, results_file_name, samples)
     metrics = pd.DataFrame(
-        [perform_analysis("staff-support", simulation_scenarios, results_file_name)])  # type: pd.DataFrame
+        [perform_analysis("adaptive-support", simulation_scenarios, results_file_name)])  # type: pd.DataFrame
     metrics.to_csv(WORKSPACE_FOLDER + "data/metrics.csv")
 
 
