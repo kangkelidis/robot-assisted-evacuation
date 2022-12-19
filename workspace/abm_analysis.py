@@ -1,5 +1,7 @@
 import matplotlib
 
+from abm_video_generation import generate_video
+
 matplotlib.use('Agg')
 
 import math
@@ -19,12 +21,13 @@ from pyNetLogo import NetLogoException
 from scipy.stats import mannwhitneyu
 from typing import List, Tuple, Dict, Optional
 
+WORKSPACE_FOLDER = "/home/workspace/"
+
 PLOT_STYLE = 'seaborn-darkgrid'
 
 NETLOGO_PROJECT_DIRECTORY = "/home/src/"  # type:str
 NETLOGO_MODEL_FILE = NETLOGO_PROJECT_DIRECTORY + "v2.11.0.nlogo"  # type:str
 NETLOGO_HOME = "/home/netlogo"  # type:str
-WORKSPACE_FOLDER = "/home/workspace/"
 RESULTS_CSV_FILE = WORKSPACE_FOLDER + "data/{}_fall_{}_samples_experiment_results.csv"  # type:str
 
 NETLOGO_VERSION = "5"  # type:str
@@ -82,7 +85,7 @@ def calculate_sample_size(mean_1, mean_2, std_dev_1, std_dev_2, alpha=0.05, powe
 
 
 def run_simulation(simulation_id, post_setup_commands):
-    # type: (int, List[str]) -> Optional[float]
+    # type: (str, List[str]) -> Optional[float]
     try:
         current_seed = netlogo_link.report(SEED_SIMULATION_REPORTER)  # type:str
         netlogo_link.command("setup")
@@ -108,6 +111,7 @@ def run_simulation(simulation_id, post_setup_commands):
             metrics_dataframe.to_csv("data/nan_df.csv")
             print("DEBUG!!! info to data/nan_df.csv")
 
+        generate_video(simulation_id=simulation_id)
         return evacuation_time
     except NetLogoException:
         traceback.print_exc()
@@ -157,9 +161,9 @@ def run_parallel_simulations(experiment_name, samples, post_setup_commands, gui=
     # type: (str, int, List[str], bool) -> List[float]
 
     initialise_arguments = (gui,)  # type: Tuple
-    simulation_parameters = [{"simulation_id": "{}_{}".format(experiment_name, simulation_id),
+    simulation_parameters = [{"simulation_id": "{}_{}".format(experiment_name, simulation_index),
                               "post_setup_commands": post_setup_commands}
-                             for simulation_id in range(samples)]  # type: List[Dict]
+                             for simulation_index in range(samples)]  # type: List[Dict]
 
     results = []  # type: List[float]
     executor = Pool(initializer=initialize,

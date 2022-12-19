@@ -10,13 +10,14 @@ def main():
 
     simulation_scenarios = {
         # "no-support": [],
-        "staff-support": [set_staff_support_command.format("TRUE")],
+        # "staff-support": [set_staff_support_command.format("TRUE")],
+        "passenger-support": [set_passenger_support_command.format("TRUE")],
         "adaptive-support": [set_passenger_support_command.format("TRUE"),
                              set_staff_support_command.format("TRUE")]
     }  # type: Dict[str, List[str]]
 
     results_file_name = WORKSPACE_FOLDER + "data/experiments.csv"  # type:str
-    samples = 30  # type: int
+    samples = 3  # type: int
 
     simulate_and_store(simulation_scenarios, results_file_name, samples)
     metrics = pd.DataFrame(
