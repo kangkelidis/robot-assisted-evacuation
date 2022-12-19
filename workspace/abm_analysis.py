@@ -293,13 +293,3 @@ def perform_analysis(target_scenario, simulation_scenarios, current_file):
                             csv_file=current_file)
 
     return current_file_metrics
-
-# if __name__ == "__main__":
-#     fall_lengths = [minutes * 60 for minutes in range(1, 11)]  # type: List[int]
-#
-#
-#     for length in fall_lengths:
-#         simulate_and_store(length)
-#
-#     metrics = pd.DataFrame([perform_analysis(length) for length in fall_lengths])  # type: pd.DataFrame
-#     metrics.to_csv(RESULTS_FOLDER + "data/metrics.csv")
