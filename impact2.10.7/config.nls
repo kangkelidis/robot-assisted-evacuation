@@ -157,7 +157,7 @@ to setup-environment
   ; Change these according to your Anaconda installation.
   ; set CONTROLLER_PYTHON_COMMAND (list"/Users/cgc87/opt/anaconda3/bin/conda" "run" "-n" "wdywfm-adaptive-robot" "python")
   set CONTROLLER_PYTHON_COMMAND (list"/opt/conda/bin/conda" "run" "-n" "robot-assisted-evacuation" "python")
-  set CONTROLLER_PYTHON_SCRIPT "/home/workspace/abm_runner.py"
+  set CONTROLLER_PYTHON_SCRIPT "/home/workspace/on_contact.py"
   set ENABLE_DATA_COLLECTION FALSE
 
   
