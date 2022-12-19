@@ -824,7 +824,8 @@ end
 
 to write-png-frame
    if ENABLE_FRAME_GENERATION [
-     export-view (word "/home/workspace/frames/view_" word ticks ".png")
+     let suffix (word SIMULATION_ID "_" ticks ".png")
+     export-view (word "/home/workspace/frames/view_" suffix)
      ; Uncomment only when using the GUI
      ;export-interface (word "/home/results/frames/interface_" word ticks ".png")
      log-turtle (word "Frames written at /frames") nobody

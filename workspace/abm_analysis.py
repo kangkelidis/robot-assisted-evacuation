@@ -33,7 +33,7 @@ TURTLE_PRESENT_REPORTER = "count turtles"  # type:str
 EVACUATED_REPORTER = "number_passengers - count agents + 1"  # type:str
 DEAD_REPORTER = "count agents with [ st_dead = 1 ]"  # type:str
 SEED_SIMULATION_REPORTER = "seed-simulation"
-SET_SIMULATION_ID_COMMAND = "set SIMULATION_ID {}"  # type:str
+SET_SIMULATION_ID_COMMAND = 'set SIMULATION_ID "{}"'  # type:str
 
 # SET_STAFF_SUPPORT_COMMAND = "set REQUEST_STAFF_SUPPORT {}"  # type: str
 # SET_PASSENGER_SUPPORT_COMMAND = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
@@ -135,7 +135,7 @@ def start_experiments(experiment_configurations, results_file, samples):
 
     experiment_data = {}  # type: Dict[str, List[float]]
     for experiment_name, experiment_commands in experiment_configurations.items():
-        scenario_times = run_parallel_simulations(samples,
+        scenario_times = run_parallel_simulations(experiment_name, samples,
                                                   post_setup_commands=experiment_commands)  # type:List[float]
         experiment_data[experiment_name] = scenario_times
 
@@ -153,11 +153,12 @@ def run_simulation_with_dict(dict_parameters):
     return run_simulation(**dict_parameters)
 
 
-def run_parallel_simulations(samples, post_setup_commands, gui=False):
-    # type: (int, List[str], bool) -> List[float]
+def run_parallel_simulations(experiment_name, samples, post_setup_commands, gui=False):
+    # type: (str, int, List[str], bool) -> List[float]
 
     initialise_arguments = (gui,)  # type: Tuple
-    simulation_parameters = [{"simulation_id": simulation_id, "post_setup_commands": post_setup_commands}
+    simulation_parameters = [{"simulation_id": "{}_{}".format(experiment_name, simulation_id),
+                              "post_setup_commands": post_setup_commands}
                              for simulation_id in range(samples)]  # type: List[Dict]
 
     results = []  # type: List[float]
@@ -206,6 +207,7 @@ def plot_results(csv_file, samples_in_title=False):
     plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
     plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
     plt.show()
+    plt.clf()
 
     _ = sns.stripplot(data=results_dataframe, order=order, jitter=True).set_title(title)
     plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
@@ -230,7 +232,7 @@ def test_hypothesis(first_scenario_column, second_scenario_column, csv_file, alt
                                                   len(first_scenario_data)))
     print("{}-> mean = {} std = {} len={}".format(second_scenario_column, second_scenario_mean, second_scenario_stddev,
                                                   len(second_scenario_data)))
-    print("Sample size: {}".format(
+    print("Recommended Sample size: {}".format(
         calculate_sample_size(first_scenario_mean, second_scenario_mean, first_scenario_stddev,
                               second_scenario_stddev)))
 
