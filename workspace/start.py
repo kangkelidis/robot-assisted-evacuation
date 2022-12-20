@@ -3,20 +3,27 @@ from typing import Dict, List
 
 from abm_analysis import simulate_and_store, perform_analysis, WORKSPACE_FOLDER
 
+SET_FRAME_GENERATION_COMMAND = "set ENABLE_FRAME_GENERATION {}"  # type: str
+SET_FALL_LENGTH_COMMAND = "set DEFAULT_FALL_LENGTH {}"  # type: str
+
+SET_STAFF_SUPPORT_COMMAND = "set REQUEST_STAFF_SUPPORT {}"  # type: str
+SET_PASSENGER_SUPPORT_COMMAND = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
+
 
 def main():
-    set_frame_generation_command = "set ENABLE_FRAME_GENERATION {}"  # type: str
-    set_staff_support_command = "set REQUEST_STAFF_SUPPORT {}"  # type: str
-    set_passenger_support_command = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
-
     simulation_scenarios = {
-        # "no-support": [],
-        # "staff-support": [set_staff_support_command.format("TRUE")],
-        "passenger-support": [set_frame_generation_command.format("FALSE"),
-                              set_passenger_support_command.format("TRUE")],
-        "adaptive-support": [set_frame_generation_command.format("FALSE"),
-                             set_passenger_support_command.format("TRUE"),
-                             set_staff_support_command.format("TRUE")]
+        "no-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                       SET_FALL_LENGTH_COMMAND.format(500)],
+        "staff-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                          SET_FALL_LENGTH_COMMAND.format(500),
+                          SET_STAFF_SUPPORT_COMMAND.format("TRUE")],
+        "passenger-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                              SET_FALL_LENGTH_COMMAND.format(500),
+                              SET_PASSENGER_SUPPORT_COMMAND.format("TRUE")],
+        "adaptive-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                             SET_FALL_LENGTH_COMMAND.format(500),
+                             SET_PASSENGER_SUPPORT_COMMAND.format("TRUE"),
+                             SET_STAFF_SUPPORT_COMMAND.format("TRUE")]
     }  # type: Dict[str, List[str]]
 
     results_file_name = WORKSPACE_FOLDER + "data/experiments.csv"  # type:str

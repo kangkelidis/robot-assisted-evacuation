@@ -33,7 +33,13 @@ class Survivor:
 def on_survivor_contact(candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
     # type: ( Survivor, Survivor, float, float) -> str
 
-    return ASK_FOR_HELP_ROBOT_ACTION
+    robot_action = CALL_STAFF_ROBOT_ACTION
+
+    if helper_victim_distance < first_responder_victim_distance and \
+            candidate_helper.gender == Gender.MALE and candidate_helper.age == Age.ADULT:
+        robot_action = ASK_FOR_HELP_ROBOT_ACTION
+
+    return robot_action
 
 
 def main():
