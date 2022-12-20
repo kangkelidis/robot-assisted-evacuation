@@ -5,14 +5,17 @@ from abm_analysis import simulate_and_store, perform_analysis, WORKSPACE_FOLDER
 
 
 def main():
+    set_frame_generation_command = "set ENABLE_FRAME_GENERATION {}"  # type: str
     set_staff_support_command = "set REQUEST_STAFF_SUPPORT {}"  # type: str
     set_passenger_support_command = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
 
     simulation_scenarios = {
         # "no-support": [],
         # "staff-support": [set_staff_support_command.format("TRUE")],
-        "passenger-support": [set_passenger_support_command.format("TRUE")],
-        "adaptive-support": [set_passenger_support_command.format("TRUE"),
+        "passenger-support": [set_frame_generation_command.format("FALSE"),
+                              set_passenger_support_command.format("TRUE")],
+        "adaptive-support": [set_frame_generation_command.format("FALSE"),
+                             set_passenger_support_command.format("TRUE"),
                              set_staff_support_command.format("TRUE")]
     }  # type: Dict[str, List[str]]
 
