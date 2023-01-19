@@ -772,6 +772,14 @@ to go
    move-staff
    check-staff-request-for-support
  ] ;nw
+
+ ; Removing sar-robot in case not needed.
+ ask sar-robots [
+   if not REQUEST_STAFF_SUPPORT and not REQUEST_BYSTANDER_SUPPORT [
+     die
+   ]
+ ]
+
  ask sar-robots [
    ifelse victim-found = nobody [
      ; Searching only when no victim in need
@@ -1528,6 +1536,7 @@ to place-sar-robots
     set shape "car"
     move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
   ]
+
 end
 
 to-report request-candidate-help?
