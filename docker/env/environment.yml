@@ -77,4 +77,5 @@ dependencies:
     - pillow==6.2.2
     - pynetlogo==0.4.2
     - typing==3.10.0.0
-prefix: /home/cgc87/anaconda3/envs/robot-assisted-evacuation
+    - concurrent-log-handler
+prefix: /anaconda3/envs/robot-assisted-evacuation

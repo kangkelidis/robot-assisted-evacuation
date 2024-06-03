@@ -21,7 +21,22 @@ from pyNetLogo import NetLogoException
 from scipy.stats import mannwhitneyu
 from typing import List, Tuple, Dict, Optional
 
-WORKSPACE_FOLDER = "/home/workspace/"
+import logging
+from concurrent_log_handler import ConcurrentRotatingFileHandler
+
+from config import WORKSPACE_FOLDER
+
+# Create a handler that writes log messages to a file
+log_file = 'simulation.log'
+handler = ConcurrentRotatingFileHandler(log_file, "a", 512*1024, 5)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+# Set up the logger to use the handler
+logger = logging.getLogger()
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+logger.info("Starting simulations")
 
 PLOT_STYLE = 'seaborn-darkgrid'
 
@@ -83,10 +98,11 @@ def calculate_sample_size(mean_1, mean_2, std_dev_1, std_dev_2, alpha=0.05, powe
                                   alternative="two-sided")
     return result
 
-
+# Each commands will run samples times. Is called samples times for each command (4 commands only?).
 def run_simulation(simulation_id, post_setup_commands):
     # type: (str, List[str]) -> Optional[float]
     try:
+        logger.info("id:{} starting simulation".format(simulation_id))
         current_seed = netlogo_link.report(SEED_SIMULATION_REPORTER)  # type:str
         netlogo_link.command("setup")
         netlogo_link.command(SET_SIMULATION_ID_COMMAND.format(simulation_id))
@@ -94,30 +110,40 @@ def run_simulation(simulation_id, post_setup_commands):
         if len(post_setup_commands) > 0:
             for post_setup_command in post_setup_commands:
                 netlogo_link.command(post_setup_command)
-                print("id:{} seed:{} {} executed".format(simulation_id, current_seed, post_setup_command))
+                logger.info("id:{} seed:{} {} executed".format(simulation_id, current_seed, post_setup_command))
         else:
-            print("id:{} seed:{} no post-setup commands".format(simulation_id, current_seed))
+            logger.info("id:{} seed:{} no post-setup commands".format(simulation_id, current_seed))
 
+        # IT FAILS HERE! samples >7 and at random scenarios, always the 7th sample.
         metrics_dataframe = netlogo_link.repeat_report(
             netlogo_reporter=[TURTLE_PRESENT_REPORTER, EVACUATED_REPORTER, DEAD_REPORTER],
             reps=MAX_NETLOGO_TICKS)  # type: pd.DataFrame
+        # #################################################################
 
+        logger.info("id:{} seed:{} metrics_dataframe size: {}".format(simulation_id, current_seed, metrics_dataframe.size))
+        
         evacuation_finished = metrics_dataframe[
             metrics_dataframe[TURTLE_PRESENT_REPORTER] == metrics_dataframe[DEAD_REPORTER]]
 
+        logger.info("id:{} seed:{} evacuation_finished: {}".format(simulation_id, current_seed, 'evacuation_finished'))
+
         evacuation_time = evacuation_finished.index.min()  # type: float
-        print("id:{} seed:{} evacuation time {}".format(simulation_id, current_seed, evacuation_time))
+        logger.info("id:{} seed:{} evacuation time {}".format(simulation_id, current_seed, evacuation_time))
+
         if math.isnan(evacuation_time):
             metrics_dataframe.to_csv("data/nan_df.csv")
             print("DEBUG!!! info to data/nan_df.csv")
 
-        generate_video(simulation_id=simulation_id)
+        # generate_video(simulation_id=simulation_id)
+        logger.info("id:{} finished simulation".format(simulation_id))
         return evacuation_time
     except NetLogoException:
+        logger.error("id:{} NetLogo exception".format(simulation_id))
         traceback.print_exc()
         raise
     except Exception:
-        traceback.print_exc()
+        logger.error("id:{} Exception".format(simulation_id))
+        traceback.print_exc() 
 
     return None
 
@@ -138,10 +164,25 @@ def start_experiments(experiment_configurations, results_file, samples):
     start_time = time.time()  # type: float
 
     experiment_data = {}  # type: Dict[str, List[float]]
-    for experiment_name, experiment_commands in experiment_configurations.items():
-        scenario_times = run_parallel_simulations(experiment_name, samples,
-                                                  post_setup_commands=experiment_commands)  # type:List[float]
-        experiment_data[experiment_name] = scenario_times
+    # for experiment_name, experiment_commands in experiment_configurations.items():
+    #     scenario_times = run_parallel_simulations(experiment_name, samples,
+    #                                               post_setup_commands=experiment_commands)  # type:List[float]
+    #     experiment_data[experiment_name] = scenario_times
+
+    # Use 4 processes to run each scenario in parallel
+    executor = Pool(processes=4)
+    results = []
+    try:
+        for experiment_name, experiment_commands in experiment_configurations.items():
+            result = executor.apply_async(run_parallel_simulations, (experiment_name, samples, experiment_commands))
+            results.append((experiment_name, result))
+
+        for experiment_name, result in results:
+            scenario_times = result.get() 
+            experiment_data[experiment_name] = scenario_times
+    finally:
+            executor.close()
+            executor.join()
 
     end_time = time.time()  # type: float
     print("Simulation finished after {} seconds".format(end_time - start_time))
@@ -161,23 +202,61 @@ def run_parallel_simulations(experiment_name, samples, post_setup_commands, gui=
     # type: (str, int, List[str], bool) -> List[float]
 
     initialise_arguments = (gui,)  # type: Tuple
+    # list of dicts of size samples. Commands are the same for all dicts.
     simulation_parameters = [{"simulation_id": "{}_{}".format(experiment_name, simulation_index),
                               "post_setup_commands": post_setup_commands}
                              for simulation_index in range(samples)]  # type: List[Dict]
 
     results = []  # type: List[float]
-    executor = Pool(initializer=initialize,
-                    initargs=initialise_arguments)  # type: multiprocessing.pool.Pool
 
-    for simulation_output in executor.map(func=run_simulation_with_dict,
-                                          iterable=simulation_parameters):
-        if simulation_output:
-            results.append(simulation_output)
+    # Running simulations in a for loop
+    try:
+        initialize(False)
+        for parameters in simulation_parameters:
+            simulation_output = run_simulation_with_dict(parameters)
+            if simulation_output:
+                results.append(simulation_output)
+        logger.info("Finished samples for scenario {}".format(experiment_name)) 
+    except Exception as e:
+        logger.error("Exception in simulation: ")
+        print(e)
+        traceback.print_exc()
 
-    executor.close()
-    executor.join()
+    # # Try using apply_async
+    # try:
+    #     initialize(False)
+    #     executor = Pool()
+    #     for parameters in simulation_parameters:
+    #         result = executor.apply_async(run_simulation_with_dict, (parameters,))
+    #         simulation_output = result.get()
+    #         if simulation_output:
+    #             results.append(simulation_output)
+    #     logger.info("Finished samples for scenario {}".format(experiment_name))
+    #     executor.close()
+    #     executor.join()
+    # except Exception as e:
+    #     logger.error("Exception in parallel simulation")
+    #     print(e)
+    #     traceback.print_exc()
 
-    return results
+    # # Original with try block
+    # executor = Pool(initializer=initialize,
+    #                 initargs=initialise_arguments)  # type: multiprocessing.pool.Pool
+    # try:
+    #     for simulation_output in executor.map(func=run_simulation_with_dict,
+    #                                         iterable=simulation_parameters):
+    #         if simulation_output:
+    #             results.append(simulation_output)
+    #     logger.info("Finished samples for scenario {}".format(experiment_name))
+    # except Exception as e:
+    #     logger.error("Exception in parallel simulation")
+    #     print(e)
+    #     traceback.print_exc()
+    # finally:
+    #     executor.close()
+    #     executor.join()
+
+    # return results
 
 
 def get_dataframe(csv_file):

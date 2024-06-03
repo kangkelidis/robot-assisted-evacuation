@@ -156,12 +156,12 @@ to setup-environment
   set SIMULATION_ID 0
   ; Change these according to your Anaconda installation.
   ; Use the config below for evacuation time experiments.
-  set CONTROLLER_PYTHON_COMMAND (list"/home/cgc87/anaconda3/bin/conda" "run" "-n" "wdywfm-adaptive-robot" "python")
-  set CONTROLLER_PYTHON_SCRIPT "/home/cgc87/github/wdywfm-adaptive-robot/abm_runner.py"
+  ; set CONTROLLER_PYTHON_COMMAND (list"/home/cgc87/anaconda3/bin/conda" "run" "-n" "wdywfm-adaptive-robot" "python")
+  ; set CONTROLLER_PYTHON_SCRIPT "/home/cgc87/github/wdywfm-adaptive-robot/abm_runner.py"
 
   ; Use the config below for simulating within docker.
-  ; set CONTROLLER_PYTHON_COMMAND (list"/opt/conda/bin/conda" "run" "-n" "robot-assisted-evacuation" "python")
-  ; set CONTROLLER_PYTHON_SCRIPT "/home/workspace/on_contact.py"
+  set CONTROLLER_PYTHON_COMMAND (list"/opt/conda/bin/conda" "run" "-n" "robot-assisted-evacuation" "python")
+  set CONTROLLER_PYTHON_SCRIPT "/home/workspace/on_contact.py"
   set ENABLE_DATA_COLLECTION FALSE
 
   

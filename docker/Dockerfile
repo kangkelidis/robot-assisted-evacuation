@@ -19,6 +19,7 @@ RUN mkdir /home/netlogo \
 
 COPY . /home/
 
+# TODO: Did not work at my machine, to check.
 # Folders for storing results
 RUN mkdir -p /home/workspace/data \
     && mkdir -p /home/workspace/frames \

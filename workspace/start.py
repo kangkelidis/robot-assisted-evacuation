@@ -1,7 +1,10 @@
 import pandas as pd
 from typing import Dict, List
 
-from abm_analysis import simulate_and_store, perform_analysis, WORKSPACE_FOLDER
+from abm_analysis import simulate_and_store, perform_analysis
+from adptation_strategies import adaptation_strategies
+from utils import load_adaptation_strategy, cleanup_workspace
+from config import WORKSPACE_FOLDER, NUM_SAMPLES
 
 SET_FRAME_GENERATION_COMMAND = "set ENABLE_FRAME_GENERATION {}"  # type: str
 SET_FALL_LENGTH_COMMAND = "set DEFAULT_FALL_LENGTH {}"  # type: str
@@ -11,23 +14,35 @@ SET_PASSENGER_SUPPORT_COMMAND = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
 
 
 def main():
-    simulation_scenarios = {
-        "no-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
-                       SET_FALL_LENGTH_COMMAND.format(500)],
-        "staff-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
-                          SET_FALL_LENGTH_COMMAND.format(500),
-                          SET_STAFF_SUPPORT_COMMAND.format("TRUE")],
-        "passenger-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
-                              SET_FALL_LENGTH_COMMAND.format(500),
-                              SET_PASSENGER_SUPPORT_COMMAND.format("TRUE")],
-        "adaptive-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
-                             SET_FALL_LENGTH_COMMAND.format(500),
-                             SET_PASSENGER_SUPPORT_COMMAND.format("TRUE"),
-                             SET_STAFF_SUPPORT_COMMAND.format("TRUE")]
-    }  # type: Dict[str, List[str]]
+    adaptation_strategy=load_adaptation_strategy()
+
+    if adaptation_strategy:
+        simulation_scenarios = {
+            "no-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                        SET_FALL_LENGTH_COMMAND.format(500)],
+            "staff-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                            SET_FALL_LENGTH_COMMAND.format(500),
+                            SET_STAFF_SUPPORT_COMMAND.format("TRUE")],
+            "passenger-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                                SET_FALL_LENGTH_COMMAND.format(500),
+                                SET_PASSENGER_SUPPORT_COMMAND.format("TRUE")],
+            "adaptive-support": [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                                SET_FALL_LENGTH_COMMAND.format(500),
+                                SET_PASSENGER_SUPPORT_COMMAND.format("TRUE"),
+                                SET_STAFF_SUPPORT_COMMAND.format("TRUE")]
+        }  # type: Dict[str, List[str]]
+    else:  
+        # Run multiple adaptation strategies, to find the best one 
+        simulation_scenarios = {
+            strategy_name: [SET_FRAME_GENERATION_COMMAND.format("FALSE"),
+                            SET_FALL_LENGTH_COMMAND.format(500),
+                            SET_PASSENGER_SUPPORT_COMMAND.format("TRUE"),
+                            SET_STAFF_SUPPORT_COMMAND.format("TRUE")]
+            for strategy_name in adaptation_strategies.keys()
+        }
 
     results_file_name = WORKSPACE_FOLDER + "data/experiments.csv"  # type:str
-    samples = 30  # type: int
+    samples = NUM_SAMPLES # type: int
 
     simulate_and_store(simulation_scenarios, results_file_name, samples)
     metrics = pd.DataFrame(
@@ -37,3 +52,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    cleanup_workspace()
+

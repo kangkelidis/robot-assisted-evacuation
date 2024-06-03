@@ -11,3 +11,12 @@
 /docker/src/room_square_4doors - Copy.png
 /docker/src/room_square_4doors_main_down.png
 /docker/src/room_square_4doors_main_left.png
+
+
+notes.md
+workspace/simulation.log*
+*.pyc
+*.lock
+workspace/data
+workspace/img
+

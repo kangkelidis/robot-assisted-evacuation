@@ -2,71 +2,61 @@ import logging
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-from typing import Dict
+# from typing import Dict <-  TODO: crashed the program
+from adptation_strategies import adaptation_strategies
+from survivor import Survivor
+from utils import load_adaptation_strategy
 
-ASK_FOR_HELP_ROBOT_ACTION = "ask-help"  # type:str
-CALL_STAFF_ROBOT_ACTION = "call-staff"  # type:str
+def on_survivor_contact(candidate_helper, victim, helper_victim_distance, first_responder_victim_distance, simulation_id):
+    # type: ( Survivor, Survivor, float, float, str) -> str
 
+    """ Only gets called during addaptive-support scenario. Called by Netlogo model and returns the robot's action.
+    Either asks for help from a survivor or calls staff. If the former, the survivor's decision whether to help on not 
+    is determined by offer-help? in the IMPACT model. If he helps, the victim gets a speed bonus. 
+    The optimal output would be the prediction of the offer-help? output.
+    If an adaptation strategy is defined in config.py, it will be used. Otherwise, the strategy is determined by the simulation_id."""
 
-class Gender:
-    FEMALE, MALE = range(2)
+    adaptation_strategy=load_adaptation_strategy()
+    if adaptation_strategy:
+        # Scenario simulation mode
+        strategy_name = adaptation_strategy
+    else:
+        # Strategy comparison mode
+        strategy_name = simulation_id.split("_")[0]  # type: str
 
-
-class CulturalCluster:
-    ARAB, NEAR_EAST, LATIN_AMERICA, EAST_EUROPE, LATIN_EUROPE, NORDIC, GERMANIC, AFRICAN, ANGLO, CONFUCIAN, FAR_EAST = range(
-        11)
-
-
-class Age:
-    CHILD, ADULT, ELDERLY = range(3)
-
-
-class Survivor:
-    def __init__(self, gender, cultural_cluster, age):
-        # type: (str, str, str) -> None
-
-        self.gender = int(gender)  # type: int
-        self.cultural_cluster = int(cultural_cluster)  # type: int
-        self.age = int(age)  # type: int
-
-
-def on_survivor_contact(candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
-    # type: ( Survivor, Survivor, float, float) -> str
-
-    robot_action = CALL_STAFF_ROBOT_ACTION
-
-    if helper_victim_distance < first_responder_victim_distance and \
-            candidate_helper.gender == Gender.MALE and candidate_helper.age == Age.ADULT:
-        robot_action = ASK_FOR_HELP_ROBOT_ACTION
-
-    return robot_action
-
+    return adaptation_strategies[strategy_name].get_robot_action(candidate_helper, victim, helper_victim_distance,
+                                                          first_responder_victim_distance)
 
 def main():
-    parser = ArgumentParser("Get a robot action from the adaptive controller",
-                            formatter_class=ArgumentDefaultsHelpFormatter)  # type: ArgumentParser
-    parser.add_argument("simulation_id")
+    try:
+        parser = ArgumentParser("Get a robot action from the adaptive controller",
+                                formatter_class=ArgumentDefaultsHelpFormatter)  # type: ArgumentParser
+        parser.add_argument("simulation_id")
 
-    parser.add_argument("helper_gender")
-    parser.add_argument("helper_culture")
-    parser.add_argument("helper_age")
-    parser.add_argument("fallen_gender")
-    parser.add_argument("fallen_culture")
-    parser.add_argument("fallen_age")
-    parser.add_argument("helper_fallen_distance")
-    parser.add_argument("staff_fallen_distance")
-    arguments = parser.parse_args()
-    sensor_data = vars(arguments)  # type:Dict[str, str]
+        parser.add_argument("helper_gender")
+        parser.add_argument("helper_culture")
+        parser.add_argument("helper_age")
+        parser.add_argument("fallen_gender")
+        parser.add_argument("fallen_culture")
+        parser.add_argument("fallen_age")
+        parser.add_argument("helper_fallen_distance")
+        parser.add_argument("staff_fallen_distance")
+        arguments = parser.parse_args()
+        sensor_data = vars(arguments)  # type:Dict[str, str]
+        print('sensor data: ', sensor_data)  
+        candidate_helper = Survivor(sensor_data["helper_gender"], sensor_data["helper_culture"], sensor_data["helper_age"])
+        victim = Survivor(sensor_data["fallen_gender"], sensor_data["fallen_culture"], sensor_data["fallen_age"])
+        helper_victim_distance = float(sensor_data["helper_fallen_distance"])  # type: float
+        first_responder_victim_distance = float(sensor_data["staff_fallen_distance"])  # type: float
+        simulation_id = sensor_data["simulation_id"]  # type: str
 
-    candidate_helper = Survivor(sensor_data["helper_gender"], sensor_data["helper_culture"], sensor_data["helper_age"])
-    victim = Survivor(sensor_data["fallen_gender"], sensor_data["fallen_culture"], sensor_data["fallen_age"])
-    helper_victim_distance = float(sensor_data["helper_fallen_distance"])  # type: float
-    first_responder_victim_distance = float(sensor_data["staff_fallen_distance"])  # type: float
+        robot_action = on_survivor_contact(candidate_helper, victim, helper_victim_distance,
+                                        first_responder_victim_distance,simulation_id)  # type:str
+        print(robot_action)
 
-    robot_action = on_survivor_contact(candidate_helper, victim, helper_victim_distance,
-                                       first_responder_victim_distance)  # type:str
-    print(robot_action)
-
+    except Exception as e:
+        logging.error("Error in on_survivor_contact: %s", e)
+        print("error", e)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.ERROR)
