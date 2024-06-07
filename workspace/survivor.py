@@ -13,8 +13,6 @@ class Age:
 
 class Survivor:
     def __init__(self, gender, cultural_cluster, age):
-        # type: (str, str, str) -> None
-
         self.gender = int(gender)  # type: int
         self.cultural_cluster = int(cultural_cluster)  # type: int
         self.age = int(age)  # type: i

@@ -19,7 +19,7 @@ def generate_video(simulation_id, frame_duration=200):
         return
 
     print("Generating GIF from {} frames for simulation...".format(number_of_frames, simulation_id))
-    frames = []  # type: List[Image]
+    frames = []
     for frame_file in frame_list:
         frame_as_image = Image.open(frame_file)  # type: Image
         frames.append(frame_as_image)

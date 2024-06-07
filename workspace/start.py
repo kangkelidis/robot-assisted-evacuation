@@ -1,16 +1,16 @@
 import pandas as pd
+import traceback
+
 from typing import Dict, List
 
-from abm_analysis import simulate_and_store, perform_analysis
+from abm_analysis import simulate_and_store
+from abm_results_analysis import perform_analysis
 from adptation_strategies import adaptation_strategies
-from utils import load_adaptation_strategy, cleanup_workspace
+from utils import load_adaptation_strategy, cleanup_workspace, setup_logger
 from config import WORKSPACE_FOLDER, NUM_SAMPLES
+from netlogo_commands import *
 
-SET_FRAME_GENERATION_COMMAND = "set ENABLE_FRAME_GENERATION {}"  # type: str
-SET_FALL_LENGTH_COMMAND = "set DEFAULT_FALL_LENGTH {}"  # type: str
-
-SET_STAFF_SUPPORT_COMMAND = "set REQUEST_STAFF_SUPPORT {}"  # type: str
-SET_PASSENGER_SUPPORT_COMMAND = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
+logger = setup_logger()
 
 
 def main():
@@ -51,6 +51,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-    cleanup_workspace()
+    try:
+        cleanup_workspace()
+        main()
+    except Exception as e:
+        logger.critical("Error in main: %s", e)
+        traceback.print_exc()
+        cleanup_workspace()
 

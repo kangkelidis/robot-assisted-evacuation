@@ -1,339 +1,235 @@
-import matplotlib
-
-from abm_video_generation import generate_video
-
-matplotlib.use('Agg')
-
 import math
-import multiprocessing
 import time
 import traceback
-from multiprocessing import Pool
-
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+import signal
+import random
 import pyNetLogo
-import seaborn as sns
-import statsmodels.api as sm
-from pathlib import Path
+
 from pyNetLogo import NetLogoException
-from scipy.stats import mannwhitneyu
+from multiprocessing import Pool, Process, Queue, cpu_count
 from typing import List, Tuple, Dict, Optional
 
-import logging
-from concurrent_log_handler import ConcurrentRotatingFileHandler
+from abm_video_generation import generate_video
+from utils import setup_logger, timeout_exception_handler, get_available_cpus
+from netlogo_commands import *
+from config import *
 
-from config import WORKSPACE_FOLDER
+# Set up the signal handler for the timeout exception
+signal.signal(signal.SIGALRM, timeout_exception_handler)
+logger = setup_logger()
 
-# Create a handler that writes log messages to a file
-log_file = 'simulation.log'
-handler = ConcurrentRotatingFileHandler(log_file, "a", 512*1024, 5)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-# Set up the logger to use the handler
-logger = logging.getLogger()
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-
-logger.info("Starting simulations")
-
-PLOT_STYLE = 'seaborn-darkgrid'
-
-NETLOGO_PROJECT_DIRECTORY = "/home/src/"  # type:str
-NETLOGO_MODEL_FILE = NETLOGO_PROJECT_DIRECTORY + "v2.11.0.nlogo"  # type:str
-NETLOGO_HOME = "/home/netlogo"  # type:str
-RESULTS_CSV_FILE = WORKSPACE_FOLDER + "data/{}_fall_{}_samples_experiment_results.csv"  # type:str
-
-NETLOGO_VERSION = "5"  # type:str
-
-TURTLE_PRESENT_REPORTER = "count turtles"  # type:str
-EVACUATED_REPORTER = "number_passengers - count agents + 1"  # type:str
-DEAD_REPORTER = "count agents with [ st_dead = 1 ]"  # type:str
-SEED_SIMULATION_REPORTER = "seed-simulation"
-SET_SIMULATION_ID_COMMAND = 'set SIMULATION_ID "{}"'  # type:str
-
-# SET_STAFF_SUPPORT_COMMAND = "set REQUEST_STAFF_SUPPORT {}"  # type: str
-# SET_PASSENGER_SUPPORT_COMMAND = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
-# SET_FALL_LENGTH_COMMAND = "set DEFAULT_FALL_LENGTH {}"  # type:str
-#
-# ENABLE_STAFF_COMMAND = SET_STAFF_SUPPORT_COMMAND.format("TRUE")  # type:str
-# ENABLE_PASSENGER_COMMAND = SET_PASSENGER_SUPPORT_COMMAND.format("TRUE")  # type:str
-
-# NO_SUPPORT_COLUMN = "no-support"  # type:str
-# ONLY_STAFF_SUPPORT_COLUMN = "staff-support"  # type:str
-# ONLY_PASSENGER_SUPPORT_COLUMN = "passenger-support"  # type:str
-# ADAPTIVE_SUPPORT_COLUMN = "adaptive-support"
-
-# SIMULATION_SCENARIOS = {NO_SUPPORT_COLUMN: [],
-#                         ONLY_STAFF_SUPPORT_COLUMN: [ENABLE_STAFF_COMMAND],
-#                         ONLY_PASSENGER_SUPPORT_COLUMN: [ENABLE_PASSENGER_COMMAND],
-#                         ADAPTIVE_SUPPORT_COLUMN: [ENABLE_PASSENGER_COMMAND,
-#                                                   ENABLE_STAFF_COMMAND]}  # type: Dict[str, List[str]]
-
-# SAMPLES = 100  # type:int
-MAX_NETLOGO_TICKS = 2000  # type: int
+class SimulationResult(object):
+    def __init__(self, simulation_id, time):
+        self.simulation_id = simulation_id  # type: str
+        self.time = int(time)  # type: int
+        if "_" not in simulation_id:
+            raise ValueError("Simulation id does not contain the scenario name (no '_').")
+        self.scenario = simulation_id.split("_")[0]  # type: str
 
 
-# Using https://www.stat.ubc.ca/~rollin/stats/ssize/n2.html
-# And https://www.statology.org/pooled-standard-deviation-calculator/
+def get_netlogo_report(simulation_id):
+    # type: (str) -> Optional[pd.DataFrame]
+    """Runs the Netlogo simulation and returns the results for the count commands."""
+
+    TIME_LIMIT_SECONDS = 120  # type: int
+    MAX_RETRIES = 2
+
+    metrics_dataframe = None
+    for i in range(MAX_RETRIES):
+        try:
+            logger.debug("Starting reporter for %s, attempt no. %i", simulation_id, i)
+            signal.alarm(TIME_LIMIT_SECONDS)
+
+            start_time = time.time()
+            metrics_dataframe = netlogo_link.repeat_report(
+                netlogo_reporter=[TURTLE_PRESENT_REPORTER, EVACUATED_REPORTER, DEAD_REPORTER],
+                reps=MAX_NETLOGO_TICKS)  # type: pd.DataFrame
+            endtime = time.time()
+
+            logger.info("%s simulation completed on attempt n.%i. Execution time was %.2f seconds", simulation_id, i+1, endtime-start_time)
+            signal.alarm(0)
+            break
+        except Exception as e:
+            logger.error("Exception in %s attempt no.%i: %s", simulation_id, i, e)
+            signal.alarm(0)
+    
+    return metrics_dataframe
 
 
-# function to calculate Cohen's d for independent samples
-# Inspired by: https://machinelearningmastery.com/effect-size-measures-in-python/
+def setup_simulation(simulation_id, post_setup_commands):
+    # type: (str, List[str]) -> None
 
-def cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2):
-    # type: (float, float, float, float) -> float
-    pooled_std_dev = np.sqrt((std_dev_1 ** 2 + std_dev_2 ** 2) / 2)
-    return (mean_1 - mean_2) / pooled_std_dev
+    logger.info("id:{} starting simulation".format(simulation_id))
+    current_seed = netlogo_link.report(SEED_SIMULATION_REPORTER)  # type:str
+    netlogo_link.command("setup")
+    netlogo_link.command(SET_SIMULATION_ID_COMMAND.format(simulation_id))
+
+    # netlogo_link.command(SET_GROUP_IDENTIFYING_PERCENTAGE_COMMAND.format(GROUP_IDENTIFYING_PERCENTAGE))
+    # netlogo_link.command(SET_REDUCE_HELPING_CHANCE_COMMAND.format(REDUCE_HELPING_CHANCE))
+    # netlogo_link.command(SET_BOOST_HELPING_CHANCE_COMMAND.format(BOOST_HELPING_CHANCE))
+
+    logger.debug('id: {} completed setup'.format(simulation_id))
+
+    if len(post_setup_commands) > 0:
+        for post_setup_command in post_setup_commands:
+            netlogo_link.command(post_setup_command)
+            logger.debug("id:{} seed:{} {} executed".format(simulation_id, current_seed, post_setup_command))
+    else:
+        logger.debug("id:{} seed:{} no post-setup commands".format(simulation_id, current_seed))
+    
+    logger.info('id: {} completed commands'.format(simulation_id))
 
 
-def calculate_sample_size(mean_1, mean_2, std_dev_1, std_dev_2, alpha=0.05, power=0.8):
-    # type: (float, float, float, float, float, float) -> float
-    analysis = sm.stats.TTestIndPower()  # type: sm.stats.TTestIndPower
-    effect_size = cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2)
-    result = analysis.solve_power(effect_size=effect_size,
-                                  alpha=alpha,
-                                  power=power,
-                                  alternative="two-sided")
-    return result
-
-# Each commands will run samples times. Is called samples times for each command (4 commands only?).
 def run_simulation(simulation_id, post_setup_commands):
-    # type: (str, List[str]) -> Optional[float]
+    # type: (str, List[str]) -> SimulationResult
     try:
-        logger.info("id:{} starting simulation".format(simulation_id))
-        current_seed = netlogo_link.report(SEED_SIMULATION_REPORTER)  # type:str
-        netlogo_link.command("setup")
-        netlogo_link.command(SET_SIMULATION_ID_COMMAND.format(simulation_id))
+        setup_simulation(simulation_id, post_setup_commands)
 
-        if len(post_setup_commands) > 0:
-            for post_setup_command in post_setup_commands:
-                netlogo_link.command(post_setup_command)
-                logger.info("id:{} seed:{} {} executed".format(simulation_id, current_seed, post_setup_command))
-        else:
-            logger.info("id:{} seed:{} no post-setup commands".format(simulation_id, current_seed))
+        metrics_dataframe = get_netlogo_report(simulation_id)
 
-        # IT FAILS HERE! samples >7 and at random scenarios, always the 7th sample.
-        metrics_dataframe = netlogo_link.repeat_report(
-            netlogo_reporter=[TURTLE_PRESENT_REPORTER, EVACUATED_REPORTER, DEAD_REPORTER],
-            reps=MAX_NETLOGO_TICKS)  # type: pd.DataFrame
-        # #################################################################
-
-        logger.info("id:{} seed:{} metrics_dataframe size: {}".format(simulation_id, current_seed, metrics_dataframe.size))
+        if metrics_dataframe is None:
+            logger.error("id:{} metrics_dataframe is None. The simulation did not return any results.".format(simulation_id))
+            # TODO: think how to handle this case
+            return SimulationResult(simulation_id, 0)
         
         evacuation_finished = metrics_dataframe[
             metrics_dataframe[TURTLE_PRESENT_REPORTER] == metrics_dataframe[DEAD_REPORTER]]
-
-        logger.info("id:{} seed:{} evacuation_finished: {}".format(simulation_id, current_seed, 'evacuation_finished'))
-
         evacuation_time = evacuation_finished.index.min()  # type: float
-        logger.info("id:{} seed:{} evacuation time {}".format(simulation_id, current_seed, evacuation_time))
 
+        # TODO: think how to handle this case
         if math.isnan(evacuation_time):
             metrics_dataframe.to_csv("data/nan_df.csv")
-            print("DEBUG!!! info to data/nan_df.csv")
+            logger.warning("DEBUG!!! info to data/nan_df.csv")
+            # simulation did not finish on time, use max time/ticks
+            evacuation_time = MAX_NETLOGO_TICKS
 
-        # generate_video(simulation_id=simulation_id)
-        logger.info("id:{} finished simulation".format(simulation_id))
-        return evacuation_time
-    except NetLogoException:
-        logger.error("id:{} NetLogo exception".format(simulation_id))
+        if GENERATE_VIDEO:
+            generate_video(simulation_id=simulation_id)
+
+        return SimulationResult(simulation_id, evacuation_time)
+    except NetLogoException as e:
+        logger.error("id:{} NetLogo exception: {}".format(simulation_id, e))
         traceback.print_exc()
-        raise
-    except Exception:
-        logger.error("id:{} Exception".format(simulation_id))
+    except Exception as e:
+        logger.error("id:{} Exception: {}".format(simulation_id, e))
         traceback.print_exc() 
 
-    return None
+    return SimulationResult(simulation_id, 0)
 
 
-def initialize(gui):
-    # type: (bool) -> None
+def initialise_netlogo_link():
+    # type: () -> None
+    logger.debug("Initializing NetLogo")
     global netlogo_link
 
     netlogo_link = pyNetLogo.NetLogoLink(netlogo_home=NETLOGO_HOME,
                                          netlogo_version=NETLOGO_VERSION,
-                                         gui=gui)  # type: pyNetLogo.NetLogoLink
+                                         gui=False)  # type: pyNetLogo.NetLogoLink
     netlogo_link.load_model(NETLOGO_MODEL_FILE)
+
+
+def build_simulation_pool(experiment_configurations, samples):
+    # type: (Dict[str, List[str]], int) -> List[Dict[str, List[str]]]
+    """ Takes each simulation scenario and creates a pool of all simulations."""
+
+    simulations_pool = []  # type: List[Dict[str, List[str]]]
+    for experiment_name, experiment_commands in experiment_configurations.items():
+        for simulation_index in range(samples):
+            simulations_pool.append({"simulation_id": "{}_{}".format(experiment_name, simulation_index),
+                                    "post_setup_commands": experiment_commands})
+    return simulations_pool
+
+
+def simulation_processor(simulations_results_queue, simulation_parameters):
+    try:
+        initialise_netlogo_link() 
+        result = run_simulation(**simulation_parameters)
+    except Exception as e:
+        logger.error("Exception in simulation_processor: %s", e)
+        result = SimulationResult(simulation_parameters["simulation_id"], 0)
+
+    simulations_results_queue.put(result)
+
+
+def execute_parallel_simulations(simulations_pool):
+    # type: (List[Dict[str, List[str]]]) -> List[SimulationResult]
+    """ Runs each simulations in the simulation_pool in parallel using multiprocessing."""
+    
+    # Using multiprocessing.Queue to allow for inter-process communication and store the results
+    simulations_results_queue = Queue() # type: Queue
+    simulations_results = []  # type: List[SimulationResult]
+
+    num_cpus = get_available_cpus()
+    random.shuffle(simulations_pool) 
+
+    logger.info("Total number of simulations to run: %i.", len(simulations_pool))
+    try:
+        while simulations_pool:
+            processes = []
+            for _ in range(num_cpus):
+                if simulations_pool:  
+                    simulation_parameters = simulations_pool.pop()
+                    process = Process(target=simulation_processor, args=(simulations_results_queue, simulation_parameters))
+                    processes.append(process)
+                    process.start()
+                    logger.debug("Started process %s. Remaining simulations: %s", process.pid, len(simulations_pool))
+            
+            for process in processes:
+                try:
+                    process.join()
+                except Exception as e:
+                    logger.error("Exception in joining process: %s", e)
+                    traceback.print_exc()
+                    process.terminate()
+
+                logger.debug("Process %s terminated.", process.pid)
+            logger.info("All processes in current batch finished. Remaining simulations: %s", len(simulations_pool))
+        logger.info("Finished all simulations. Successful results Queue size: %s", simulations_results_queue.qsize()) 
+
+        while not simulations_results_queue.empty():
+            simulation_result = simulations_results_queue.get() # type: SimulationResult
+            simulations_results.append(simulation_result) # type: List[SimulationResult]
+
+    except Exception as e:
+        logger.error("Exception in parallel simulation")
+        print(e)
+        traceback.print_exc()
+
+    return simulations_results
+
+
+def extract_evacuation_times(results):
+    # type: (List[SimulationResult]) -> Dict[str, List[int]]
+    """ Extracts the evacuation times from the results and groups them by scenario name."""
+
+    simulation_times = {}  # type: Dict[str, List[int]]
+    for result in results:
+        if result.scenario in simulation_times:
+            simulation_times[result.scenario].append(result.time)
+        else:
+            simulation_times[result.scenario] = [result.time]
+    return simulation_times
 
 
 def start_experiments(experiment_configurations, results_file, samples):
     # type: (Dict[str, List[str]], str, int) -> None
-
     start_time = time.time()  # type: float
 
-    experiment_data = {}  # type: Dict[str, List[float]]
-    # for experiment_name, experiment_commands in experiment_configurations.items():
-    #     scenario_times = run_parallel_simulations(experiment_name, samples,
-    #                                               post_setup_commands=experiment_commands)  # type:List[float]
-    #     experiment_data[experiment_name] = scenario_times
-
-    # Use 4 processes to run each scenario in parallel
-    executor = Pool(processes=4)
-    results = []
-    try:
-        for experiment_name, experiment_commands in experiment_configurations.items():
-            result = executor.apply_async(run_parallel_simulations, (experiment_name, samples, experiment_commands))
-            results.append((experiment_name, result))
-
-        for experiment_name, result in results:
-            scenario_times = result.get() 
-            experiment_data[experiment_name] = scenario_times
-    finally:
-            executor.close()
-            executor.join()
+    simulations_pool = build_simulation_pool(experiment_configurations, samples) # type: List[Dict[str, List[str]]]
+    results = execute_parallel_simulations(simulations_pool) # type: List[SimulationResult]
+    experiment_data = extract_evacuation_times(results) # type: Dict[str, List[int]]
 
     end_time = time.time()  # type: float
-    print("Simulation finished after {} seconds".format(end_time - start_time))
+    logger.info("Simulation finished after {} seconds".format(end_time - start_time))
 
-    experiment_results = pd.DataFrame(experiment_data)  # type:pd.DataFrame
-    experiment_results.to_csv(results_file)
-
-    print("Data written to {}".format(results_file))
-
-
-def run_simulation_with_dict(dict_parameters):
-    # type: (Dict) -> float
-    return run_simulation(**dict_parameters)
-
-
-def run_parallel_simulations(experiment_name, samples, post_setup_commands, gui=False):
-    # type: (str, int, List[str], bool) -> List[float]
-
-    initialise_arguments = (gui,)  # type: Tuple
-    # list of dicts of size samples. Commands are the same for all dicts.
-    simulation_parameters = [{"simulation_id": "{}_{}".format(experiment_name, simulation_index),
-                              "post_setup_commands": post_setup_commands}
-                             for simulation_index in range(samples)]  # type: List[Dict]
-
-    results = []  # type: List[float]
-
-    # Running simulations in a for loop
+    # TODO: make sure the experiment_data has the same length for all scenarios
     try:
-        initialize(False)
-        for parameters in simulation_parameters:
-            simulation_output = run_simulation_with_dict(parameters)
-            if simulation_output:
-                results.append(simulation_output)
-        logger.info("Finished samples for scenario {}".format(experiment_name)) 
+        experiment_results = pd.DataFrame(experiment_data)  # type:pd.DataFrame
+        experiment_results.to_csv(results_file)
+        logger.debug("Data written to {}".format(results_file))
     except Exception as e:
-        logger.error("Exception in simulation: ")
-        print(e)
-        traceback.print_exc()
-
-    # # Try using apply_async
-    # try:
-    #     initialize(False)
-    #     executor = Pool()
-    #     for parameters in simulation_parameters:
-    #         result = executor.apply_async(run_simulation_with_dict, (parameters,))
-    #         simulation_output = result.get()
-    #         if simulation_output:
-    #             results.append(simulation_output)
-    #     logger.info("Finished samples for scenario {}".format(experiment_name))
-    #     executor.close()
-    #     executor.join()
-    # except Exception as e:
-    #     logger.error("Exception in parallel simulation")
-    #     print(e)
-    #     traceback.print_exc()
-
-    # # Original with try block
-    # executor = Pool(initializer=initialize,
-    #                 initargs=initialise_arguments)  # type: multiprocessing.pool.Pool
-    # try:
-    #     for simulation_output in executor.map(func=run_simulation_with_dict,
-    #                                         iterable=simulation_parameters):
-    #         if simulation_output:
-    #             results.append(simulation_output)
-    #     logger.info("Finished samples for scenario {}".format(experiment_name))
-    # except Exception as e:
-    #     logger.error("Exception in parallel simulation")
-    #     print(e)
-    #     traceback.print_exc()
-    # finally:
-    #     executor.close()
-    #     executor.join()
-
-    # return results
-
-
-def get_dataframe(csv_file):
-    # type: (str) -> pd.DataFrame
-    results_dataframe = pd.read_csv(csv_file, index_col=[0])  # type: pd.DataFrame
-    results_dataframe = results_dataframe.dropna()
-
-    return results_dataframe
-
-
-def plot_results(csv_file, samples_in_title=False):
-    # type: (str, bool) -> None
-    file_description = Path(csv_file).stem  # type: str
-    results_dataframe = get_dataframe(csv_file)  # type: pd.DataFrame
-    # results_dataframe = results_dataframe.rename(columns={
-    #     NO_SUPPORT_COLUMN: "No Support",
-    #     ONLY_STAFF_SUPPORT_COLUMN: "Proself-Oriented",
-    #     ONLY_PASSENGER_SUPPORT_COLUMN: "Prosocial-Oriented",
-    #     ADAPTIVE_SUPPORT_COLUMN: "Adaptive"
-    # })
-
-    print(results_dataframe.describe())
-
-    title = ""
-    # order = ["No Support", "Prosocial-Oriented", "Proself-Oriented", "Adaptive"]  # type: List[str]
-    order = None
-
-    if samples_in_title:
-        title = "{} samples".format(len(results_dataframe))
-    _ = sns.violinplot(data=results_dataframe, order=order).set_title(title)
-    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
-    plt.show()
-    plt.clf()
-
-    _ = sns.stripplot(data=results_dataframe, order=order, jitter=True).set_title(title)
-    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_strip_plot.eps", bbox_inches='tight', pad_inches=0)
-    plt.show()
-
-
-def test_hypothesis(first_scenario_column, second_scenario_column, csv_file, alternative="two-sided"):
-    # type: (str, str, str, str) -> None
-    print("CURRENT ANALYSIS: Analysing file {}".format(csv_file))
-    results_dataframe = get_dataframe(csv_file)  # type: pd.DataFrame
-
-    first_scenario_data = results_dataframe[first_scenario_column].values  # type: List[float]
-    first_scenario_mean = np.mean(first_scenario_data).item()  # type:float
-    first_scenario_stddev = np.std(first_scenario_data).item()  # type:float
-
-    second_scenario_data = results_dataframe[second_scenario_column].values  # type: List[float]
-    second_scenario_mean = np.mean(second_scenario_data).item()  # type:float
-    second_scenario_stddev = np.std(second_scenario_data).item()  # type:float
-
-    print("{}-> mean = {} std = {} len={}".format(first_scenario_column, first_scenario_mean, first_scenario_stddev,
-                                                  len(first_scenario_data)))
-    print("{}-> mean = {} std = {} len={}".format(second_scenario_column, second_scenario_mean, second_scenario_stddev,
-                                                  len(second_scenario_data)))
-    print("Recommended Sample size: {}".format(
-        calculate_sample_size(first_scenario_mean, second_scenario_mean, first_scenario_stddev,
-                              second_scenario_stddev)))
-
-    null_hypothesis = "MANN-WHITNEY RANK TEST: " + \
-                      "The distribution of {} times is THE SAME as the distribution of {} times".format(
-                          first_scenario_column, second_scenario_column)  # type: str
-    alternative_hypothesis = "ALTERNATIVE HYPOTHESIS: the distribution underlying {} is stochastically {} than the " \
-                             "distribution underlying {}".format(first_scenario_column, alternative,
-                                                                 second_scenario_column)  # type:str
-
-    threshold = 0.05  # type:float
-    u, p_value = mannwhitneyu(x=first_scenario_data, y=second_scenario_data, alternative=alternative)
-    print("U={} , p={}".format(u, p_value))
-    if p_value > threshold:
-        print("FAILS TO REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
-    else:
-        print("REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
-        print(alternative_hypothesis)
+        logger.warning("Error writing data to file. Experiment data: {}. \n{}".format(experiment_data, e))
 
 
 def simulate_and_store(simulation_scenarios, results_file_name, samples):
@@ -344,35 +240,3 @@ def simulate_and_store(simulation_scenarios, results_file_name, samples):
                                     simulation_scenarios.iteritems()}  # type: Dict[str, List[str]]
     start_experiments(updated_simulation_scenarios, results_file_name, samples)
 
-
-def get_current_file_metrics(simulation_scenarios, current_file):
-    # type: (Dict[str, List[str]], str) -> Dict[str, float]
-    results_dataframe = get_dataframe(current_file)  # type: pd.DataFrame
-    metrics_dict = {}  # type: Dict[str, float]
-
-    for scenario in simulation_scenarios.keys():
-        metrics_dict["{}_mean".format(scenario)] = results_dataframe[scenario].mean()
-        metrics_dict["{}_std".format(scenario)] = results_dataframe[scenario].std()
-        metrics_dict["{}_median".format(scenario)] = results_dataframe[scenario].median()
-        metrics_dict["{}_min".format(scenario)] = results_dataframe[scenario].min()
-        metrics_dict["{}_max".format(scenario)] = results_dataframe[scenario].max()
-
-    return metrics_dict
-
-
-def perform_analysis(target_scenario, simulation_scenarios, current_file):
-    # type: (str, Dict[str, List[str]], str) -> Dict[str, float]
-
-    plt.style.use(PLOT_STYLE)
-    plot_results(csv_file=current_file)
-    current_file_metrics = get_current_file_metrics(simulation_scenarios, current_file)  # type: Dict[str, float]
-    # current_file_metrics["fall_length"] = fall_length
-
-    for alternative_scenario in simulation_scenarios.keys():
-        if alternative_scenario != target_scenario:
-            test_hypothesis(first_scenario_column=target_scenario,
-                            second_scenario_column=alternative_scenario,
-                            alternative="less",
-                            csv_file=current_file)
-
-    return current_file_metrics

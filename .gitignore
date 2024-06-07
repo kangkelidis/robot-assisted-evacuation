@@ -19,4 +19,5 @@ workspace/simulation.log*
 *.lock
 workspace/data
 workspace/img
-
+workspace/frames
+workspace/video

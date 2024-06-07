@@ -17,13 +17,8 @@ RUN mkdir /home/netlogo \
     && rm $NETLOGO_NAME-64.tgz \
     && apt-get update && apt-get install -y libxrender1 libxtst6
 
-COPY . /home/
-
-# TODO: Did not work at my machine, to check.
-# Folders for storing results
-RUN mkdir -p /home/workspace/data \
-    && mkdir -p /home/workspace/frames \
-    && mkdir -p /home/workspace/img
+# Copy only environment.yml
+COPY ./env/environment.yml /home/env/environment.yml
 
 # Installing Anaconda
 
@@ -42,14 +37,26 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-py27_4.8.3-Linux
 # Put conda in path so we can use conda activate
 ENV PATH=$CONDA_DIR/bin:$PATH
 
+# Disable output buffering for Python
+ENV PYTHONUNBUFFERED=True
+
 # Creating the conda environment
 RUN conda env create -f /home/env/environment.yml
+
+#  Moved after installing conda environment to avoid re-installing the environment
+COPY . /home/
+
+# TODO: Did not work at my machine, to check.
+# Folders for storing results
+RUN mkdir -p /home/workspace/data \
+    && mkdir -p /home/workspace/frames \
+    && mkdir -p /home/workspace/img
 
 # Unsetting to avoid a Netlogo error.
 ENV DISPLAY=
 
 # Executing evacuation simulations
 WORKDIR "/home/workspace"
-ENTRYPOINT ["conda", "run", "-n", "robot-assisted-evacuation", "python", "start.py"]
+ENTRYPOINT ["conda", "run", "-n", "robot-assisted-evacuation", "python", "-u", "start.py"]
 
 

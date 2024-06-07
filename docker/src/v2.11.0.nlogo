@@ -1311,11 +1311,10 @@ end
 to-report get-support-strategy
   let result ""
 
-  ; staff support strategy
   if REQUEST_STAFF_SUPPORT and not REQUEST_BYSTANDER_SUPPORT [
     set result "call-staff"
   ]
-  ; passenger support strategy
+
   if REQUEST_BYSTANDER_SUPPORT [
     set result "ask-help"
   ]
@@ -1423,7 +1422,6 @@ to request-bystander-support
   ]
 
   ; Assessing the payoff of requesting passanger help.
-  ; Adaptive support strategy
   if candidate-helper != nobody and REQUEST_STAFF_SUPPORT and REQUEST_BYSTANDER_SUPPORT [
     if not request-candidate-help? [
       set support-strategy "call-staff"

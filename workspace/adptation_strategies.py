@@ -54,6 +54,10 @@ class StrategyC(AdaptationStrategy):
         super(StrategyC, self).__init__("C")
 
     def get_robot_action(self, candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
+        if helper_victim_distance < first_responder_victim_distance and \
+                        candidate_helper.gender == Gender.MALE and candidate_helper.age == Age.ADULT:
+                    return self.ASK_FOR_HELP_ROBOT_ACTION
+
         if random.random() < GROUP_IDENTIFYING_PERCENTAGE:
             if random.random() < IDENTITY_PREDICTION_ACCURANCY:
                 return self.ASK_FOR_HELP_ROBOT_ACTION # correctly identified group identity

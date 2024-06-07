@@ -144,6 +144,10 @@ globals [; GLOBALS
          ENABLE_FRAME_GENERATION
          CONTROLLER_PYTHON_COMMAND
          CONTROLLER_PYTHON_SCRIPT
+         BOOST_HELPING_CHANCE
+         REDUCE_HELPING_CHANCE
+         GROUP_IDENTIFYING_PERCENTAGE
+         NUM_OF_SAR_ROBOTS
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
 
@@ -263,7 +267,7 @@ agents-own [
 to setup
   clear-all
   ;random-seed
-
+;  set number_passengers 200
   set list_exits []
   set request-for-help-results (list (list "helper_gender" "helper_culture" "helper_age" "fallen_gender" "fallen_culture" "fallen_age" "offer-help"))
   set start_place_fire 0
@@ -414,7 +418,7 @@ to setup
     ] ;nw
   ]
 
-  set-default-shape agents "person"
+  set-default-shape agents "circle"
   create-agents number_passengers [ move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ] ]
   ask agents [
     set color PASSENGERS_COLOR
@@ -1311,10 +1315,11 @@ end
 to-report get-support-strategy
   let result ""
 
+  ; staff support strategy
   if REQUEST_STAFF_SUPPORT and not REQUEST_BYSTANDER_SUPPORT [
     set result "call-staff"
   ]
-
+  ; passenger support strategy
   if REQUEST_BYSTANDER_SUPPORT [
     set result "ask-help"
   ]
@@ -1422,6 +1427,7 @@ to request-bystander-support
   ]
 
   ; Assessing the payoff of requesting passanger help.
+  ; Adaptive support strategy
   if candidate-helper != nobody and REQUEST_STAFF_SUPPORT and REQUEST_BYSTANDER_SUPPORT [
     if not request-candidate-help? [
       set support-strategy "call-staff"
@@ -1496,23 +1502,25 @@ to move-sar-robots
 
   ; Moving randomly
   set heading (heading + 45 - (random 90))
-  jump 1
+  jump 1 
 
   ; When all passangers have evacuated, the robot evacuates.
+  ; TODO: why not just die? There is no need to wait for the robot to reach the exit.
   if count agents with [ color = PASSENGERS_COLOR ] = 0 [
+    die
+    
+;    if target-patch = nobody [
+;      ; Obtaining the nearest exit.
+;      let current-patch patch-here
+;      set target-patch min-one-of (patches in-radius maximum-radius with [pcolor = EXIT_COLOR and self != current-patch]) [
+;        distance myself
+;      ]
+;    ]
 
-    if target-patch = nobody [
-      ; Obtaining the nearest exit.
-      let current-patch patch-here
-      set target-patch min-one-of (patches in-radius maximum-radius with [pcolor = EXIT_COLOR and self != current-patch]) [
-        distance myself
-      ]
-    ]
-
-    if target-patch != nobody [
-      set heading towards target-patch
-      jump 1
-    ]
+;    if target-patch != nobody [
+;      set heading towards target-patch
+;      jump 1
+;    ]
   ]
 
   ; Remove the robot when reaching an exit and no passengers left.
@@ -1525,7 +1533,7 @@ end
 to place-sar-robots
   ; For placing SAR robots in the area.
 
-  create-sar-robots 1 [
+  create-sar-robots NUM_OF_SAR_ROBOTS [
     set target-patch nobody
     set victim-found nobody
     set candidate-helper nobody
@@ -1747,7 +1755,7 @@ to check-fall
  if _falls = TRUE [
    if (((st_action_movetoexit * congestion_speed_factor) > 3) and (count agents-here >= CROWD_CONGESTION_THRESHOLD)) ;nw
    [
-     if random-float 100 < 0.5 [ ;nw
+     if random-float 1 < 0.2 [ ;nw change from 0.05 to 0.5, prevents staff from falling
        set st_fall 1
        set speed 0
        set color FALL_COLOR
@@ -1800,6 +1808,17 @@ to-report offer-help? [passenger selected_fallen_person]
 
 
     let helping_chance matrix:get helping_chance_matrix row col
+    ; increase helping_chance by D if the agent is altrouistic(group social identity) and decrease otherwise.
+    ; the chance of a random agent being altrouistic is determined by GROUP_IDENTIFYING_PERCENTAGE in the config file.
+    ; call python function to determine if the agent is altrouistic
+     ; Calling the adaptive controller using Python
+
+    let random-number-a random-float 1.0
+    ifelse (random-number-a < GROUP_IDENTIFYING_PERCENTAGE) [
+      set helping_chance min list (helping_chance + BOOST_HELPING_CHANCE) 1
+    ] [
+      set helping_chance max list (helping_chance - REDUCE_HELPING_CHANCE) 0
+    ]
 
     let random-number random-float 1.0
 
@@ -1910,7 +1929,7 @@ end
 to check-get-up
   if ( st_fall = 1 ) [
     if ticks-since-fall < fall-length [
-      set color FALL_COLOR + 1
+      set color FALL_COLOR ; + 1 why +1?
       set ticks-since-fall ticks-since-fall + 1
       stop
     ]
@@ -1931,7 +1950,9 @@ to check-get-up
       ]
 
       ;nw
-      set color PASSENGERS_COLOR
+      if breed = staff [set color STAFF_COLOR]
+      if breed = agents [set color PASSENGERS_COLOR]
+;      set color PASSENGERS_COLOR
     ]
   ]
 
@@ -3018,7 +3039,7 @@ Circle -7500403 true true 195 195 58
 circle
 false
 0
-Circle -7500403 true true 0 0 300
+Circle -7500403 true true 0 0 150
 
 circle 2
 false
