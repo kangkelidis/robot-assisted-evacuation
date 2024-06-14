@@ -15,8 +15,6 @@ from utils import setup_logger, timeout_exception_handler, get_available_cpus
 from netlogo_commands import *
 from config import *
 
-# Set up the signal handler for the timeout exception
-signal.signal(signal.SIGALRM, timeout_exception_handler)
 logger = setup_logger()
 
 class SimulationResult(object):
@@ -27,11 +25,15 @@ class SimulationResult(object):
             raise ValueError("Simulation id does not contain the scenario name (no '_').")
         self.scenario = simulation_id.split("_")[0]  # type: str
 
+    def __str__(self):
+        return "Simulation ID: {}. Evacuation time: {}".format(self.simulation_id, self.time)
+
 
 def get_netlogo_report(simulation_id):
     # type: (str) -> Optional[pd.DataFrame]
     """Runs the Netlogo simulation and returns the results for the count commands."""
 
+    signal.signal(signal.SIGALRM, timeout_exception_handler)
     TIME_LIMIT_SECONDS = 120  # type: int
     MAX_RETRIES = 2
 
@@ -51,7 +53,7 @@ def get_netlogo_report(simulation_id):
             signal.alarm(0)
             break
         except Exception as e:
-            logger.error("Exception in %s attempt no.%i: %s", simulation_id, i, e)
+            logger.error("Exception in %s attempt no.%i: %s", simulation_id, i+1, e)
             signal.alarm(0)
     
     return metrics_dataframe
@@ -99,9 +101,9 @@ def run_simulation(simulation_id, post_setup_commands):
 
         # TODO: think how to handle this case
         if math.isnan(evacuation_time):
-            metrics_dataframe.to_csv("data/nan_df.csv")
-            logger.warning("DEBUG!!! info to data/nan_df.csv")
-            # simulation did not finish on time, use max time/ticks
+            metrics_dataframe.to_csv(DATA_FOLDER + "nan_df.csv")
+            logger.warning("DEBUG!!! info to {}nan_df.csv".format(DATA_FOLDER))
+            # simulation did not finish on time, use max time/ticks)
             evacuation_time = MAX_NETLOGO_TICKS
 
         if GENERATE_VIDEO:
@@ -147,9 +149,11 @@ def simulation_processor(simulations_results_queue, simulation_parameters):
         result = run_simulation(**simulation_parameters)
     except Exception as e:
         logger.error("Exception in simulation_processor: %s", e)
+        traceback.print_exc()
         result = SimulationResult(simulation_parameters["simulation_id"], 0)
 
     simulations_results_queue.put(result)
+    logger.info("Simulation n. %i. - Result: %s. ", simulations_results_queue.qsize(), result)
 
 
 def execute_parallel_simulations(simulations_pool):

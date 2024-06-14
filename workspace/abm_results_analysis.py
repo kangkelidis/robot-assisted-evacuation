@@ -11,7 +11,7 @@ from pathlib import Path
 from scipy.stats import mannwhitneyu
 from typing import Dict, List
 
-from config import WORKSPACE_FOLDER
+from config import WORKSPACE_FOLDER, IMAGE_FOLDER, DATA_FOLDER
 
 PLOT_STYLE = 'seaborn-darkgrid'
 
@@ -67,14 +67,14 @@ def plot_results(csv_file, samples_in_title=False):
     if samples_in_title:
         title = "{} samples".format(len(results_dataframe))
     _ = sns.violinplot(data=results_dataframe, order=order).set_title(title)
-    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig(IMAGE_FOLDER + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
+    plt.savefig(IMAGE_FOLDER + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
     plt.show()
     plt.clf()
 
     _ = sns.stripplot(data=results_dataframe, order=order, jitter=True).set_title(title)
-    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(WORKSPACE_FOLDER + "img/" + file_description + "_strip_plot.eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig(IMAGE_FOLDER + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
+    plt.savefig(IMAGE_FOLDER + file_description + "_strip_plot.eps", bbox_inches='tight', pad_inches=0)
     plt.show()
 
 
@@ -112,7 +112,7 @@ def test_hypothesis(first_scenario_column, second_scenario_column, csv_file, alt
     if p_value > threshold:
         print("FAILS TO REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
         # save the results
-        with open(WORKSPACE_FOLDER + "data/hypothesis_tests.txt", "a") as f:
+        with open(DATA_FOLDER + "hypothesis_tests.txt", "a") as f:
             f.write("FAILS TO REJECT NULL HYPOTHESIS: {}\n".format(null_hypothesis))
             f.write(alternative_hypothesis)
             f.write("\n")
@@ -120,7 +120,7 @@ def test_hypothesis(first_scenario_column, second_scenario_column, csv_file, alt
         print("REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
         print(alternative_hypothesis)
         # save the results
-        with open(WORKSPACE_FOLDER + "data/hypothesis_tests.txt", "a") as f:
+        with open(DATA_FOLDER + "hypothesis_tests.txt", "a") as f:
             f.write("REJECT NULL HYPOTHESIS: {}\n".format(null_hypothesis))
             f.write(alternative_hypothesis)
             f.write("\n")

@@ -15,4 +15,4 @@ class Survivor:
     def __init__(self, gender, cultural_cluster, age):
         self.gender = int(gender)  # type: int
         self.cultural_cluster = int(cultural_cluster)  # type: int
-        self.age = int(age)  # type: i
+        self.age = int(age)  # type: int

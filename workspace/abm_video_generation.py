@@ -1,16 +1,14 @@
 import glob
-
 import natsort
 from PIL import Image
 from typing import List
 
-WORKSPACE_FOLDER = "/home/workspace/"
-FRAME_FOLDER = WORKSPACE_FOLDER + "frames"  # type:str
+from config import FRAMES_FOLDER, VIDEO_FOLDER
 
 
 def generate_video(simulation_id, frame_duration=200):
     # type: ( str, int) -> None
-    search_string = "{}/view_{}_*png".format(FRAME_FOLDER, simulation_id)  # type: str
+    search_string = "{}view_{}_*png".format(FRAMES_FOLDER, simulation_id)  # type: str
     frame_list = natsort.natsorted(glob.glob(search_string))  # type: List[str]
     number_of_frames = len(frame_list)  # type: int
 
@@ -24,7 +22,7 @@ def generate_video(simulation_id, frame_duration=200):
         frame_as_image = Image.open(frame_file)  # type: Image
         frames.append(frame_as_image)
 
-    output_file = WORKSPACE_FOLDER + "video/video_{}.gif".format(simulation_id)
+    output_file = VIDEO_FOLDER + "video_{}.gif".format(simulation_id)
     first_frame = frames[0]  # type: Image
     first_frame.save(output_file, format="GIF", append_images=frames,
                      save_all=True, duration=frame_duration)

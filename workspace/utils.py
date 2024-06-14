@@ -6,7 +6,7 @@ import logging
 from typing import List
 from multiprocessing import cpu_count
 
-from config import WORKSPACE_FOLDER, ADAPTATION_STRATEGY, GROUP_IDENTIFYING_PERCENTAGE, BOOST_HELPING_CHANCE, REDUCE_HELPING_CHANCE
+from config import *
 
 logger_imported = False
 try:
@@ -86,3 +86,11 @@ def get_available_cpus():
         num_cpus = 4
     logger.debug("Number of CPUs available: %s", num_cpus)
     return num_cpus
+
+
+def setup_folders():
+    """ Creates the necessary folders for the workspace."""
+
+    for folder in [DATA_FOLDER, FRAMES_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER]:
+        if not os.path.exists(folder):
+            os.makedirs(folder)

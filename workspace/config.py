@@ -1,8 +1,12 @@
 # -----data path-----
-WORKSPACE_FOLDER = "/home/workspace/"
+WORKSPACE_FOLDER = "/home/workspace/"   # type:str
+DATA_FOLDER = WORKSPACE_FOLDER + "data/"  # type:str
+FRAMES_FOLDER = WORKSPACE_FOLDER + "frames/"  # type:str
+IMAGE_FOLDER = WORKSPACE_FOLDER + "img/"  # type:str
+VIDEO_FOLDER = WORKSPACE_FOLDER + "video/"  # type:str
 
 # -----simulation parameters-----
-NUM_SAMPLES = 30
+NUM_SAMPLES = 1
 
 MAX_NETLOGO_TICKS = 2000  # type: int
 
@@ -18,4 +22,4 @@ REDUCE_HELPING_CHANCE = 0
 ADAPTATION_STRATEGY = "C"
 
 # -----Options-----
-GENERATE_VIDEO = False
+GENERATE_VIDEO = True

@@ -69,7 +69,7 @@ extensions [
   csv
   shell
 ]
-__includes [ "config.nls" ]
+__includes [ "config-2.11.nls" ]
 
 breed [staff staff_member]
 breed [agents agent]
