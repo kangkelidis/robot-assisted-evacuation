@@ -2,9 +2,9 @@ import logging
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 # from typing import Dict # <-  TODO: crashed the program, perhaps becouse it is called from netlogo?
-from adptation_strategies import adaptation_strategies
-from survivor import Survivor
-from utils import load_adaptation_strategy, setup_logger
+from workspace.core.adaptation_strategies import adaptation_strategies
+from workspace.core.survivor import Survivor
+from workspace.core.utils.utils import get_simulation_scenarios, setup_logger
 
 logger = setup_logger()
 
@@ -17,7 +17,7 @@ def on_survivor_contact(candidate_helper, victim, helper_victim_distance, first_
     The optimal output would be the prediction of the offer-help? output.
     If an adaptation strategy is defined in config.py, it will be used. Otherwise, the strategy is determined by the simulation_id."""
 
-    adaptation_strategy=load_adaptation_strategy()
+    adaptation_strategy=get_simulation_scenarios()
     if adaptation_strategy:
         # Scenario simulation mode
         strategy_name = adaptation_strategy

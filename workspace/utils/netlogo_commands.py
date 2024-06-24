@@ -1,9 +1,10 @@
 from config import WORKSPACE_FOLDER
+from core.paths import *
 
-NETLOGO_PROJECT_DIRECTORY = "/home/src/"  # type:str
-NETLOGO_MODEL_FILE = NETLOGO_PROJECT_DIRECTORY + "v2.11.0.nlogo"  # type:str
-NETLOGO_HOME = "/home/netlogo"  # type:str
-RESULTS_CSV_FILE = WORKSPACE_FOLDER + "data/{}_fall_{}_samples_experiment_results.csv"  # type:str
+# NETLOGO_PROJECT_DIRECTORY = "/home/src/"  # type:str
+# NETLOGO_MODEL_FILE = NETLOGO_PROJECT_DIRECTORY + "v2.11.0.nlogo"  # type:str
+# NETLOGO_HOME = "/home/netlogo"  # type:str
+# RESULTS_CSV_FILE = WORKSPACE_FOLDER + "data/{}_fall_{}_samples_experiment_results.csv"  # type:str
 
 NETLOGO_VERSION = "5"  # type:str
 
@@ -24,7 +25,14 @@ ENABLE_STAFF_COMMAND = SET_STAFF_SUPPORT_COMMAND.format("TRUE")  # type:str
 ENABLE_PASSENGER_COMMAND = SET_PASSENGER_SUPPORT_COMMAND.format("TRUE")  # type:str
 
 SET_FRAME_GENERATION_COMMAND = "set ENABLE_FRAME_GENERATION {}"  # type: str
+ENABLE_FRAME_GENERATION_COMMAND = SET_FRAME_GENERATION_COMMAND.format('TRUE')
+
 SET_FALL_LENGTH_COMMAND = "set DEFAULT_FALL_LENGTH {}"  # type: str
 
 SET_STAFF_SUPPORT_COMMAND = "set REQUEST_STAFF_SUPPORT {}"  # type: str
 SET_PASSENGER_SUPPORT_COMMAND = "set REQUEST_BYSTANDER_SUPPORT {}"  # type: str
+
+SET_ENABLE_ROBOTS_COMMAND = "set ENABLE_ROBOTS {}"  # type: str
+
+SET_NUM_OFF_PASSENGERS_COMMAND = "set NUM_OF_PASSENGERS {}"
+SET_NUM_OFF_ROBOTS_COMMAND = "set NUM_OF_ROBOTS {}"

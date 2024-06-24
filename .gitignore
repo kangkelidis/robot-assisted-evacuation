@@ -17,7 +17,7 @@ notes.md
 workspace/simulation.log*
 *.pyc
 *.lock
-workspace/data
-workspace/img
-workspace/frames
+workspace/results/*
 workspace/video
+**/.DS_Store
+__pycache__/

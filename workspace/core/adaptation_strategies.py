@@ -1,6 +1,5 @@
 import random
-from survivor import Survivor, Gender, Age, CulturalCluster
-from config import GROUP_IDENTIFYING_PERCENTAGE, IDENTITY_PREDICTION_ACCURANCY
+from core.Survivor import Survivor, Gender, Age, CulturalCluster
 
 class AdaptationStrategy(object):
     """ Base class for adaptation strategies. get_robot_action method should be overridden and implemented by the subclasses."""
@@ -10,6 +9,7 @@ class AdaptationStrategy(object):
         self.name = name  # type: str
         self.ASK_FOR_HELP_ROBOT_ACTION = "ask-help"  # type:str
         self.CALL_STAFF_ROBOT_ACTION = "call-staff"  # type:str
+        self.robot = True
         
     def get_robot_action(self, candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
         # type: (Survivor, Survivor, float, float) -> str
@@ -49,7 +49,9 @@ class StrategyC(AdaptationStrategy):
         Then it asks for help. If it predics wrong, it calls the staff. 
         Similarly, If the potential helper has an individual identity (1-X%), there is a Y% chance the robot will predict it correctly
         and call for staff. Or 1-Y% it predicts wrong and it asks for help."""
-        
+            # -----identity prediction-----
+    GROUP_IDENTIFYING_PERCENTAGE = 0.8
+    IDENTITY_PREDICTION_ACCURANCY = 0.9
     def __init__(self):
         super(StrategyC, self).__init__("C")
 

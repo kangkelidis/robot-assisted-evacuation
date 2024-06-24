@@ -1,0 +1,1 @@
+strategy class must be the same name as the file name

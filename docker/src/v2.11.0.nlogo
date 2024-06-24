@@ -1525,7 +1525,7 @@ end
 to place-sar-robots
   ; For placing SAR robots in the area.
 
-  create-sar-robots 1 [
+  create-sar-robots 5 [
     set target-patch nobody
     set victim-found nobody
     set candidate-helper nobody

@@ -2,6 +2,8 @@
 ;--- Made by dr. C. Natalie van der Wal ---
 ;--- 31st May 2016 --
 
+;- REMOVED: SUPPORT
+
 ;2.11.0
 ;- ADD: Staff (workers) and level of influence of Staff workers on evacuation. These agents are placed randomly into the room. See the paper;
 ;     : added the same functionalities to the already developed staff agents (security staff) located around the doors;
@@ -69,7 +71,7 @@ extensions [
   csv
   shell
 ]
-__includes [ "config.nls" ]
+__includes [ "config_v2.11.1.nls" ]
 
 breed [staff staff_member]
 breed [agents agent]
@@ -137,8 +139,8 @@ globals [; GLOBALS
          STAFF_HELP_FACTOR
          PASSENGER_HELP_FACTOR
          ROBOT_REQUEST_BONUS
-         REQUEST_STAFF_SUPPORT
-         REQUEST_BYSTANDER_SUPPORT
+         ENABLE_ROBOTS
+         FALL_CHANCE
          ENABLE_LOGGING
          ENABLE_DATA_COLLECTION
          ENABLE_FRAME_GENERATION
@@ -146,6 +148,8 @@ globals [; GLOBALS
          CONTROLLER_PYTHON_SCRIPT
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
+         NUM_OF_ROBOTS
+         NUM_OF_PASSENGERS
 
          g_st_others_belief_dangerous
          g_st_others_fear
@@ -414,6 +418,8 @@ to setup
     ] ;nw
   ]
 
+  set number_passengers NUM_OF_PASSENGERS
+
   set-default-shape agents "person"
   create-agents number_passengers [ move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ] ]
   ask agents [
@@ -440,9 +446,6 @@ to setup
   reset-ticks
   set-time   ;nw
 
-  if ENABLE_FRAME_GENERATION [
-    let errasing_frames (shell:exec "rm" "/home/workspace/frames/*")
-  ]
 end
 
 ;-----------------------------------------
@@ -775,7 +778,7 @@ to go
 
  ; Removing sar-robot in case not needed.
  ask sar-robots [
-   if not REQUEST_STAFF_SUPPORT and not REQUEST_BYSTANDER_SUPPORT [
+   if not ENABLE_ROBOTS [
      die
    ]
  ]
@@ -833,9 +836,7 @@ end
 to write-png-frame
    if ENABLE_FRAME_GENERATION [
      let suffix (word SIMULATION_ID "_" ticks ".png")
-     export-view (word "/home/workspace/frames/view_" suffix)
-     ; Uncomment only when using the GUI
-     ;export-interface (word "/home/results/frames/interface_" word ticks ".png")
+     export-view (word "/home/workspace/results/frames/view_" suffix)
      log-turtle (word "Frames written at /frames") nobody
  ]
 end
@@ -1305,20 +1306,6 @@ to prepare-new-search
   set victim-found nobody
   set candidate-helper nobody
 
-  set support-strategy get-support-strategy
-end
-
-to-report get-support-strategy
-  let result ""
-
-  if REQUEST_STAFF_SUPPORT and not REQUEST_BYSTANDER_SUPPORT [
-    set result "call-staff"
-  ]
-
-  if REQUEST_BYSTANDER_SUPPORT [
-    set result "ask-help"
-  ]
-  report result
 end
 
 to-report get-bystander-requests
@@ -1422,7 +1409,7 @@ to request-bystander-support
   ]
 
   ; Assessing the payoff of requesting passanger help.
-  if candidate-helper != nobody and REQUEST_STAFF_SUPPORT and REQUEST_BYSTANDER_SUPPORT [
+  if candidate-helper != nobody [
     if not request-candidate-help? [
       set support-strategy "call-staff"
       set candidate-helper nobody
@@ -1525,13 +1512,12 @@ end
 to place-sar-robots
   ; For placing SAR robots in the area.
 
-  create-sar-robots 5 [
+  create-sar-robots NUM_OF_ROBOTS [
     set target-patch nobody
     set victim-found nobody
     set candidate-helper nobody
     set bystander-requests 0
     set staff-requests 0
-    set support-strategy get-support-strategy
     set color SAR_ROBOT_COLOR
     set shape "car"
     move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
@@ -1747,7 +1733,7 @@ to check-fall
  if _falls = TRUE [
    if (((st_action_movetoexit * congestion_speed_factor) > 3) and (count agents-here >= CROWD_CONGESTION_THRESHOLD)) ;nw
    [
-     if random-float 100 < 0.5 [ ;nw
+     if random-float 1 < FALL_CHANCE [ ;nw
        set st_fall 1
        set speed 0
        set color FALL_COLOR
