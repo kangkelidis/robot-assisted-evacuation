@@ -1,17 +1,17 @@
 import matplotlib
+
 matplotlib.use('Agg')
+
+from pathlib import Path
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import statsmodels.api as sm
-import pandas as pd
-
-from pathlib import Path
+from config import DATA_FOLDER, IMAGE_FOLDER
 from scipy.stats import mannwhitneyu
-from typing import Dict, List
-
-from config import WORKSPACE_FOLDER, IMAGE_FOLDER, DATA_FOLDER
 
 PLOT_STYLE = 'seaborn-darkgrid'
 
@@ -51,30 +51,27 @@ def plot_results(csv_file, samples_in_title=False):
     # type: (str, bool) -> None
     file_description = Path(csv_file).stem  # type: str
     results_dataframe = get_dataframe(csv_file)  # type: pd.DataFrame
-    # results_dataframe = results_dataframe.rename(columns={
-    #     NO_SUPPORT_COLUMN: "No Support",
-    #     ONLY_STAFF_SUPPORT_COLUMN: "Proself-Oriented",
-    #     ONLY_PASSENGER_SUPPORT_COLUMN: "Prosocial-Oriented",
-    #     ADAPTIVE_SUPPORT_COLUMN: "Adaptive"
-    # })
 
     print(results_dataframe.describe())
 
     title = ""
-    # order = ["No Support", "Prosocial-Oriented", "Proself-Oriented", "Adaptive"]  # type: List[str]
     order = None
 
     if samples_in_title:
         title = "{} samples".format(len(results_dataframe))
     _ = sns.violinplot(data=results_dataframe, order=order).set_title(title)
-    plt.savefig(IMAGE_FOLDER + file_description + "_violin_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(IMAGE_FOLDER + file_description + "_violin_plot.eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig(IMAGE_FOLDER + file_description + "_violin_plot.png",
+                bbox_inches='tight', pad_inches=0)
+    plt.savefig(IMAGE_FOLDER + file_description + "_violin_plot.eps", bbox_inches='tight',
+                pad_inches=0)
     plt.show()
     plt.clf()
 
     _ = sns.stripplot(data=results_dataframe, order=order, jitter=True).set_title(title)
-    plt.savefig(IMAGE_FOLDER + file_description + "_strip_plot.png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(IMAGE_FOLDER + file_description + "_strip_plot.eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig(IMAGE_FOLDER + file_description + "_strip_plot.png",
+                bbox_inches='tight', pad_inches=0)
+    plt.savefig(IMAGE_FOLDER + file_description + "_strip_plot.eps",
+                bbox_inches='tight', pad_inches=0)
     plt.show()
 
 
@@ -91,10 +88,10 @@ def test_hypothesis(first_scenario_column, second_scenario_column, csv_file, alt
     second_scenario_mean = np.mean(second_scenario_data).item()  # type:float
     second_scenario_stddev = np.std(second_scenario_data).item()  # type:float
 
-    print("{}-> mean = {} std = {} len={}".format(first_scenario_column, first_scenario_mean, first_scenario_stddev,
-                                                  len(first_scenario_data)))
-    print("{}-> mean = {} std = {} len={}".format(second_scenario_column, second_scenario_mean, second_scenario_stddev,
-                                                  len(second_scenario_data)))
+    print("{}-> mean = {} std = {} len={}".format(first_scenario_column, first_scenario_mean,
+                                                  first_scenario_stddev, len(first_scenario_data)))
+    print("{}-> mean = {} std = {} len={}".format(second_scenario_column, second_scenario_mean,
+                                                  second_scenario_stddev, len(second_scenario_data)))
     print("Recommended Sample size: {}".format(
         calculate_sample_size(first_scenario_mean, second_scenario_mean, first_scenario_stddev,
                               second_scenario_stddev)))

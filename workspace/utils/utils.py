@@ -1,17 +1,17 @@
+import logging
 import os
 import re
-import logging
-
-from typing import List
 from multiprocessing import cpu_count
+from typing import List
 
 from config import *
-from core.paths import *
 from core.adaptation_strategies import AdaptationStrategy
+from core.paths import *
 
 logger_imported = False
 try:
-    from concurrent_log_handler import ConcurrentRotatingFileHandler # sometimes causes an error
+    from concurrent_log_handler import \
+        ConcurrentRotatingFileHandler  # sometimes causes an error
     logger_imported = True
 except ImportError:
     print("Import error")

@@ -1,5 +1,6 @@
 from core.adaptation_strategies import AdaptationStrategy
 
+
 class ProSelf(AdaptationStrategy):
     """ Randomly choose between asking for help and calling staff."""
 

@@ -1,6 +1,7 @@
+import random
+
 from core.adaptation_strategies import AdaptationStrategy
 
-import random
 
 class Random(AdaptationStrategy):
     """ Randomly choose between asking for help and calling staff."""

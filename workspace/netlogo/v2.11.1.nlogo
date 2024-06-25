@@ -139,6 +139,8 @@ globals [; GLOBALS
          STAFF_HELP_FACTOR
          PASSENGER_HELP_FACTOR
          ROBOT_REQUEST_BONUS
+         REQUEST_STAFF_SUPPORT
+         REQUEST_BYSTANDER_SUPPORT
          ENABLE_ROBOTS
          FALL_CHANCE
          ENABLE_LOGGING
@@ -150,6 +152,7 @@ globals [; GLOBALS
 
          NUM_OF_ROBOTS
          NUM_OF_PASSENGERS
+         NUM_OF_STAFF
 
          g_st_others_belief_dangerous
          g_st_others_fear
@@ -419,6 +422,7 @@ to setup
   ]
 
   set number_passengers NUM_OF_PASSENGERS
+  set _number_staff_members NUM_OF_STAFF
 
   set-default-shape agents "person"
   create-agents number_passengers [ move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ] ]
@@ -446,6 +450,9 @@ to setup
   reset-ticks
   set-time   ;nw
 
+  if ENABLE_FRAME_GENERATION [
+    let errasing_frames (shell:exec "rm" "/home/workspace/results/frames/*")
+  ]
 end
 
 ;-----------------------------------------
@@ -1306,6 +1313,20 @@ to prepare-new-search
   set victim-found nobody
   set candidate-helper nobody
 
+  set support-strategy get-support-strategy
+end
+
+to-report get-support-strategy
+  let result ""
+
+  if REQUEST_STAFF_SUPPORT and not REQUEST_BYSTANDER_SUPPORT [
+    set result "call-staff"
+  ]
+
+  if REQUEST_BYSTANDER_SUPPORT [
+    set result "ask-help"
+  ]
+  report result
 end
 
 to-report get-bystander-requests
@@ -1409,7 +1430,7 @@ to request-bystander-support
   ]
 
   ; Assessing the payoff of requesting passanger help.
-  if candidate-helper != nobody [
+  if candidate-helper != nobody and REQUEST_STAFF_SUPPORT and REQUEST_BYSTANDER_SUPPORT [
     if not request-candidate-help? [
       set support-strategy "call-staff"
       set candidate-helper nobody
@@ -1518,6 +1539,7 @@ to place-sar-robots
     set candidate-helper nobody
     set bystander-requests 0
     set staff-requests 0
+    set support-strategy get-support-strategy
     set color SAR_ROBOT_COLOR
     set shape "car"
     move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
@@ -1576,6 +1598,15 @@ to-report request-candidate-help?
 
 end
 
+to post-to-server
+  let json-data (word "{ \"simulation_id\": \"" SIMULATION_ID "\"}")
+  let SERVER_URL "http://localhost:5000/on_survivor_contact"
+  let curl-command (word "curl -X POST -H 'Content-Type: application/json' -d \"" json-data "\" " SERVER_URL)
+
+  let response (shell:exec "sh" "-c" curl-command)
+  log-turtle "Response from server: " response
+end
+
 to request-support
   ; For the SAR robot, to invoke logic according to its helping strategy.
   if support-strategy = "call-staff" [
@@ -1616,24 +1647,6 @@ to-report maximum-radius
   report result
 end
 
-to place-staff
-  while [count staff < _number_staff_members] [
-    foreach list_exits [
-      let exit_patch nobody
-      ask ? [set exit_patch one-of neighbors]
-
-      create-staff 1 [
-        set xcor [pxcor] of exit_patch
-        set ycor [pycor] of exit_patch
-        set color STAFF_COLOR
-        set shape "person"
-      ]
-
-      if count staff >= _number_staff_members [stop]
-    ]
-  ]
-end
-
 ;version 2.11
 to place-staff-random
     create-staff _number_staff_members [
@@ -1641,18 +1654,8 @@ to place-staff-random
         set target-patch nobody
         set assistance-required nobody
         set help-factor STAFF_HELP_FACTOR
-        set color STAFF_COLOR
-        set shape "person"
-        move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
-    ]
-
-    create-staff _number_normal_staff_members [
-        set skill_convince_others _normal_staff_skill
-        set target-patch nobody
-        set assistance-required nobody
-        set help-factor STAFF_HELP_FACTOR
-        set color STAFF_COLOR
-        set shape "person"
+        set color 14
+        set shape "circle"
         move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
     ]
 end
@@ -1733,7 +1736,7 @@ to check-fall
  if _falls = TRUE [
    if (((st_action_movetoexit * congestion_speed_factor) > 3) and (count agents-here >= CROWD_CONGESTION_THRESHOLD)) ;nw
    [
-     if random-float 1 < FALL_CHANCE [ ;nw
+     if random-float 100 < FALL_CHANCE [ ;nw
        set st_fall 1
        set speed 0
        set color FALL_COLOR

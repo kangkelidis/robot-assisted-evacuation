@@ -441,7 +441,7 @@ to setup
   set-time   ;nw
 
   if ENABLE_FRAME_GENERATION [
-    let errasing_frames (shell:exec "rm" "/home/workspace/frames/*")
+    let errasing_frames (shell:exec "rm" "/home/workspace/results/frames/*")
   ]
 end
 
@@ -833,10 +833,10 @@ end
 to write-png-frame
    if ENABLE_FRAME_GENERATION [
      let suffix (word SIMULATION_ID "_" ticks ".png")
-     export-view (word "/home/workspace/frames/view_" suffix)
+     export-view (word "/home/workspace/results/frames/view_" suffix)
      ; Uncomment only when using the GUI
      ;export-interface (word "/home/results/frames/interface_" word ticks ".png")
-     log-turtle (word "Frames written at /frames") nobody
+     log-turtle (word "Frames written at /results/frames") nobody
  ]
 end
 

@@ -1,4 +1,3 @@
-
 # Base workspace folder
 WORKSPACE_FOLDER = "/home/workspace/"
 NETLOGO_HOME = "/home/netlogo/"  # type:str
@@ -14,5 +13,3 @@ DATA_FOLDER = RESULTS_FOLDER + "data/"
 FRAMES_FOLDER = RESULTS_FOLDER + "frames/"
 IMAGE_FOLDER = RESULTS_FOLDER + "img/"
 VIDEO_FOLDER = RESULTS_FOLDER + "video/"
-
-

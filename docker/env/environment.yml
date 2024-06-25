@@ -9,6 +9,7 @@ dependencies:
   - certifi
   - dbus
   - expat
+  - flask
   - fontconfig
   - freetype
   - glib

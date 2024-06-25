@@ -127,7 +127,7 @@ to setup-environment
   ;; CONSTANTS: ajust environment conditions
   set EXIT_COLOR            blue
   set EXIT_LIGHTING_COLOR   orange
-  set PASSENGERS_COLOR      black 
+  set PASSENGERS_COLOR      red 
   set STAFF_COLOR           green
   set SAR_ROBOT_COLOR       lime
   set STAFF_SUPPORT_COLOR   sky
@@ -148,14 +148,17 @@ to setup-environment
   set ROBOT_REQUEST_BONUS 0.2
   
   ; For evacuation time experiments, keep them all false.
+  set REQUEST_STAFF_SUPPORT TRUE
+  set REQUEST_BYSTANDER_SUPPORT TRUE
   set ENABLE_LOGGING FALSE
   set ENABLE_FRAME_GENERATION FALSE
 
-  set FALL_CHANCE 0.1
+  set FALL_CHANCE 0.05
 
   set ENABLE_ROBOTS TRUE
   set NUM_OF_ROBOTS 1
-  set NUM_OF_PASSENGERS 100
+  set NUM_OF_PASSENGERS 200
+  set NUM_OF_STAFF 10
   
   set SIMULATION_ID 0
 

@@ -141,15 +141,15 @@ to setup-environment
   set FIRE_RADIUS           2
   set OBSERVATION_DISTANCE  5
   
-  set DEFAULT_FALL_LENGTH 240 ; Fall is 30 seconds on the original paper
+  set DEFAULT_FALL_LENGTH 500 ; Fall is 30 seconds on the original paper
   set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 3
   set STAFF_HELP_FACTOR 0.50
   set PASSENGER_HELP_FACTOR 0.98
   set ROBOT_REQUEST_BONUS 0.2
   
   ; For evacuation time experiments, keep them all false.
-  set REQUEST_STAFF_SUPPORT FALSE
-  set REQUEST_BYSTANDER_SUPPORT FALSE
+  set REQUEST_STAFF_SUPPORT TRUE
+  set REQUEST_BYSTANDER_SUPPORT TRUE
   set ENABLE_LOGGING FALSE
   set ENABLE_FRAME_GENERATION FALSE
   

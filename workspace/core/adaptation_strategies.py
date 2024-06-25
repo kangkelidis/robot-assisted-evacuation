@@ -1,19 +1,22 @@
 import random
-from core.Survivor import Survivor, Gender, Age, CulturalCluster
+
+from core.Survivor import Age, Gender, Survivor
+
 
 class AdaptationStrategy(object):
-    """ Base class for adaptation strategies. get_robot_action method should be overridden and implemented by the subclasses."""
+    """ Base class for adaptation strategies. get_robot_action method should be overridden and 
+    implemented by the subclasses."""
 
     def __init__(self, name):
-        # type: (str) -> None
-        self.name = name  # type: str
-        self.ASK_FOR_HELP_ROBOT_ACTION = "ask-help"  # type:str
-        self.CALL_STAFF_ROBOT_ACTION = "call-staff"  # type:str
+        self.name = name
+        self.ASK_FOR_HELP_ROBOT_ACTION = "ask-help"  
+        self.CALL_STAFF_ROBOT_ACTION = "call-staff" 
         self.robot = True
         
-    def get_robot_action(self, candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
-        # type: (Survivor, Survivor, float, float) -> str
+    def get_robot_action(self, candidate_helper, victim, helper_victim_distance, 
+                         first_responder_victim_distance):
         pass
+    
     
 class StrategyA(AdaptationStrategy):
     """ If the potential helper is closer to the victim than the first responder (staff member) and
