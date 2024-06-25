@@ -1,12 +1,34 @@
+import importlib
+import json
 import logging
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+import os
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 # from typing import Dict # <-  TODO: crashed the program, perhaps becouse it is called from netlogo?
-from adptation_strategies import adaptation_strategies
+from adptation_strategies import AdaptationStrategy, adaptation_strategies
+from paths import WORKSPACE_FOLDER
 from survivor import Survivor
 from utils import load_adaptation_strategy, setup_logger
 
 logger = setup_logger()
+
+def get_adaptation_strategy(strategy_name):
+    for file_name in os.listdir(WORKSPACE_FOLDER + "strategies/"):
+        logger.info('strategy file name: {}'.format(file_name))
+        if file_name[:-3] == strategy_name:
+            module = importlib.import_module('strategies.' + strategy_name)
+            strategy_class = getattr(module, strategy_name)
+
+            if issubclass(strategy_class, AdaptationStrategy):
+                strategy_instance = strategy_class()
+                return strategy_instance
+            
+def load_scenarios_from_temp(filename="scenarios_temp.json"):
+    """Loads the scenarios from the specified JSON file."""
+    logger.info('loading')
+    with open(filename, 'r') as file:
+        scenarios = json.load(file)
+    return scenarios
 
 def on_survivor_contact(candidate_helper, victim, helper_victim_distance, first_responder_victim_distance, simulation_id):
     # type: ( Survivor, Survivor, float, float, str) -> str
@@ -16,17 +38,39 @@ def on_survivor_contact(candidate_helper, victim, helper_victim_distance, first_
     is determined by offer-help? in the IMPACT model. If he helps, the victim gets a speed bonus. 
     The optimal output would be the prediction of the offer-help? output.
     If an adaptation strategy is defined in config.py, it will be used. Otherwise, the strategy is determined by the simulation_id."""
+    
+    scenario_name = simulation_id.split("_")[0]  # type: str
+    logger.info('Simulation id : {}'.format(simulation_id))
+    with open("output.txt", "a") as file:
+        file.write("Scenario name: {}\n".format(scenario_name))
+        file.write("simulation_id: {}\n".format(simulation_id))
 
-    adaptation_strategy=load_adaptation_strategy()
-    if adaptation_strategy:
-        # Scenario simulation mode
-        strategy_name = adaptation_strategy
-    else:
-        # Strategy comparison mode
-        strategy_name = simulation_id.split("_")[0]  # type: str
+    scenario = None
+    # load scenarios from temporary files
+    
+    scnarios = load_scenarios_from_temp()
 
-    return adaptation_strategies[strategy_name].get_robot_action(candidate_helper, victim, helper_victim_distance,
+    for scenario in scnarios:
+        logger.info('scenario name: {}'.format(scenario['name']))
+        if scenario['name'] == scenario_name:
+            scenario = scenario
+            break
+    if scenario:
+        strategy_name = scenario['adaptation_strategy']
+        with open("output.txt", "a") as file:
+            file.write("strategy name: {}\n".format(strategy_name))
+        strategy = get_adaptation_strategy(strategy_name)
+
+
+        if strategy:
+            # create a text file in the current working directory
+            with open("output.txt", "a") as file:
+                file.write("Hello, world!")
+
+            action = strategy.get_robot_action(candidate_helper, victim, helper_victim_distance,
                                                           first_responder_victim_distance)
+            logger.info("Selected action: {}".format(action))
+            return action
 
 def main():
     try:
@@ -61,4 +105,7 @@ def main():
 
 
 if __name__ == "__main__":
+    logger.info('on cantact called')
+    with open("output.txt", "w") as file:
+        file.write("on contact\n")
     main()

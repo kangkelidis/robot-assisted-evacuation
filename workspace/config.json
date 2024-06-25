@@ -1,0 +1,68 @@
+{
+    "netlogoModelPath": "workspace/netlogo/v2.11.1.nlogo",
+    "netlogoConfigPath": "workspace/netlogo/config.nls",
+
+    "_comment": [
+        "Global parameters for the simulation. To ovveride these parameters,",
+        "for a specific scenario, add the same parameter in the scenario object."],
+    "simulationParameters": {
+        "numOfSamples": 30,
+        "numOfRobots": 1,
+        "numOfPassengers": 800,
+        "numOfStaff" : 10,
+        "fallLength": 500,
+        "fallChance": 0.05,
+        "allowStaffSupport": true,
+        "allowPassengerSupport": true,
+        "adaptationStrategy": null,
+        "maxNetlogoTicks": 2000,
+        "enableVideo": false
+    },
+
+    "_comment": [
+        "Scenarios for the simulation.", 
+        "SAR adaptation strategy name must match file name in scenarios folder.",
+        "Each scenario can have its own parameters that will override the global parameters."],
+    "simulationScenarios" : [
+        {
+            "name": "no-support",
+            "description": "There are no SAR robots in the simulation.",
+            "numOfRobots": 0,
+            "allowStaffSupport": false,
+            "allowPassengerSupport": false,
+            "adaptationStrategy": null,
+            "enableVideo": true,
+            "enabled": true
+        },
+        {
+            "name": "staff-support",
+            "description": "The SAR always asks help from a staff member.",
+            "numOfRobots": 1,
+            "allowStaffSupport": true,
+            "allowPassengerSupport": false,
+            "adaptationStrategy": null,
+            "video": true,
+            "enabled": true
+        },
+        {
+            "name": "passenger-support",
+            "description": "The SAR always asks help from a passenger.",
+            "numOfRobots": 1,
+            "allowStaffSupport": false,
+            "allowPassengerSupport": true,
+            "adaptationStrategy": null,
+            "enableVideo": true,
+            "enabled": true
+        },
+        {
+            "name": "addaptive-support",
+            "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
+            "numOfRobots": 1,
+            "adaptationStrategy": "RandomStrategy",
+            "enableVideo": true,
+            "enabled": true
+        }
+    ]
+
+
+}

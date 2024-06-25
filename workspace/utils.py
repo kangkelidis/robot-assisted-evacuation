@@ -1,16 +1,16 @@
-import os
-import re
-import random
 import logging
-
-from typing import List
+import os
+import random
+import re
 from multiprocessing import cpu_count
+from typing import List
 
 from config import *
 
 logger_imported = False
 try:
-    from concurrent_log_handler import ConcurrentRotatingFileHandler # sometimes causes an error
+    from concurrent_log_handler import \
+        ConcurrentRotatingFileHandler  # sometimes causes an error
     logger_imported = True
 except ImportError:
     print("Import error")
@@ -58,20 +58,6 @@ def load_adaptation_strategy():
     return ADAPTATION_STRATEGY
 
 
-def adjust_helping_chance(helping_chance):
-    # type: (float) -> float
-
-    logger('helping_chance: ', helping_chance)
-    """ Adjusts the helping chance based on the group identifying percentage. """
-
-    # TODO: this is called twice, one here and once in the strategy. Should be the same for a single agent
-    # increase the helping chance if the potential helper has a group identity by a 50%, decrease otherwise
-    if random.random() < GROUP_IDENTIFYING_PERCENTAGE:
-        return min(helping_chance + BOOST_HELPING_CHANCE, 1)
-    else:
-        return max(helping_chance - REDUCE_HELPING_CHANCE, 0)
-    
-
 def timeout_exception_handler(signum, frame):
     raise Exception("The function took too long to execute.")
 
@@ -91,6 +77,13 @@ def get_available_cpus():
 def setup_folders():
     """ Creates the necessary folders for the workspace."""
 
+    if not os.path.exists(RESULTS_FOLDER):
+        os.makedirs(RESULTS_FOLDER)
+
     for folder in [DATA_FOLDER, FRAMES_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER]:
         if not os.path.exists(folder):
             os.makedirs(folder)
+
+
+def convert_camel_case_to_snake_case(camel_case_str):
+    return ''.join(['_' + i.lower() if i.isupper() else i for i in camel_case_str]).lstrip('_')

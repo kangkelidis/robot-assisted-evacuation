@@ -1,13 +1,13 @@
 import random
-from survivor import Survivor, Gender, Age, CulturalCluster
-from config import GROUP_IDENTIFYING_PERCENTAGE, IDENTITY_PREDICTION_ACCURANCY
+
+from survivor import Age, CulturalCluster, Gender, Survivor
+
 
 class AdaptationStrategy(object):
     """ Base class for adaptation strategies. get_robot_action method should be overridden and implemented by the subclasses."""
 
-    def __init__(self, name):
+    def __init__(self):
         # type: (str) -> None
-        self.name = name  # type: str
         self.ASK_FOR_HELP_ROBOT_ACTION = "ask-help"  # type:str
         self.CALL_STAFF_ROBOT_ACTION = "call-staff"  # type:str
         
@@ -18,9 +18,6 @@ class AdaptationStrategy(object):
 class StrategyA(AdaptationStrategy):
     """ If the potential helper is closer to the victim than the first responder (staff member) and
         the is an adult male, ask for his help. Otherwise, call the staff. """    
-    
-    def __init__(self):
-        super(StrategyA, self).__init__("A")
 
     # TODO: To optimise it, could take into account how more efficient a staff member is compared to a bystander and determine the distance cuttoff accordingly.
     def get_robot_action(self, candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
@@ -35,9 +32,6 @@ class StrategyA(AdaptationStrategy):
 class StrategyB(AdaptationStrategy):
     """ Randomly choose between asking for help and calling staff."""
 
-    def __init__(self):
-        super(StrategyB, self).__init__("B")
-
     def get_robot_action(self, candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
         if random.random() < 0.5:
             return self.ASK_FOR_HELP_ROBOT_ACTION
@@ -49,9 +43,8 @@ class StrategyC(AdaptationStrategy):
         Then it asks for help. If it predics wrong, it calls the staff. 
         Similarly, If the potential helper has an individual identity (1-X%), there is a Y% chance the robot will predict it correctly
         and call for staff. Or 1-Y% it predicts wrong and it asks for help."""
-        
-    def __init__(self):
-        super(StrategyC, self).__init__("C")
+    GROUP_IDENTIFYING_PERCENTAGE = 0.8
+    IDENTITY_PREDICTION_ACCURANCY = 0.9
 
     def get_robot_action(self, candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
         if helper_victim_distance < first_responder_victim_distance and \
@@ -84,9 +77,8 @@ class StrategyC(AdaptationStrategy):
 class StrategyD(AdaptationStrategy):
     """ Predictor is always correct. P(A) = 1. """
 
-    def __init__(self):
-        super(StrategyD, self).__init__("D")
 
+    GROUP_IDENTIFYING_PERCENTAGE  = 0.8
     def get_robot_action(self, candidate_helper, victim, helper_victim_distance, first_responder_victim_distance):
         if random.random() < GROUP_IDENTIFYING_PERCENTAGE:
             return self.ASK_FOR_HELP_ROBOT_ACTION

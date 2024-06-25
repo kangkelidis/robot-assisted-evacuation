@@ -1,19 +1,18 @@
 import math
+import random
+import signal
 import time
 import traceback
-import pandas as pd
-import signal
-import random
-import pyNetLogo
-
-from pyNetLogo import NetLogoException
 from multiprocessing import Pool, Process, Queue, cpu_count
-from typing import List, Tuple, Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
+import pandas as pd
+import pyNetLogo
 from abm_video_generation import generate_video
-from utils import setup_logger, timeout_exception_handler, get_available_cpus
-from netlogo_commands import *
 from config import *
+from netlogo_commands import *
+from pyNetLogo import NetLogoException
+from utils import get_available_cpus, setup_logger, timeout_exception_handler
 
 logger = setup_logger()
 
@@ -47,6 +46,7 @@ def get_netlogo_report(simulation_id):
             metrics_dataframe = netlogo_link.repeat_report(
                 netlogo_reporter=[TURTLE_PRESENT_REPORTER, EVACUATED_REPORTER, DEAD_REPORTER],
                 reps=MAX_NETLOGO_TICKS)  # type: pd.DataFrame
+            netlogo_link.kill_workspace()
             endtime = time.time()
 
             logger.info("%s simulation completed on attempt n.%i. Execution time was %.2f seconds", simulation_id, i+1, endtime-start_time)
@@ -59,36 +59,37 @@ def get_netlogo_report(simulation_id):
     return metrics_dataframe
 
 
-def setup_simulation(simulation_id, post_setup_commands):
+
+def setup_simulation(scenario):
     # type: (str, List[str]) -> None
 
-    logger.info("id:{} starting simulation".format(simulation_id))
-    current_seed = netlogo_link.report(SEED_SIMULATION_REPORTER)  # type:str
+    # logger.info("id:{} starting simulation".format(simulation_id))
+    netlogo_link.command('clear')
+    scenario.execute_commands(netlogo_link)
     netlogo_link.command("setup")
-    netlogo_link.command(SET_SIMULATION_ID_COMMAND.format(simulation_id))
 
-    # netlogo_link.command(SET_GROUP_IDENTIFYING_PERCENTAGE_COMMAND.format(GROUP_IDENTIFYING_PERCENTAGE))
-    # netlogo_link.command(SET_REDUCE_HELPING_CHANCE_COMMAND.format(REDUCE_HELPING_CHANCE))
-    # netlogo_link.command(SET_BOOST_HELPING_CHANCE_COMMAND.format(BOOST_HELPING_CHANCE))
+    id = netlogo_link.report('SIMULATION_ID')
+    logger.info('reported Simulation id: {}'.format(id))
 
-    logger.debug('id: {} completed setup'.format(simulation_id))
+    logger.debug('id: {} completed setup'.format(scenario.id))
 
-    if len(post_setup_commands) > 0:
-        for post_setup_command in post_setup_commands:
-            netlogo_link.command(post_setup_command)
-            logger.debug("id:{} seed:{} {} executed".format(simulation_id, current_seed, post_setup_command))
-    else:
-        logger.debug("id:{} seed:{} no post-setup commands".format(simulation_id, current_seed))
+    # if len(post_setup_commands) > 0:
+    #     for post_setup_command in post_setup_commands:
+    #         netlogo_link.command(post_setup_command)
+    #         logger.debug("id:{} seed:{} {} executed".format(simulation_id, current_seed, post_setup_command))
+    # else:
+    #     logger.debug("id:{} seed:{} no post-setup commands".format(simulation_id, current_seed))
     
-    logger.info('id: {} completed commands'.format(simulation_id))
+    # logger.info('id: {} completed commands'.format(simulation_id))
 
 
-def run_simulation(simulation_id, post_setup_commands):
+def run_simulation(scenario):
     # type: (str, List[str]) -> SimulationResult
     try:
-        setup_simulation(simulation_id, post_setup_commands)
+        simulation_id = scenario.id
+        setup_simulation(scenario)
 
-        metrics_dataframe = get_netlogo_report(simulation_id)
+        metrics_dataframe = get_netlogo_report(scenario.id)
 
         if metrics_dataframe is None:
             logger.error("id:{} metrics_dataframe is None. The simulation did not return any results.".format(simulation_id))
@@ -106,8 +107,8 @@ def run_simulation(simulation_id, post_setup_commands):
             # simulation did not finish on time, use max time/ticks)
             evacuation_time = MAX_NETLOGO_TICKS
 
-        if GENERATE_VIDEO:
-            generate_video(simulation_id=simulation_id)
+        # if GENERATE_VIDEO:
+        #     generate_video(simulation_id=simulation_id)
 
         return SimulationResult(simulation_id, evacuation_time)
     except NetLogoException as e:
@@ -131,22 +132,25 @@ def initialise_netlogo_link():
     netlogo_link.load_model(NETLOGO_MODEL_FILE)
 
 
-def build_simulation_pool(experiment_configurations, samples):
-    # type: (Dict[str, List[str]], int) -> List[Dict[str, List[str]]]
+def build_simulation_pool(scenarios):
+    # type: (SimulationParameters) -> List[SimulationParameters]
     """ Takes each simulation scenario and creates a pool of all simulations."""
 
     simulations_pool = []  # type: List[Dict[str, List[str]]]
-    for experiment_name, experiment_commands in experiment_configurations.items():
-        for simulation_index in range(samples):
-            simulations_pool.append({"simulation_id": "{}_{}".format(experiment_name, simulation_index),
-                                    "post_setup_commands": experiment_commands})
+    for scenario in scenarios:
+        if not scenario.enabled:
+            continue
+        for simulation_index in range(scenario.num_of_samples):
+            scenario.id = "{}_{}".format(scenario.name, simulation_index)
+            simulations_pool.append(scenario)
+    random.shuffle(simulations_pool)
     return simulations_pool
 
 
 def simulation_processor(simulations_results_queue, simulation_parameters):
     try:
-        initialise_netlogo_link() 
-        result = run_simulation(**simulation_parameters)
+        initialise_netlogo_link()
+        result = run_simulation(simulation_parameters)
     except Exception as e:
         logger.error("Exception in simulation_processor: %s", e)
         traceback.print_exc()
@@ -161,11 +165,10 @@ def execute_parallel_simulations(simulations_pool):
     """ Runs each simulations in the simulation_pool in parallel using multiprocessing."""
     
     # Using multiprocessing.Queue to allow for inter-process communication and store the results
-    simulations_results_queue = Queue() # type: Queue
+    simulations_results_queue = Queue()  # type: Queue
     simulations_results = []  # type: List[SimulationResult]
 
     num_cpus = get_available_cpus()
-    random.shuffle(simulations_pool) 
 
     logger.info("Total number of simulations to run: %i.", len(simulations_pool))
     try:
@@ -216,11 +219,11 @@ def extract_evacuation_times(results):
     return simulation_times
 
 
-def start_experiments(experiment_configurations, results_file, samples):
+def start_experiments(scenarios, results_file):
     # type: (Dict[str, List[str]], str, int) -> None
     start_time = time.time()  # type: float
 
-    simulations_pool = build_simulation_pool(experiment_configurations, samples) # type: List[Dict[str, List[str]]]
+    simulations_pool = build_simulation_pool(scenarios)  # type: List[SimulationParameters]
     results = execute_parallel_simulations(simulations_pool) # type: List[SimulationResult]
     experiment_data = extract_evacuation_times(results) # type: Dict[str, List[int]]
 
@@ -235,12 +238,4 @@ def start_experiments(experiment_configurations, results_file, samples):
     except Exception as e:
         logger.warning("Error writing data to file. Experiment data: {}. \n{}".format(experiment_data, e))
 
-
-def simulate_and_store(simulation_scenarios, results_file_name, samples):
-    # type: (Dict[str, List[str]],str, int) -> None
-
-    updated_simulation_scenarios = {scenario_name: commands
-                                    for scenario_name, commands in
-                                    simulation_scenarios.iteritems()}  # type: Dict[str, List[str]]
-    start_experiments(updated_simulation_scenarios, results_file_name, samples)
 

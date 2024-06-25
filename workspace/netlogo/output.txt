@@ -1,0 +1,5 @@
+on contact
+Scenario name: addaptive-support
+simulation_id: addaptive-support_29
+strategy name: RandomStrategy
+Hello, world!
