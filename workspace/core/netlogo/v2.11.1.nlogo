@@ -146,6 +146,10 @@ globals [; GLOBALS
          CONTROLLER_PYTHON_SCRIPT
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
 
+         NUM_OF_ROBOTS
+         NUM_OF_PASSENGERS
+         NUM_OF_STAFF
+         FALL_CHANCE
 
          g_st_others_belief_dangerous
          g_st_others_fear
@@ -254,14 +258,18 @@ agents-own [
   stat_assembly_area_flag
 ]
 
+;-----------------------------------------
+;INITIALISATION PART 0
+;-----------------------------------------
 
-
+to clear
+  clear-all
+end
 
 ;-----------------------------------------
 ;INITIALISATION PART 1
 ;-----------------------------------------
 to setup
-  clear-all
   ;random-seed
 
   set list_exits []
@@ -414,6 +422,9 @@ to setup
     ] ;nw
   ]
 
+  set _number_staff_members NUM_OF_STAFF
+  set number_passengers NUM_OF_PASSENGERS
+  
   set-default-shape agents "person"
   create-agents number_passengers [ move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ] ]
   ask agents [
@@ -440,9 +451,6 @@ to setup
   reset-ticks
   set-time   ;nw
 
-  if ENABLE_FRAME_GENERATION [
-    let errasing_frames (shell:exec "rm" "/home/workspace/frames/*")
-  ]
 end
 
 ;-----------------------------------------
@@ -833,7 +841,7 @@ end
 to write-png-frame
    if ENABLE_FRAME_GENERATION [
      let suffix (word SIMULATION_ID "_" ticks ".png")
-     export-view (word "/home/workspace/frames/view_" suffix)
+     export-view (word "/home/workspace/results/frames/view_" suffix)
      ; Uncomment only when using the GUI
      ;export-interface (word "/home/results/frames/interface_" word ticks ".png")
      log-turtle (word "Frames written at /frames") nobody
@@ -1525,7 +1533,7 @@ end
 to place-sar-robots
   ; For placing SAR robots in the area.
 
-  create-sar-robots 1 [
+  create-sar-robots NUM_OF_ROBOTS [
     set target-patch nobody
     set victim-found nobody
     set candidate-helper nobody
@@ -1747,7 +1755,7 @@ to check-fall
  if _falls = TRUE [
    if (((st_action_movetoexit * congestion_speed_factor) > 3) and (count agents-here >= CROWD_CONGESTION_THRESHOLD)) ;nw
    [
-     if random-float 100 < 0.5 [ ;nw
+     if random-float 100 < FALL_CHANCE [ ;nw
        set st_fall 1
        set speed 0
        set color FALL_COLOR

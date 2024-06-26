@@ -1,17 +1,17 @@
 import matplotlib
+
 matplotlib.use('Agg')
+
+from pathlib import Path
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import statsmodels.api as sm
-import pandas as pd
-
-from pathlib import Path
+from core.utils.paths import DATA_FOLDER, IMAGE_FOLDER, WORKSPACE_FOLDER
 from scipy.stats import mannwhitneyu
-from typing import Dict, List
-
-from config import WORKSPACE_FOLDER, IMAGE_FOLDER, DATA_FOLDER
 
 PLOT_STYLE = 'seaborn-darkgrid'
 

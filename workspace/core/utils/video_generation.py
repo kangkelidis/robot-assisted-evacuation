@@ -1,9 +1,9 @@
 import glob
-import natsort
-from PIL import Image
 from typing import List
 
-from config import FRAMES_FOLDER, VIDEO_FOLDER
+import natsort
+from paths import FRAMES_FOLDER, VIDEO_FOLDER
+from PIL import Image  # type: ignore
 
 
 def generate_video(simulation_id, frame_duration=200):
@@ -16,7 +16,7 @@ def generate_video(simulation_id, frame_duration=200):
         print("No frames for GIF generation for simulation {}".format(simulation_id))
         return
 
-    print("Generating GIF from {} frames for simulation...".format(number_of_frames, simulation_id))
+    print("Generating GIF from {} frames for simulation {}".format(number_of_frames, simulation_id))
     frames = []
     for frame_file in frame_list:
         frame_as_image = Image.open(frame_file)  # type: Image

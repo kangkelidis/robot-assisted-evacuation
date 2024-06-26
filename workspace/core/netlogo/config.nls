@@ -47,15 +47,15 @@ to setup-environment
 
 
   if room_environment_type < 0 or room_environment_type > 8 [set room_environment_type 1]
-  if room_environment_type = 0 [set room_environment_filename "room_square_2doors_up_down.png"]
-  if room_environment_type = 1 [set room_environment_filename "room_square_4doors_main_down.png"]  
-  if room_environment_type = 2 [set room_environment_filename "room_square_2doors_left_right.png"]
-  if room_environment_type = 3 [set room_environment_filename "room_square_4doors_main_left.png"]  
-  if room_environment_type = 4 [set room_environment_filename "room_rectangle_2doors_left_right.png"]
-  if room_environment_type = 5 [set room_environment_filename "room_rectangle_2doors_up_down.png"]
-  if room_environment_type = 6 [set room_environment_filename "room_rectangle_4doors_main_down.png"]
-  if room_environment_type = 7 [set room_environment_filename "room_rectangle_4doors_main_left.png"]  
-  if room_environment_type = 8 [set room_environment_filename "room_square_2doors_left_right_barriers.png"]
+  if room_environment_type = 0 [set room_environment_filename "rooms/room_square_2doors_up_down.png"]
+  if room_environment_type = 1 [set room_environment_filename "rooms/room_square_4doors_main_down.png"]  
+  if room_environment_type = 2 [set room_environment_filename "rooms/room_square_2doors_left_right.png"]
+  if room_environment_type = 3 [set room_environment_filename "rooms/room_square_4doors_main_left.png"]  
+  if room_environment_type = 4 [set room_environment_filename "rooms/room_rectangle_2doors_left_right.png"]
+  if room_environment_type = 5 [set room_environment_filename "rooms/room_rectangle_2doors_up_down.png"]
+  if room_environment_type = 6 [set room_environment_filename "rooms/room_rectangle_4doors_main_down.png"]
+  if room_environment_type = 7 [set room_environment_filename "rooms/room_rectangle_4doors_main_left.png"]  
+  if room_environment_type = 8 [set room_environment_filename "rooms/room_square_2doors_left_right_barriers.png"]
   
   ;nw
   set lighting_list []
@@ -141,32 +141,21 @@ to setup-environment
   set FIRE_RADIUS           2
   set OBSERVATION_DISTANCE  5
   
-  set DEFAULT_FALL_LENGTH 240 ; Fall is 30 seconds on the original paper
+  ;set DEFAULT_FALL_LENGTH 240 ; Fall is 30 seconds on the original paper
   set SAR_ROBOT_OBSERVATION_DISTANCE OBSERVATION_DISTANCE * 3
   set STAFF_HELP_FACTOR 0.50
   set PASSENGER_HELP_FACTOR 0.98
   set ROBOT_REQUEST_BONUS 0.2
-  set NUM_OF_SAR_ROBOTS 3
   
   ; For evacuation time experiments, keep them all false.
-  set REQUEST_STAFF_SUPPORT FALSE
-  set REQUEST_BYSTANDER_SUPPORT FALSE
   set ENABLE_LOGGING FALSE
-  set ENABLE_FRAME_GENERATION FALSE
-  
-  set SIMULATION_ID 0
-  ; Change these according to your Anaconda installation.
-  ; Use the config below for evacuation time experiments.
-  ; set CONTROLLER_PYTHON_COMMAND (list"/home/cgc87/anaconda3/bin/conda" "run" "-n" "wdywfm-adaptive-robot" "python")
-  ; set CONTROLLER_PYTHON_SCRIPT "/home/cgc87/github/wdywfm-adaptive-robot/abm_runner.py"
 
   ; Use the config below for simulating within docker.
   set CONTROLLER_PYTHON_COMMAND (list"/opt/conda/bin/conda" "run" "-n" "robot-assisted-evacuation" "python")
-  set CONTROLLER_PYTHON_SCRIPT "/home/workspace/on_contact.py"
-  set ENABLE_DATA_COLLECTION TRUE
+  set CONTROLLER_PYTHON_SCRIPT "on_contact.py"
+  set ENABLE_DATA_COLLECTION FALSE
 
-  ;set CONTROLLER_PYTHON_SCRIPT_HELPING_CHANCE "/home/workspace/on_contact.py --helping_chance"
-
+  
   set PROTOCOL_DISTANCE     2
   ask turtles [set size 0.25]
 end
