@@ -47,15 +47,29 @@ def get_scenario_name(simulation_id):
     return simulation_id.split("_")[0]
 
 
+def get_scenario_index(simulation_id):
+    # type: (str) -> str
+    return simulation_id.split("_")[1]
+
+
 def setup_folders():
     # type: () -> None
     """ Creates the necessary folders for the workspace."""
     if not os.path.exists(RESULTS_FOLDER):
         os.makedirs(RESULTS_FOLDER)
 
+    if not os.path.exists(LOGS_FOLDER):
+        os.makedirs(LOGS_FOLDER)
+
+    experiment_folder_name = get_experiment_folder()
     for folder in [DATA_FOLDER, FRAMES_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER]:
         if not os.path.exists(folder):
             os.makedirs(folder)
+
+    for folder in [DATA_FOLDER, IMAGE_FOLDER]:
+        experiment_folder_path = os.path.join(folder, experiment_folder_name)
+        if not os.path.exists(experiment_folder_path):
+            os.makedirs(experiment_folder_path)
 
 
 def timeout_exception_handler(signum, frame):

@@ -1,6 +1,3 @@
-
-# RESULTS_CSV_FILE = WORKSPACE_FOLDER + "data/{}_fall_{}_samples_experiment_results.csv"  # type:str
-
 NETLOGO_VERSION = "5"  # type:str
 
 TURTLE_PRESENT_REPORTER = "count turtles"  # type:str
@@ -19,6 +16,7 @@ SET_FALL_CHANCE_COMMAND = "set FALL_CHANCE {}"  # type: str
 SET_NUM_OF_ROBOTS_COMMAND = "set NUM_OF_ROBOTS {}"  # type: str
 SET_NUM_OF_PASSENGERS_COMMAND = "set NUM_OF_PASSENGERS {}"  # type: str
 SET_NUM_OF_STAFF_COMMAND = "set NUM_OF_STAFF {}"  # type: str
+SET_ROOM_ENVIRONMENT_TYPE = "set ROOM_ENVIRONMENT_INDX {}"  # type: str
 
 ENABLE_STAFF_COMMAND = SET_STAFF_SUPPORT_COMMAND.format("TRUE")  # type:str
 ENABLE_PASSENGER_COMMAND = SET_PASSENGER_SUPPORT_COMMAND.format("TRUE")  # type:str

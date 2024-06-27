@@ -1,3 +1,5 @@
+from datetime import datetime
+
 # Base workspace folder, copy of this workspace in the container
 WORKSPACE_FOLDER = "/home/workspace/"
 # Contains Netlogo installation files
@@ -29,4 +31,16 @@ RESULTS_CSV_FILE = DATA_FOLDER + "experiments.csv"
 STRATEGIES_FOLDER = WORKSPACE_FOLDER + "strategies/"
 
 CONFIG_FILE = WORKSPACE_FOLDER + 'config.json'
-SCENARIOS_TEMP_FILE_RELATIVE_PATH = 'core/netlogo/' + 'scenarios_temp.json'
+# Temporary file to store and retrieve active scenarios during execution
+SCENARIOS_TEMP_FILE_NAME = 'scenarios_temp.json'
+ROBOTS_ACTIONS_FILE_NAME = 'robots_actions_temp.csv'
+
+EXPERIMENT_FOLDER_NAME = None
+
+
+def get_experiment_folder():
+    """ Returns the name of folder for the current experiment."""
+    global EXPERIMENT_FOLDER_NAME
+    if EXPERIMENT_FOLDER_NAME is None:
+        EXPERIMENT_FOLDER_NAME = datetime.now().strftime("%y%m%d_%H%M%S")
+    return EXPERIMENT_FOLDER_NAME

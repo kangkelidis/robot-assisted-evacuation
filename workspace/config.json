@@ -1,11 +1,19 @@
 {
+    "_comment": [
+        "The netlogo model to be used for the simulations.",
+        "This model must be in the core/netlogo folder."],
     "netlogoModeName": "v2.11.1.nlogo",
 
     "_comment": [
-        "Global parameters for the simulation. To ovveride these parameters,",
+        "The scenario that will be used for the analysis.",
+        "This scenario must be in the simulationScenarios array."],
+    "targetScenarioForAnalysis": "adaptive-support",
+
+    "_comment": [
+        "Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
-        "numOfSamples": 30,
+        "numOfSamples": 10,
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
@@ -14,6 +22,7 @@
         "allowStaffSupport": true,
         "allowPassengerSupport": true,
         "maxNetlogoTicks": 2000,
+        "roomType": 8,
         "enableVideo": false
     },
 
@@ -54,14 +63,12 @@
             "enabled": true
         },
         {
-            "name": "addaptive-support",
+            "name": "adaptive-support",
             "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
             "numOfRobots": 1,
             "adaptationStrategy": "RandomStrategy",
-            "enableVideo": false,
+            "enableVideo": true,
             "enabled": true
         }
     ]
-
-
 }

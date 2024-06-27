@@ -1,0 +1,1 @@
+find workspace/results/* -mindepth 1 -delete

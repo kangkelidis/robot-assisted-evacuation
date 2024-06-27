@@ -1,7 +1,9 @@
 import glob
+import os
 from typing import List
 
 import natsort
+from core.utils.paths import get_experiment_folder
 from paths import FRAMES_FOLDER, VIDEO_FOLDER
 from PIL import Image  # type: ignore
 
@@ -22,7 +24,12 @@ def generate_video(simulation_id, frame_duration=200):
         frame_as_image = Image.open(frame_file)  # type: Image
         frames.append(frame_as_image)
 
-    output_file = VIDEO_FOLDER + "video_{}.gif".format(simulation_id)
+    experiment_folder_name = get_experiment_folder()
+    experiment_folder_path = os.path.join(VIDEO_FOLDER, experiment_folder_name)
+    if not os.path.exists(experiment_folder_path):
+        os.makedirs(experiment_folder_path)
+
+    output_file = experiment_folder_path + "/video_{}.gif".format(simulation_id)
     first_frame = frames[0]  # type: Image
     first_frame.save(output_file, format="GIF", append_images=frames,
                      save_all=True, duration=frame_duration)

@@ -7,9 +7,10 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 sys.path.append("/home/workspace/")
 
-from core.utils.helper import get_scenario_name, setup_logger
-from core.utils.paths import (SCENARIOS_TEMP_FILE_RELATIVE_PATH,
-                              STRATEGIES_FOLDER)
+from core.utils.helper import (get_scenario_index, get_scenario_name,
+                               setup_logger)
+from core.utils.paths import (ROBOTS_ACTIONS_FILE_NAME,
+                              SCENARIOS_TEMP_FILE_NAME, STRATEGIES_FOLDER)
 from strategies.AdaptationStrategies import AdaptationStrategy, Survivor
 
 logger = setup_logger()
@@ -46,7 +47,7 @@ def get_adaptation_strategy(strategy_name):
         "Failed to get adaptation strategy {}".format(strategy_name))
 
 
-def load_scenarios_from_temp(filename='scenarios_temp.json'):
+def load_scenarios_from_temp(filename=SCENARIOS_TEMP_FILE_NAME):
     """Loads the scenarios from the specified JSON file."""
     try:
         with open(filename, 'r') as file:
@@ -67,6 +68,19 @@ def get_current_scenario(scenario_name, active_scenarios):
         if scenario['name'] == scenario_name:
             return scenario
     raise ScenarioNotFoundError("No matching scenario found for name {}".format(scenario_name))
+
+
+def store_action(action, simulation_id):
+    # type: (str, str) -> None
+    """ Stores the action taken by the robot in the robot_actions.csv file."""
+    file_exists = os.path.exists(ROBOTS_ACTIONS_FILE_NAME)
+    try:
+        with open(ROBOTS_ACTIONS_FILE_NAME, 'a') as file:
+            if not file_exists or os.stat(ROBOTS_ACTIONS_FILE_NAME).st_size == 0:
+                file.write("id,Action\n")
+            file.write("{},{}\n".format(simulation_id, action))
+    except IOError as e:
+        logger.error("Failed to write to file: %s", e)
 
 
 def on_survivor_contact(candidate_helper, victim, helper_victim_distance,
@@ -92,6 +106,7 @@ def on_survivor_contact(candidate_helper, victim, helper_victim_distance,
     action = strategy.get_robot_action(candidate_helper, victim, helper_victim_distance,
                                        first_responder_victim_distance)
     logger.info("Selected action: {}".format(action))
+    store_action(action, simulation_id)
     return action
 
 

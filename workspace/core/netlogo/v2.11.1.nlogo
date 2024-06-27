@@ -145,11 +145,12 @@ globals [; GLOBALS
          CONTROLLER_PYTHON_COMMAND
          CONTROLLER_PYTHON_SCRIPT
          L_STEEPNESS L_THRESHOLD AL_STEEPNESS AL_THRESHOLD ETA_MENTAL ETA_BODY CROWD_CONGESTION_THRESHOLD WALL_COLOR
-
+        ; 2.11.1
          NUM_OF_ROBOTS
          NUM_OF_PASSENGERS
          NUM_OF_STAFF
          FALL_CHANCE
+         ROOM_ENVIRONMENT_INDX
 
          g_st_others_belief_dangerous
          g_st_others_fear
@@ -350,6 +351,7 @@ to setup
   set g_st_action_walkrandom                          0
   set g_st_action_movetoexit                          0
 
+  set room_environment_type ROOM_ENVIRONMENT_INDX
 
   ; ENVIRONMENT INITIAL CONDITION
   setup-environment

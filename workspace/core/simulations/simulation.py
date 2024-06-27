@@ -1,20 +1,12 @@
-import math
-import signal
-import time
-import traceback
-from typing import Dict
+
+import os
+from typing import Dict, List
 
 import pandas as pd  # type: ignore
-import pyNetLogo
 from core.utils.helper import (convert_camelCase_to_snake_case,
-                               generate_simulation_id, setup_logger,
-                               timeout_exception_handler)
-from core.utils.paths import *
-from core.utils.video_generation import generate_video
-from netlogo_commands import *
-from pyNetLogo import NetLogoException
-
-# TODO: results object, think about the structure of the results and how to save and anylyse them
+                               generate_simulation_id, setup_logger)
+from core.utils.paths import (DATA_FOLDER, NETLOGO_FOLDER,
+                              ROBOTS_ACTIONS_FILE_NAME, get_experiment_folder)
 
 
 class Updateable(object):
@@ -28,7 +20,6 @@ class Updateable(object):
 
 
 class NetLogoParams(Updateable):
-    # type: () -> None
     """ Holds the NetLogo parameters for a simulation."""
     def __init__(self):
         self.num_of_samples = 30
@@ -40,14 +31,30 @@ class NetLogoParams(Updateable):
         self.allow_staff_support = False
         self.allow_passenger_support = False
         self.max_netlogo_ticks = 2000
+        self.room_type = 8
         self.enable_video = False
 
 
+class Result(object):
+    """ Holds the results of a simulation."""
+    # ? how should we handle the unsuccessful simulations?
+    def __init__(self, simulation_id=None, evacuation_ticks=None,
+                 evacuation_time=None, success=None):
+        self.simulation_id = simulation_id
+        self.evacuation_ticks = evacuation_ticks
+        self.evacuation_time = evacuation_time
+        self.robot_actions = []
+        self.success = success
+
+    def __str__(self):
+        return "Evacuation ticks: {}, Evacuation time: {:.2f}".format(
+            self.evacuation_ticks, self.evacuation_time)
+
+
 class Scenario(Updateable):
-    # type: () -> None
     """
-    Represents a simulation scenario. Contains the parameters for the simulations
-    and a list of the simulations objects.
+    Represents a simulation scenario. Contains the parameters and results for the scenario
+    and a list of its simulation objects.
     """
     def __init__(self):
         # type: () -> None
@@ -56,7 +63,10 @@ class Scenario(Updateable):
         self.netlogo_params = NetLogoParams()
         self.adaptation_strategy = None
         self.enabled = True
-        self.simulations = []
+        self.simulations = []  # type: List[Simulation]
+        self.results = []  # type: List[Result]
+        self.results_df = None  # type: pd.DataFrame
+        self.logger = setup_logger()
 
     def update(self, params):
         # type: (Dict) -> None
@@ -64,141 +74,93 @@ class Scenario(Updateable):
         super(Scenario, self).update(params)
         self.netlogo_params.update(params)
 
-    def build_simulations(self, netlogo_model_path):
+    def build_simulations(self):
         # type: (str) -> None
         """ Builds the simulation objects for this scenario and saves them in a list."""
         for simulation_index in range(self.netlogo_params.num_of_samples):
             simulation = Simulation(
-                self.name, simulation_index, netlogo_model_path, self.netlogo_params)
+                self.name, simulation_index, self.netlogo_params)
             self.simulations.append(simulation)
+
+    def gather_results(self):
+        # type: () -> None
+        """ Gathers the results of the simulations in this scenario."""
+        for simulation in self.simulations:
+            simulation.get_robots_actions()
+            self.results.append(simulation.result)
+
+    def save_results(self):
+        # type: () -> None
+        """ Creates a dataframe with the results and saves it as a csv. """
+        results_dicts = [result.__dict__ for result in self.results]
+        df = pd.DataFrame(results_dicts)
+        df = self.expand_robots_actions(df)
+        columns_order = ['simulation_id', 'success', 'evacuation_ticks', 'evacuation_time',
+                         'robot_ask_help', 'robot_call_staff', 'total_actions']
+        self.results_df = df[columns_order]
+
+        try:
+            experiment_folder_name = get_experiment_folder()
+            experiment_folder_path = os.path.join(DATA_FOLDER, experiment_folder_name)
+            if not os.path.exists(experiment_folder_path):
+                os.makedirs(experiment_folder_path)
+
+            scenarios_folder_path = os.path.join(experiment_folder_path, 'scenarios')
+            if not os.path.exists(scenarios_folder_path):
+                os.makedirs(scenarios_folder_path)
+        except Exception as e:
+            self.logger.error("Error creating folder: {}".format(e))
+
+        try:
+            results_file_name = self.name + "_results.csv"
+            results_file_path = os.path.join(scenarios_folder_path, results_file_name)
+            df.to_csv(results_file_path)
+        except Exception as e:
+            self.logger.error("Error saving results file: {}".format(e))
+
+        # save params
+        try:
+            params_file_name = self.name + "_params.txt"
+            params_file_path = os.path.join(scenarios_folder_path, params_file_name)
+            with open(params_file_path, 'w') as f:
+                f.write("description: {}\n".format(self.description))
+                f.write("adaptation_strategy: {}\n".format(self.adaptation_strategy))
+                for key, value in self.netlogo_params.__dict__.items():
+                    f.write("{}: {}\n".format(key, value))
+        except Exception as e:
+            self.logger.error("Error saving params file: {}".format(e))
+
+    def expand_robots_actions(self, df):
+        # type: (pd.DataFrame) -> None
+        """
+        Turns the column containing the list of robot actions into 3 columns,
+        containing the count for each action (ask-help and call-staff) and their total.
+        """
+        df['robot_ask_help'] = df['robot_actions'].apply(lambda x: x.count('ask-help'))
+        df['robot_call_staff'] = df['robot_actions'].apply(lambda x: x.count('call-staff'))
+        df['total_actions'] = df['robot_ask_help'] + df['robot_call_staff']
+        df.drop('robot_actions', axis=1, inplace=True)
+        return df
 
 
 class Simulation(object):
-    # type: (str, int, str, NetLogoParams) -> None
     """
-    A simulation object that runs a single simulation in NetLogo.
-    Contains the logic to setup and run the simulation. Also contains the results of the simulation.
+    A simulation object with the neccesary parameters to run a simulation in NetLogo.
+    Also contains the results object created by the simulation.
     """
-    def __init__(self, scenario_name, index, netlogo_model_path, netlogo_params):
+    def __init__(self, scenario_name, index, netlogo_params):
+        # type: (str, int, NetLogoParams) -> None
         self.scenario_name = scenario_name
         self.id = generate_simulation_id(scenario_name, index)
-        self.logger = setup_logger()
-        self.netlogo_model_path = netlogo_model_path
-        self.netlogo_link = None
         self.netlogo_params = netlogo_params  # type: NetLogoParams
-        self.results = None
+        self.result = Result()
 
-    def initialise_netlogo_link(self):
-        # type: (str) -> pyNetLogo.NetLogoLink
-        """ Initialises the NetLogo link and loads the model."""
-        netlogo_link = pyNetLogo.NetLogoLink(netlogo_home=NETLOGO_HOME,
-                                             netlogo_version=NETLOGO_VERSION, gui=False)
-        netlogo_link.load_model(self.netlogo_model_path)
-        self.netlogo_link = netlogo_link
-
-    def execute_comands(self):
+    def get_robots_actions(self):
         # type: () -> None
-        """ Executes commands to setup the parameters in NetLogo."""
-        commands = {
-            SET_SIMULATION_ID_COMMAND: self.id,
-            SET_NUM_OF_ROBOTS_COMMAND: self.netlogo_params.num_of_robots,
-            SET_NUM_OF_PASSENGERS_COMMAND: self.netlogo_params.num_of_passengers,
-            SET_NUM_OF_STAFF_COMMAND: self.netlogo_params.num_of_staff,
-            SET_FALL_LENGTH_COMMAND: self.netlogo_params.fall_length,
-            SET_FALL_CHANCE_COMMAND: self.netlogo_params.fall_chance,
-            SET_STAFF_SUPPORT_COMMAND: "TRUE" if self.netlogo_params.allow_staff_support
-            else "FALSE",
-            SET_PASSENGER_SUPPORT_COMMAND: "TRUE" if self.netlogo_params.allow_passenger_support
-            else "FALSE",
-            SET_FRAME_GENERATION_COMMAND: "TRUE" if self.netlogo_params.enable_video else "FALSE"
-        }
-        try:
-            for command, value in commands.items():
-                self.netlogo_link.command(command.format(value))
-                self.logger.debug("Executed %s", command.format(value))
-
-        except Exception as e:
-            self.logger.error("Commands failed for id: {}. Exception: {}".format(self.id, e))
-            traceback.print_exc()
-        self.logger.debug("Commands executed for id: {}".format(self.id))
-
-    def setup_simulation(self):
-        # type: () -> None
-        """
-        Sets up the simulation in NetLogo.
-        Clears the environment, executes the commands and sets up the simulation.
-        """
-        self.logger.debug(
-            'Setting up simulation for id: {}. netlogo_link: {}'.format(self.id, self.netlogo_link))
-        self.netlogo_link.command('clear')
-        self.logger.debug('Cleared environment for id: {}'.format(self.id))
-        self.execute_comands()
-        self.netlogo_link.command('setup')
-        self.logger.info("Setup completed for id: {}".format(self.id))
-
-    # TODO: retry if max_netlogo_ticks is reached, see what the metrics df looks like
-    def get_netlogo_report(self):
-        # type: () -> pd.DataFrame
-        """
-        Runs the simulation and returns the results.
-        If the simulation is unsucessful, it tries again.
-        """
-        signal.signal(signal.SIGALRM, timeout_exception_handler)
-        TIME_LIMIT_SECONDS = 120
-        MAX_RETRIES = 2
-
-        metrics_dataframe = None
-        for i in range(MAX_RETRIES):
-            try:
-                signal.alarm(TIME_LIMIT_SECONDS)
-                start_time = time.time()
-                self.logger.info("Starting reporter for %s, attempt no. %i", self.id, i + 1)
-                metrics_dataframe = self.netlogo_link.repeat_report(
-                    netlogo_reporter=[TURTLE_PRESENT_REPORTER, EVACUATED_REPORTER, DEAD_REPORTER],
-                    reps=self.netlogo_params.max_netlogo_ticks)  # type: pd.DataFrame
-                self.netlogo_link.kill_workspace()
-                endtime = time.time()
-                self.logger.info(
-                    "%s simulation completed on attempt n.%i. Execution time was %.2f seconds",
-                    self.id, i + 1, endtime - start_time)
-                signal.alarm(0)
-                if metrics_dataframe is not None:
-                    break
-            except Exception as e:
-                self.logger.error("Exception in %s attempt no.%i: %s", self.id, i + 1, e)
-                signal.alarm(0)
-        return metrics_dataframe
-
-    def run(self):
-        # type: () -> None
-        """ Runs the simulation."""
-        try:
-            self.logger.debug("Initialising NetLogo link for simulation %s. model path: %s",
-                              self.id, self.netlogo_model_path)
-            self.initialise_netlogo_link()
-            self.setup_simulation()
-            metrics_dataframe = self.get_netlogo_report()
-
-            if metrics_dataframe is None:
-                self.logger.error("Simulation %s failed. Did not return any results", self.id)
-
-            evacuation_finished = metrics_dataframe[
-                metrics_dataframe[TURTLE_PRESENT_REPORTER] == metrics_dataframe[DEAD_REPORTER]]
-            evacuation_time = evacuation_finished.index.min()  # type: float
-
-            # TODO: think how to handle this case
-            if math.isnan(evacuation_time):
-                metrics_dataframe.to_csv(DATA_FOLDER + "nan_df.csv")
-                self.logger.warning("DEBUG!!! info to {}nan_df.csv".format(DATA_FOLDER))
-                # simulation did not finish on time, use max time/ticks)
-                evacuation_time = self.netlogo_params.max_netlogo_ticks
-
-            if self.netlogo_params.enable_video:
-                generate_video(simulation_id=self.id)
-
-        except NetLogoException as e:
-            self.logger.error("id:{} NetLogo exception: {}".format(self.id, e))
-            traceback.print_exc()
-        except Exception as e:
-            self.logger.error("id:{} Exception: {}".format(self.id, e))
-            traceback.print_exc()
+        """ Collects the robots actions from the temp file """
+        robots_actions_file_path = NETLOGO_FOLDER + ROBOTS_ACTIONS_FILE_NAME
+        if not os.path.exists(robots_actions_file_path):
+            return
+        df = pd.read_csv(robots_actions_file_path)
+        actions_df = df[df['id'] == self.id]
+        self.result.robot_actions.extend(actions_df['Action'].tolist())
