@@ -1,3 +1,7 @@
+"""
+NetLogo commands and reporters used in the simulation
+"""
+
 NETLOGO_VERSION = "5"  # type:str
 
 TURTLE_PRESENT_REPORTER = "count turtles"  # type:str

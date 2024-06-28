@@ -1,3 +1,7 @@
+"""
+This module defines the file and folder structure for the project.
+"""
+
 from datetime import datetime
 
 # Base workspace folder, copy of this workspace in the container
@@ -39,7 +43,15 @@ EXPERIMENT_FOLDER_NAME = None
 
 
 def get_experiment_folder():
-    """ Returns the name of folder for the current experiment."""
+    """
+    Returns the name of folder for the current experiment.
+
+    The folder name is generated using the current date and time in the format "yymmdd_HHMMSS".
+    It is unique for each experiment and is used to store the results of the simulation.
+
+    Returns:
+        str: The name of the folder for the current experiment.
+    """
     global EXPERIMENT_FOLDER_NAME
     if EXPERIMENT_FOLDER_NAME is None:
         EXPERIMENT_FOLDER_NAME = datetime.now().strftime("%y%m%d_%H%M%S")

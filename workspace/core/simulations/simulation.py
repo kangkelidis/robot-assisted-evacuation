@@ -1,3 +1,14 @@
+"""
+This module defines the classes and functions necessary for executing the Netlogo model simulations.
+
+Classes:
+- Updateable: A base class that provides a method to update object attributes.
+- NetLogoParams: Stores the parameters required to configure and run a simulation.
+- Result: Holds the results of a single simulation, including metrics such as evacuation ticks.
+- Scenario: Represents a simulation scenario, encapsulating the parameters, simulations,
+            and results associated with it.
+- Simulation: Encapsulates the details necessary to run a single simulation within a scenario.
+"""
 
 import os
 from typing import Dict, List
@@ -12,7 +23,12 @@ from core.utils.paths import (DATA_FOLDER, NETLOGO_FOLDER,
 class Updateable(object):
     def update(self, params):
         # type: (Dict) -> None
-        """ Updates the object's parameters that are in the provided dictionary."""
+        """
+        Updates the object's parameters that are in the provided dictionary.
+
+        Args:
+            params: A dictionary containing the parameters to update.
+        """
         for key, value in params.items():
             attr_name = convert_camelCase_to_snake_case(key)
             if hasattr(self, attr_name):
@@ -20,7 +36,22 @@ class Updateable(object):
 
 
 class NetLogoParams(Updateable):
-    """ Holds the NetLogo parameters for a simulation."""
+    """
+    Holds the NetLogo parameters for a simulation.
+
+    Attributes:
+    - num_of_samples: The number of simulations to run.
+    - num_of_robots: The number of robots in the simulation.
+    - num_of_passengers: The number of passengers in the simulation.
+    - num_of_staff: The number of staff in the simulation.
+    - fall_length: The number of ticks of fall lasts in the simulation.
+    - fall_chance: The chance of a fall happening in the simulation.
+    - allow_staff_support: Whether staff can support passengers.
+    - allow_passenger_support: Whether passengers can support each other.
+    - max_netlogo_ticks: The maximum number of NetLogo ticks to run the simulation.
+    - room_type: The type of room in the simulation.
+    - enable_video: Whether to enable video recording of the simulation.
+    """
     def __init__(self):
         self.num_of_samples = 30
         self.num_of_robots = 1
@@ -36,7 +67,16 @@ class NetLogoParams(Updateable):
 
 
 class Result(object):
-    """ Holds the results of a simulation."""
+    """
+    Holds the results of a simulation.
+
+    Attributes:
+    - simulation_id: Combines the scenario name and the simulation number.
+    - evacuation_ticks: The number of ticks it took to evacuate the room.
+    - evacuation_time: The time it took to execute the simulation.
+    - robot_actions: A list of the actions performed by the robots.
+    - success: Whether the simulation was successful (finished on time and no errors).
+    """
     # ? how should we handle the unsuccessful simulations?
     def __init__(self, simulation_id=None, evacuation_ticks=None,
                  evacuation_time=None, success=None):
@@ -55,6 +95,17 @@ class Scenario(Updateable):
     """
     Represents a simulation scenario. Contains the parameters and results for the scenario
     and a list of its simulation objects.
+
+    Attributes:
+    - name: The name of the scenario.
+    - description: A description of the scenario.
+    - netlogo_params: The NetLogo parameters for the scenario.
+    - adaptation_strategy: The name of the adaptation strategy to use in the scenario.
+    - enabled: Whether to run the scenario's simulations.
+    - simulations: A list of Simulation objects for the scenario.
+    - results: A list of Result objects for the scenario.
+    - results_df: A DataFrame containing the results of the scenario.
+    - logger: A logger object for logging messages.
     """
     def __init__(self):
         # type: () -> None
@@ -70,13 +121,17 @@ class Scenario(Updateable):
 
     def update(self, params):
         # type: (Dict) -> None
-        """ Updates the scenario's parameters and its Netlogo parameters."""
         super(Scenario, self).update(params)
         self.netlogo_params.update(params)
 
     def build_simulations(self):
         # type: (str) -> None
-        """ Builds the simulation objects for this scenario and saves them in a list."""
+        """
+        Builds the simulation objects for this scenario and saves them in a list.
+
+        Args:
+            scenario_name: The name of the scenario.
+        """
         for simulation_index in range(self.netlogo_params.num_of_samples):
             simulation = Simulation(
                 self.name, simulation_index, self.netlogo_params)
@@ -84,14 +139,19 @@ class Scenario(Updateable):
 
     def gather_results(self):
         # type: () -> None
-        """ Gathers the results of the simulations in this scenario."""
+        """
+        Gathers the results of the simulations in this scenario.
+        Also collects the robots actions from the temp file.
+        """
         for simulation in self.simulations:
             simulation.get_robots_actions()
             self.results.append(simulation.result)
 
     def save_results(self):
         # type: () -> None
-        """ Creates a dataframe with the results and saves it as a csv. """
+        """
+        Creates a dataframe with the results and saves it as a csv.
+        """
         results_dicts = [result.__dict__ for result in self.results]
         df = pd.DataFrame(results_dicts)
         df = self.expand_robots_actions(df)
@@ -131,15 +191,22 @@ class Scenario(Updateable):
             self.logger.error("Error saving params file: {}".format(e))
 
     def expand_robots_actions(self, df):
-        # type: (pd.DataFrame) -> None
+        # type: (pd.DataFrame) -> pd.DataFrame
         """
         Turns the column containing the list of robot actions into 3 columns,
         containing the count for each action (ask-help and call-staff) and their total.
+
+        Args:
+            df: A DataFrame containing the results of the scenario.
+
+        Returns:
+            df: A DataFrame with the expanded columns.
         """
         df['robot_ask_help'] = df['robot_actions'].apply(lambda x: x.count('ask-help'))
         df['robot_call_staff'] = df['robot_actions'].apply(lambda x: x.count('call-staff'))
         df['total_actions'] = df['robot_ask_help'] + df['robot_call_staff']
         df.drop('robot_actions', axis=1, inplace=True)
+
         return df
 
 
@@ -157,7 +224,9 @@ class Simulation(object):
 
     def get_robots_actions(self):
         # type: () -> None
-        """ Collects the robots actions from the temp file """
+        """
+        Collects the robots actions from the temp file and appends them to the robot_actions list.
+        """
         robots_actions_file_path = NETLOGO_FOLDER + ROBOTS_ACTIONS_FILE_NAME
         if not os.path.exists(robots_actions_file_path):
             return

@@ -1,4 +1,6 @@
-""" This module creates the default Scenarios for the simulation. """
+"""
+This module creates the default Scenarios for the simulation.
+"""
 
 from typing import List
 
@@ -6,7 +8,7 @@ from core.simulations.load_config import save_scenarios
 from core.simulations.simulation import Scenario
 
 scenarioParams = {
-    'num_of_samples': 1,
+    'num_of_samples': 30,
     'num_of_robots': 1,
     'num_of_passengers': 800,
     'num_of_staff': 10,
@@ -56,7 +58,12 @@ simulationParams = [
 
 def get_default_experiment_scenarios():
     # type: () -> List[Scenario]
-    """ Returns the list of default scenarios."""
+    """
+    Returns the list of default scenarios.
+
+    Returns:
+        scenarios: A list of scenarios.
+    """
     scenarios = []
 
     for simulationParam in simulationParams:

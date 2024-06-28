@@ -1,3 +1,8 @@
+"""
+This module provides functionality for generating GIF animations from simulation frames.
+"""
+
+
 import glob
 import os
 from typing import List
@@ -10,6 +15,15 @@ from PIL import Image  # type: ignore
 
 def generate_video(simulation_id, frame_duration=200):
     # type: ( str, int) -> None
+    """ Generates a GIF animation from the frames of a simulation.
+
+    It searches for the frames in the "frames" folder and creates an animation
+    with the specified frame duration.
+
+    Args:
+        simulation_id (str): The ID of the simulation.
+        frame_duration (int, optional): The duration of each frame in milliseconds. Defaults to 200.
+    """
     search_string = "{}view_{}_*png".format(FRAMES_FOLDER, simulation_id)  # type: str
     frame_list = natsort.natsorted(glob.glob(search_string))  # type: List[str]
     number_of_frames = len(frame_list)  # type: int

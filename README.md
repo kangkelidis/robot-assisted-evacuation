@@ -11,9 +11,28 @@ List any prerequisities, setup options and configuation details.
 * Then, either run the pre-built image we’ve provided on Docker Hub, or build the image yourself from the source code.
 * This container was tested on 18.09.1 (for example)
 
+---
+To build the image from source open your terminal, ensure that you are at **robot-assisted-evacuation** directory and run:
+```
+./build-docker-container.sh
+```
+
+>Note: If you encounter a "permission denied" error, use the `chmod` command to add execute permissions to the file and try executing the command again.:
+```
+chmod +x ./build-docker-container.sh
+```
+
+
 ## Usage
 
 List all parameters.
+
+To start the application, ensure that you are at **robot-assisted-evacuation** directory and run:
+```
+./run-container.sh
+```
+>Note: If you encounter a "permission denied" error, use the `chmod` command to add execute permissions to the file.
+
 
 
 ### Configuration Options
@@ -33,7 +52,7 @@ The config.json contains parameters that can be adjusted by the user.
 - `roomType`: The type of room being simulated. [0-8]
 - `enableVideo`: Whether to generate a gif video of the simulation.
 
-
+---
 #### Room Types
 The PNGs for the rooms are located in `core/netlogo/rooms`
 
@@ -48,7 +67,7 @@ The PNGs for the rooms are located in `core/netlogo/rooms`
 | 6    | room_rectangle_4doors_main_down.png              |
 | 7    | room_rectangle_4doors_main_left.png              |
 | 8    | room_square_2doors_left_right_barriers.png       |
-
+---
 
 
 

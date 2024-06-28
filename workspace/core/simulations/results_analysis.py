@@ -33,12 +33,44 @@ logger = setup_logger()
 
 def cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2):
     # type: (float, float, float, float) -> float
+    """
+    Calculate Cohen's d effect size from the means and standard deviations of two samples.
+
+    Cohen's d is a measure of the standardized difference between two means. It is calculated as the
+    difference between the two means divided by the pooled standard deviation.
+
+    Args:
+        mean_1 (float): The mean of the first sample.
+        mean_2 (float): The mean of the second sample.
+        std_dev_1 (float): The standard deviation of the first sample.
+        std_dev_2 (float): The standard deviation of the second sample.
+
+    Returns:
+        float: The Cohen's d effect size.
+    """
     pooled_std_dev = np.sqrt((std_dev_1 ** 2 + std_dev_2 ** 2) / 2)
     return (mean_1 - mean_2) / pooled_std_dev
 
 
 def calculate_sample_size(mean_1, mean_2, std_dev_1, std_dev_2, alpha=0.05, power=0.8):
     # type: (float, float, float, float, float, float) -> float
+    """
+    Calculate the recommended sample size for a two-sample test.
+
+    This function uses the `statsmodels` library to calculate the recommended sample size based on
+    the provided means, standard deviations, alpha level, and desired power.
+
+    Args:
+        mean_1 (float): The mean of the first sample.
+        mean_2 (float): The mean of the second sample.
+        std_dev_1 (float): The standard deviation of the first sample.
+        std_dev_2 (float): The standard deviation of the second sample.
+        alpha (float, optional): The desired alpha level (type I error rate). Defaults to 0.05.
+        power (float, optional): The desired statistical power. Defaults to 0.8.
+
+    Returns:
+        float: The recommended sample size for each group.
+    """
     analysis = sm.stats.TTestIndPower()  # type: sm.stats.TTestIndPower
     effect_size = cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2)
     result = analysis.solve_power(effect_size=effect_size,
@@ -51,6 +83,20 @@ def calculate_sample_size(mean_1, mean_2, std_dev_1, std_dev_2, alpha=0.05, powe
 def test_hypothesis(first_scenario_column, second_scenario_column,
                     results_dataframe, alternative="two-sided"):
     # type: (str, str, pd.DataFrame, str) -> None
+    """
+    Perform a Mann-Whitney U test to compare the distributions of two samples.
+
+    This function calculates the means, standard deviations, and recommended sample sizes for the
+    two samples, then performs a Mann-Whitney U test to determine if the distributions are
+    significantly different. The results are printed to the console and also saved to a file.
+
+    Args:
+        first_scenario_column (str): The name of the column containing the first sample.
+        second_scenario_column (str): The name of the column containing the second sample.
+        results_dataframe (pd.DataFrame): The DataFrame containing the sample data.
+        alternative (str, optional): The alternative hypothesis, either "two-sided", "less",
+                                     or "greater". Defaults to "two-sided".
+    """
 
     first_scenario_data = results_dataframe[first_scenario_column].values  # type: List[int]
     first_scenario_mean = np.mean(first_scenario_data).item()  # type:float
@@ -105,7 +151,15 @@ def test_hypothesis(first_scenario_column, second_scenario_column,
 
 def get_metrics(experiment_results):
     # type: (pd.DataFrame) -> pd.DataFrame
-    """ Returns the metrics of the experiment results."""
+    """
+    Returns the metrics of the experiment results.
+
+    Args:
+        experiment_results (pd.DataFrame): The DataFrame containing the experiment results.
+
+    Returns:
+        metrics_df (pd.DataFrame): The DataFrame containing the description of the results.
+    """
     metrics_df = experiment_results.describe()
     print(metrics_df)
     return metrics_df
@@ -113,7 +167,12 @@ def get_metrics(experiment_results):
 
 def plot_results(experiment_results):
     # type: (pd.DataFrame) -> None
-    """ Plots the results of the experiment."""
+    """
+    Plots the results of the experiment.
+
+    Args:
+        experiment_results (pd.DataFrame): The DataFrame containing the experiment results.
+    """
     plt.style.use(PLOT_STYLE)
     plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/violin_plot"
     _ = sns.violinplot(data=experiment_results, order=None).set_title("title")
@@ -126,8 +185,15 @@ def process_data(experiment_results):
     # type: (pd.DataFrame) -> pd.DataFrame
     """
     Processes the data from the experiment results in order to plot them.
-    It combines the simulation evacuation ticks for each scenario sample in a row and
+
+    It combines the simulation evacuation ticks from each scenario sample in a row and
     has each scenario as a column.
+
+    Args:
+        experiment_results (pd.DataFrame): DataFrame with all simulations' results.
+
+    Returns:
+        processed_data (pd.DataFrame): DataFrame with ticks grouped by scenario.
     """
     # Split 'simulation_id' to extract the scenario name and simulation number
     experiment_results['scenario'] = experiment_results['simulation_id'].apply(get_scenario_name)
@@ -147,7 +213,12 @@ def process_data(experiment_results):
 
 def perform_analysis(experiment_results):
     # type: (pd.DataFrame) -> None
-    """ Performs the analysis of the experiment results."""
+    """
+    Performs the analysis of the experiment results.
+
+    Args:
+        experiment_results (pd.DataFrame): DataFrame with all simulations' results.
+    """
     logger.info("Performing analysis.")
     processed_data = process_data(experiment_results)
     plot_results(processed_data)

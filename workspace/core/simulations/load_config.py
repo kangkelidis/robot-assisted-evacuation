@@ -1,6 +1,6 @@
 """
 Responsible for loading the JSON configuration file, checking its validity,
-and creating the Scenario objects.
+and creating Scenario objects.
 """
 
 import json
@@ -20,7 +20,7 @@ CONFIG = None
 def load_config(config_file_path):
     # type: (str) -> Dict
     """
-    The JSON configuration file is loaded and checked for the following keys:
+    Loads the JSON configuration file and checks for the following keys:
 
     - netlogoModeName           (str)
     - targetScenarioForAnalysis (str)
@@ -28,6 +28,12 @@ def load_config(config_file_path):
     - simulationScenarios       (list[dict])
 
     Then the scenarios are loaded and returned as a dictionary.
+
+    Args:
+        config_file_path (str): The path to the JSON configuration file.
+
+    Returns:
+        config (dict): The configuration dictionary.
     """
     global CONFIG
     if CONFIG:
@@ -79,9 +85,14 @@ def load_target_scenario():
 def load_scenarios():
     # type: () -> List[Scenario]
     """
-    Creates and returns a list of Scenario objects. They are created using
-    the scenarioParams and scenario specific params from
-    the simulationScenarios that are 'enabled', in the config.json file.
+    Loads the config file, creates Scenario objects and saves them to a temporary file.
+
+    Creates and returns a list of Scenario objects using the scenarioParams and
+    scenario-specific parameters from the simulationScenarios
+    that are 'enabled' in the config.json file.
+
+    Returns:
+        scenarios (list): A list of Scenario objects.
     """
     config = load_config(CONFIG_FILE)
     scenarios = []
@@ -106,7 +117,11 @@ def load_scenarios():
 
 
 def save_scenarios(scenarios):
-    """ Saves the scenarios to a temporary file. To be read by on_contact.py."""
+    """Saves the scenarios to a temporary file, so that they can be accessed by on_contact.py.
+
+    Args:
+        scenarios (list): A list of Scenario objects.
+    """
     try:
         temp_file_path = NETLOGO_FOLDER + SCENARIOS_TEMP_FILE_NAME
         with open(temp_file_path, 'w') as temp_file:

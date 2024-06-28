@@ -1,14 +1,21 @@
+"""
+This module serves as the entry point for running experiments in a simulation environment.
+"""
+
 import traceback
 
-from core.example import get_default_experiment_scenarios
 from core.simulations.results_analysis import perform_analysis
 from core.simulations.simulation_manager import start_experiments
 from core.utils.helper import setup_folders, setup_logger
+from examples.default_scenarios import get_default_experiment_scenarios
 
 logger = setup_logger()
 
 
 def main():
+    """
+    Main function to initiate and analyse the simulations.
+    """
     try:
         logger.info("******* ==Starting Experiment== *******")
         setup_folders()
