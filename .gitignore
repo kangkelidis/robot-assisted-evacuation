@@ -3,5 +3,8 @@
 *.__pycache__
 .DS_Store
 
-workspace/results
+workspace/results/data/*
+workspace/results/frames/*
+workspace/results/img/*
+workspace/results/video/*
 workspace/logs/*

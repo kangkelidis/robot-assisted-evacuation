@@ -4,7 +4,7 @@ import signal
 import time
 import traceback
 from multiprocessing import Process, Queue
-from typing import Dict, List
+from typing import List
 
 import pandas as pd  # type: ignore
 import pyNetLogo
@@ -72,18 +72,17 @@ def setup_simulation(simulation_id, netlogo_link, netlogo_params):
     logger.info("Setup completed for id: {}".format(simulation_id))
 
 
-# TODO: retry if max_netlogo_ticks is reached?
 def get_netlogo_report(simulation_id, netlogo_link, netlogo_params):
-    # type: (str, pyNetLogo, NetLogoParams) -> pd.DataFrame
+    # type: (str, pyNetLogo, NetLogoParams) -> int | None
     """
-    Runs the simulation and returns the results.
-    If the simulation is unsucessful, it tries again.
+    Runs the simulation and returns the results. If the simulation is unsucessful, it tries again.
+    If it still fails, it returns None.
     """
+    # ! Only woeks the first time, alarm does not reset.
     signal.signal(signal.SIGALRM, timeout_exception_handler)
     TIME_LIMIT_SECONDS = 120
     MAX_RETRIES = 2
 
-    metrics_dataframe = None
     for i in range(MAX_RETRIES):
         try:
             signal.alarm(TIME_LIMIT_SECONDS)
@@ -91,18 +90,21 @@ def get_netlogo_report(simulation_id, netlogo_link, netlogo_params):
             metrics_dataframe = netlogo_link.repeat_report(
                 netlogo_reporter=[TURTLE_PRESENT_REPORTER, EVACUATED_REPORTER, DEAD_REPORTER],
                 reps=netlogo_params.max_netlogo_ticks)  # type: pd.DataFrame
-            netlogo_link.kill_workspace()
             signal.alarm(0)
 
             if metrics_dataframe is not None:
-                break
+                evacuation_ticks = get_evacuation_ticks(metrics_dataframe, simulation_id)
+                # Reapeat the simulation if it did not finish under max ticks.
+                if evacuation_ticks is not None:
+                    return evacuation_ticks
+
         except Exception as e:
             logger.error("Exception in %s attempt no.%i: %s", simulation_id, i + 1, e)
             signal.alarm(0)
-    return metrics_dataframe
+    logger.error("Simulation %s failed. Did not return any results", simulation_id)
+    return None
 
 
-# ? Can't it be initialised only once? Use a global variable?
 def initialise_netlogo_link(netlogo_model_path):
     # type: (str) -> pyNetLogo.NetLogoLink
     """ Initialises the NetLogo link and loads the model."""
@@ -113,6 +115,22 @@ def initialise_netlogo_link(netlogo_model_path):
     return netlogo_link
 
 
+def get_evacuation_ticks(metrics_dataframe, simulation_id):
+    # type: (pd.DataFrame, str) -> int | None
+    """
+    Returns the evacuation ticks for the simulation.
+    None if the evacuation did not finish under the tick limit.
+    """
+    evacuation_finished = metrics_dataframe[
+        metrics_dataframe[TURTLE_PRESENT_REPORTER] == metrics_dataframe[DEAD_REPORTER]]
+    evacuation_ticks = evacuation_finished.index.min()  # type: float
+    # Evacuation did not finish on time.
+    if math.isnan(evacuation_ticks):
+        logger.warning("Id: {} - Evacuation did not finish on time.".format(simulation_id))
+        return None
+    return int(evacuation_ticks)
+
+
 def run_simulation(simulation_id, netlogo_model_path, netlogo_params):
     # type: (str, str, NetLogoParams) -> None
     """ Runs the simulation."""
@@ -120,26 +138,16 @@ def run_simulation(simulation_id, netlogo_model_path, netlogo_params):
         start_time = time.time()
         netlogo_link = initialise_netlogo_link(netlogo_model_path)
         setup_simulation(simulation_id, netlogo_link, netlogo_params)
-        metrics_dataframe = get_netlogo_report(simulation_id, netlogo_link, netlogo_params)
-
-        if metrics_dataframe is None:
-            logger.error("Simulation %s failed. Did not return any results", simulation_id)
-
-        evacuation_finished = metrics_dataframe[
-            metrics_dataframe[TURTLE_PRESENT_REPORTER] == metrics_dataframe[DEAD_REPORTER]]
-        evacuation_ticks = int(evacuation_finished.index.min())  # type: int
-        # TODO: think how to handle this case?
-        if math.isnan(evacuation_ticks):
-            metrics_dataframe.to_csv(DATA_FOLDER + "nan_df.csv")
-            logger.warning("DEBUG!!! info to {}nan_df.csv".format(DATA_FOLDER))
-            # simulation did not finish on time, use max time/ticks)
-            evacuation_ticks = netlogo_params.max_netlogo_ticks
+        evacuation_ticks = get_netlogo_report(simulation_id, netlogo_link, netlogo_params)
+        netlogo_link.kill_workspace()
         endtime = time.time()
         evacuation_time = round(endtime - start_time, 2)
-        result = Result(simulation_id, evacuation_ticks, evacuation_time, True)
+
         if netlogo_params.enable_video:
             generate_video(simulation_id)
-        return result
+
+        return Result(simulation_id, evacuation_ticks, evacuation_time,
+                      evacuation_ticks is not None)
     except NetLogoException as e:
         logger.error("id:{} NetLogo exception: {}".format(id, e))
         traceback.print_exc()
@@ -255,11 +263,16 @@ def log_execution_time(start_time, end_time):
     logger.info("--------------------------------------------")
 
 
-def start_experiments():
-    # type: () -> pd.DataFrame
-    """ Starts the simulations for the provided scenarios and saves and returns the results. """
+def start_experiments(scenarios=None):
+    # type: (List[Scenario]) -> pd.DataFrame
+    """
+    Starts the simulations for the provided scenarios and saves and returns the results.
+    If no scenarios are provided, it loads them from the config file.
+    """
     start_time = time.time()  # type: float
-    scenarios = load_scenarios()  # type: List[Scenario]
+    # Load scenarios from the config file if not provided and create simulations
+    if scenarios is None:
+        scenarios = load_scenarios()  # type: List[Scenario]
     netlogo_model_path = load_netlogo_model_path()
     simulations_pool = build_simulation_pool(scenarios)  # type: List[Simulation]
     execute_parallel_simulations(simulations_pool, netlogo_model_path)

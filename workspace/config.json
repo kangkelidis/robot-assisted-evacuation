@@ -49,7 +49,7 @@
             "allowStaffSupport": true,
             "allowPassengerSupport": false,
             "adaptationStrategy": null,
-            "video": false,
+            "enableVideo": false,
             "enabled": true
         },
         {

@@ -33,4 +33,4 @@ class AdaptationStrategy(object):
     def get_robot_action(self, candidate_helper, victim, helper_victim_distance,
                          first_responder_victim_distance):
         # type: (Survivor, Survivor, float, float) -> str
-        pass
+        raise NotImplementedError("Subclasses must override get_robot_action")

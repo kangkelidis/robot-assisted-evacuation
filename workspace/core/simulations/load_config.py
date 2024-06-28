@@ -87,6 +87,7 @@ def load_scenarios():
     scenarios = []
 
     for scenario_dict in config['simulationScenarios']:
+        # Only build the scenario if it is enabled
         if scenario_dict.get('enabled', False):
             global_params = config['scenarioParams']
             scenario_obj = Scenario()
