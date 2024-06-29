@@ -7,7 +7,7 @@ import logging
 import os
 from multiprocessing import cpu_count
 
-from paths import *
+from core.utils.paths import *
 
 logger_imported = False
 try:

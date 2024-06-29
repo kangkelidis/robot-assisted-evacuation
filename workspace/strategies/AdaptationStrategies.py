@@ -51,10 +51,8 @@ class AdaptationStrategy(object):
         CALL_STAFF_ROBOT_ACTION (str): The robot action to call staff.
     """
 
-    def __init__(self):
-        # type: (str) -> None
-        self.ASK_FOR_HELP_ROBOT_ACTION = "ask-help"  # type:str
-        self.CALL_STAFF_ROBOT_ACTION = "call-staff"  # type:str
+    ASK_FOR_HELP_ROBOT_ACTION = "ask-help"
+    CALL_STAFF_ROBOT_ACTION = "call-staff"
 
     def get_robot_action(self, candidate_helper, victim, helper_victim_distance,
                          first_responder_victim_distance):

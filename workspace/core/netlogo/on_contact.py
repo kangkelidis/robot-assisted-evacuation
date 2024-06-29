@@ -33,8 +33,8 @@ class StrategyExecutionError(Exception):
     pass
 
 
-def get_adaptation_strategy(strategy_name):
-    # type: (str) -> Optional[AdaptationStrategy]
+def get_adaptation_strategy(strategy_name, strategies_folder=STRATEGIES_FOLDER):
+    # type: (str, str) -> Optional[AdaptationStrategy]
     """
     Returns an instance of the specified adaptation strategy.
 
@@ -43,12 +43,14 @@ def get_adaptation_strategy(strategy_name):
 
     Args:
         strategy_name (str): The name of the strategy.
+        strategies_folder (str): The folder containing the strategy files.
+                                 Default is STRATEGIES_FOLDER form paths.py.
 
     Returns:
         AdaptationStrategy: An instance of the specified strategy. None if not found.
     """
     try:
-        for file_name in os.listdir(STRATEGIES_FOLDER):
+        for file_name in os.listdir(strategies_folder):
             if file_name.endswith('.py') and file_name[:-3] == strategy_name:
                 module = importlib.import_module('strategies.' + strategy_name)
                 strategy_class = getattr(module, strategy_name)
@@ -77,14 +79,23 @@ def load_scenarios_from_temp(filename=SCENARIOS_TEMP_FILE_NAME):
     try:
         with open(filename, 'r') as file:
             scenarios = json.load(file)
-        return scenarios
-    except IOError:
-        logger.error("File not found or can't be opened: %s", filename)
-    except ValueError:
-        logger.error("Error decoding JSON from file: %s", filename)
+    except FileNotFoundError:
+        logger.error("File not found: {}".format(filename))
+        raise ScenarioNotFoundError("File not found: {}".format(filename))
+    except json.JSONDecodeError:
+        logger.error("Error decoding JSON from file: {}".format(filename))
+        raise ScenarioNotFoundError("Error decoding JSON from file: {}".format(filename))
     except Exception as e:
-        logger.error("An unexpected error occurred: %s", str(e))
-    raise ScenarioNotFoundError("Failed to load scenarios from temp")
+        logger.error("An unexpected error occurred: {}".format(e))
+        raise ScenarioNotFoundError(
+            "An unexpected error occurred while loading scenarios from {}".format(filename))
+
+    for scenario in scenarios:
+        if 'name' not in scenario or 'adaptation_strategy' not in scenario:
+            logger.error("Invalid scenario format in file: %s", filename)
+            raise ScenarioNotFoundError("Invalid scenario format in temp file")
+
+    return scenarios
 
 
 def get_current_scenario(scenario_name, active_scenarios):
@@ -196,7 +207,7 @@ def main():
 
         robot_action = on_survivor_contact(candidate_helper, victim, helper_victim_distance,
                                            first_responder_victim_distance, simulation_id)
-        # Needed in otder to return to netlogo
+        # Needed in order to return the action to netlogo
         print(robot_action)
 
     except Exception as e:

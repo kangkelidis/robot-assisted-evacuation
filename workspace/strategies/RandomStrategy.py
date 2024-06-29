@@ -1,6 +1,6 @@
 import random
 
-from AdaptationStrategies import AdaptationStrategy
+from strategies.AdaptationStrategies import AdaptationStrategy
 
 
 class RandomStrategy(AdaptationStrategy):

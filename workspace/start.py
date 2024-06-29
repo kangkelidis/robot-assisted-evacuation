@@ -21,11 +21,11 @@ def main():
         setup_folders()
 
         # It is possible to use the default scenarios, or create new ones.
-        default_scenarios = get_default_experiment_scenarios()
+        # default_scenarios ./= get_default_experiment_scenarios()
         # Any list of Scenario objects can be passed to start_experiments.
         # Alternatively, if no parameters are passed,
         # the scenarios from congig.json will be used.
-        experiments_results = start_experiments(default_scenarios)
+        experiments_results = start_experiments()
 
         perform_analysis(experiments_results)
         logger.info("******* ==Experiment Finished== *******\n")

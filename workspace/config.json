@@ -13,7 +13,7 @@
         "Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
-        "numOfSamples": 10,
+        "numOfSamples": 1,
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
