@@ -78,4 +78,5 @@ dependencies:
     - pynetlogo==0.4.2
     - typing==3.10.0.0
     - concurrent-log-handler
+    - tqdm
 prefix: /anaconda3/envs/robot-assisted-evacuation

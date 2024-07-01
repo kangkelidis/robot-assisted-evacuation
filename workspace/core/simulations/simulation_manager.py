@@ -26,12 +26,13 @@ from core.simulations.load_config import (load_netlogo_model_path,
                                           load_scenarios)
 from core.simulations.simulation import (NetLogoParams, Result, Scenario,
                                          Simulation)
-from core.utils.helper import (get_available_cpus, setup_logger,
-                               timeout_exception_handler)
+from core.utils.helper import (get_available_cpus, get_custom_bar_format,
+                               setup_logger, timeout_exception_handler)
 from core.utils.paths import *
 from core.utils.video_generation import generate_video
 from netlogo_commands import *
 from pyNetLogo import NetLogoException
+from tqdm import tqdm  # Import tqdm
 
 logger = setup_logger()
 
@@ -283,34 +284,40 @@ def execute_parallel_simulations(simulations, netlogo_model_path):
     logger.info("Total number of simulations to run: %i.", len(simulations))
 
     try:
-        while simulations:
-            processes = []
-            for _ in range(num_cpus):
-                if simulations:
-                    simulation = simulations.pop()
-                    # Simulation objects are not passed to the Process, becouse they will be copied
-                    process = Process(target=simulation_processor,
-                                      args=(results_queue,
-                                            simulation.id,
-                                            simulation.netlogo_params,
-                                            netlogo_model_path))
-                    processes.append(process)
-                    process.start()
-                    logger.debug(
-                        "Started process %i. Simulations left: %i", process.pid, len(simulations))
+        with tqdm(total=len(simulations), desc="Running Simulations",
+                  bar_format=get_custom_bar_format()) as pbar:
+            while simulations:
+                processes = []
+                for _ in range(num_cpus):
+                    if simulations:
+                        simulation = simulations.pop()
+                        # Simulation objects are not passed to the Process,
+                        # becouse they will be copied
+                        process = Process(target=simulation_processor,
+                                          args=(results_queue,
+                                                simulation.id,
+                                                simulation.netlogo_params,
+                                                netlogo_model_path))
+                        processes.append(process)
+                        process.start()
+                        logger.debug(
+                            "Started process %i. Simulations left: %i",
+                            process.pid, len(simulations))
 
-            for process in processes:
-                try:
-                    process.join()
-                except Exception as e:
-                    logger.error("Exception in joining process: %s", e)
-                    traceback.print_exc()
-                    process.terminate()
-
-                logger.debug("Process %s terminated.", process.pid)
-            logger.info(
-                "All processes in current batch finished. Simulations left: %i ", len(simulations))
-        logger.info("Finished all simulations.")
+                for process in processes:
+                    try:
+                        process.join()
+                    except Exception as e:
+                        logger.error("Exception in joining process: %s", e)
+                        traceback.print_exc()
+                        process.terminate()
+                    finally:
+                        pbar.update(1)
+                        logger.debug("Process %s terminated.", process.pid)
+                logger.info(
+                    "All processes in current batch finished. Simulations left: %i ",
+                    len(simulations))
+            logger.info("Finished all simulations.")
 
         update_simulations_with(results_queue, simulations_copy)
 

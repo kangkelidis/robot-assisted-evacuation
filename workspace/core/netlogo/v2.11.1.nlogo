@@ -1313,7 +1313,14 @@ to prepare-new-search
   ; For the SAR robot, to prepare to locate a new passanger to help.
 
   set victim-found nobody
-  set candidate-helper nobody
+ if candidate-helper != nobody [
+    ask candidate-helper [
+      set color previous-color
+    ]
+    set candidate-helper nobody
+  ]
+
+  set color SAR_ROBOT_COLOR
 
   set support-strategy get-support-strategy
 end
@@ -1666,6 +1673,7 @@ to place-staff-random
         set assistance-required nobody
         set help-factor STAFF_HELP_FACTOR
         set color STAFF_COLOR
+        set previous-color STAFF_COLOR
         set shape "person"
         move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
     ]
@@ -1676,6 +1684,7 @@ to place-staff-random
         set assistance-required nobody
         set help-factor STAFF_HELP_FACTOR
         set color STAFF_COLOR
+        set previous-color STAFF_COLOR
         set shape "person"
         move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ]
     ]
@@ -2492,7 +2501,7 @@ number_passengers
 number_passengers
 1
 6743
-800
+0
 1
 1
 NIL
@@ -2541,7 +2550,7 @@ SWITCH
 108
 _fire_alarm
 _fire_alarm
-0
+1
 1
 -1000
 
@@ -2552,7 +2561,7 @@ SWITCH
 140
 _public_announcement
 _public_announcement
-0
+1
 1
 -1000
 
@@ -2868,7 +2877,7 @@ _number_normal_staff_members
 _number_normal_staff_members
 0
 64
-8
+0
 1
 1
 NIL

@@ -18,6 +18,7 @@ def test_batch_run():
     scenario = Scenario()
     scenario.name = "test"
     scenario.adaptation_strategy = "RandomStrategy"
+    scenario.netlogo_params.enable_video = True
 
     parameters = {
         'num_of_robots': range(1, 5),
@@ -53,5 +54,5 @@ def main():
 
 
 if __name__ == "__main__":
-    test_batch_run()
-    # main()
+    # test_batch_run()
+    main()

@@ -60,7 +60,7 @@ def convert_camelCase_to_snake_case(camelCase_str):
     return ''.join(['_' + i.lower() if i.isupper() else i for i in camelCase_str]).lstrip('_')
 
 
-def generate_simulation_id(scenario, index):
+def generate_simulation_id(scenario_name, index):
     # type: (str, int) -> str
     """
     Generates a simulation ID based on the scenario and index.
@@ -69,14 +69,14 @@ def generate_simulation_id(scenario, index):
     simulation ID in the format "scenario_index".
 
     Args:
-        scenario (str): The name of the scenario.
+        scenario_name (str): The name of the scenario.
         index (int): The index of the simulation.
 
     Returns:
         str: The generated simulation ID.
     """
-    scenario = scenario.replace("_", "-")
-    return scenario + "_" + str(index)
+    scenario_name = scenario_name.replace("_", "-")
+    return scenario_name + "_" + str(index)
 
 
 def get_scenario_name(simulation_id):
@@ -161,3 +161,15 @@ def get_available_cpus():
         num_cpus = 4
         logger.error("Exception in getting number of CPUs. 4 used. : %s", e)
     return num_cpus
+
+
+def get_custom_bar_format():
+    green_color = '\033[92m'
+
+    # Reset color to default
+    reset_color = '\033[0m'
+
+    # Custom bar_format with green color
+    custom_bar_format = "{}{{l_bar}}{{bar}}{}| {{n_fmt}}/{{total_fmt}} [{{elapsed}}<{{remaining}}, \
+        {{rate_fmt}}{{postfix}}]".format(green_color, reset_color)
+    return custom_bar_format

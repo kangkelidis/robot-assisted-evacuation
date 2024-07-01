@@ -13,7 +13,7 @@
         "Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
-        "numOfSamples": 1,
+        "numOfSamples": 10,
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
@@ -68,7 +68,7 @@
             "numOfRobots": 1,
             "adaptationStrategy": "RandomStrategy",
             "enableVideo": true,
-            "enabled": true
+            "enabled": false
         }
     ]
 }

@@ -127,7 +127,7 @@ to setup-environment
   ;; CONSTANTS: ajust environment conditions
   set EXIT_COLOR            blue
   set EXIT_LIGHTING_COLOR   orange
-  set PASSENGERS_COLOR      black 
+  set PASSENGERS_COLOR      black
   set STAFF_COLOR           green
   set SAR_ROBOT_COLOR       lime
   set STAFF_SUPPORT_COLOR   sky
