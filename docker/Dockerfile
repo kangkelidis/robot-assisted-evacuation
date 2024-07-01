@@ -37,7 +37,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-py27_4.8.3-Linux
 ENV PATH=$CONDA_DIR/bin:$PATH
 
 # Disable output buffering for Python
-ENV PYTHONUNBUFFERED=True
+ENV PYTHONUNBUFFERED=1
 
 # Creating the conda environment
 RUN conda env create -f /home/env/environment.yml

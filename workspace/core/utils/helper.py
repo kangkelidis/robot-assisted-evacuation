@@ -75,6 +75,7 @@ def generate_simulation_id(scenario, index):
     Returns:
         str: The generated simulation ID.
     """
+    scenario = scenario.replace("_", "-")
     return scenario + "_" + str(index)
 
 

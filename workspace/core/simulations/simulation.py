@@ -124,6 +124,19 @@ class Scenario(Updateable):
         super(Scenario, self).update(params)
         self.netlogo_params.update(params)
 
+    def copy(self):
+        # type: () -> Scenario
+        new_scenario = Scenario()
+        new_scenario.name = self.name
+        new_scenario.description = self.description
+        new_scenario.adaptation_strategy = self.adaptation_strategy
+        new_scenario.enabled = self.enabled
+        new_scenario.simulations = self.simulations[:]
+        new_scenario.results = self.results[:]
+        new_scenario.results_df = self.results_df
+        new_scenario.netlogo_params.update(self.netlogo_params.__dict__)
+        return new_scenario
+
     def build_simulations(self):
         # type: (str) -> None
         """
@@ -133,9 +146,13 @@ class Scenario(Updateable):
             scenario_name: The name of the scenario.
         """
         for simulation_index in range(self.netlogo_params.num_of_samples):
+            self.logger.info("Building simulation n.{} for scenario: {}".format(
+                simulation_index, self.name))
             simulation = Simulation(
                 self.name, simulation_index, self.netlogo_params)
             self.simulations.append(simulation)
+        self.logger.info("Finished building simulations for scenario: {}. size of list {}".format(
+            self.name, self.simulations.__len__()))
 
     def gather_results(self):
         # type: () -> None

@@ -333,6 +333,8 @@ def build_simulation_pool(scenarios):
     """
     simulatios_pool = []
     for scenario in scenarios:
+        logger.info("Adding simulations for scenario: %s. List size %i",
+                    scenario.name, len(scenario.simulations))
         simulatios_pool.extend(scenario.simulations)
     return simulatios_pool
 
