@@ -66,7 +66,7 @@ def load_config(config_file_path):
     config['netlogoModelPath'] = netlogo_model_path
 
     CONFIG = config
-    logger.info('Config checked and loaded. Loading Scenarios...')
+    logger.debug('Config checked and loaded. Loading Scenarios...')
     return config
 
 
@@ -106,7 +106,7 @@ def load_scenarios():
             params_to_update = global_params.copy()  # Make a copy of the global_params
             params_to_update.update(scenario_dict)  # Update the copy with scenario_dict
             scenario_obj.update(params_to_update)
-            logger.info('Building simulations for scenario: {}'.format(scenario_obj.name))
+            logger.debug('Building simulations for scenario: {}'.format(scenario_obj.name))
             scenario_obj.build_simulations()
             scenarios.append(scenario_obj)
 

@@ -104,7 +104,7 @@ def setup_simulation(simulation_id, netlogo_link, netlogo_params):
     execute_comands(simulation_id, netlogo_params, netlogo_link)
 
     netlogo_link.command('setup')
-    logger.info("Setup completed for id: {}".format(simulation_id))
+    logger.debug("Setup completed for id: {}".format(simulation_id))
 
 
 def get_netlogo_report(simulation_id, netlogo_link, netlogo_params):
@@ -131,7 +131,7 @@ def get_netlogo_report(simulation_id, netlogo_link, netlogo_params):
         try:
             signal.alarm(TIME_LIMIT_SECONDS)
 
-            logger.info("Starting reporter for %s, attempt no. %i", simulation_id, i + 1)
+            logger.debug("Starting reporter for %s, attempt no. %i", simulation_id, i + 1)
             metrics_dataframe = netlogo_link.repeat_report(
                 netlogo_reporter=[TURTLE_PRESENT_REPORTER, EVACUATED_REPORTER, DEAD_REPORTER],
                 reps=netlogo_params.max_netlogo_ticks)  # type: pd.DataFrame
@@ -164,7 +164,8 @@ def initialise_netlogo_link(netlogo_model_path):
     """
     logger.debug("Initialising NetLogo link from model path: %s", netlogo_model_path)
     netlogo_link = pyNetLogo.NetLogoLink(netlogo_home=NETLOGO_HOME,
-                                         netlogo_version=NETLOGO_VERSION, gui=False)
+                                         netlogo_version=NETLOGO_VERSION,
+                                         gui=False)
     netlogo_link.load_model(netlogo_model_path)
     return netlogo_link
 
@@ -259,7 +260,7 @@ def simulation_processor(results_queue, simulation_id, netlogo_params, netlogo_m
         traceback.print_exc()
 
     results_queue.put(result)
-    logger.info("Simulation id: %s finished. - Result: %s. ", simulation_id, result)
+    logger.debug("Simulation id: %s finished. - Result: %s. ", simulation_id, result)
 
 
 def execute_parallel_simulations(simulations, netlogo_model_path):
@@ -307,12 +308,12 @@ def execute_parallel_simulations(simulations, netlogo_model_path):
                 for process in processes:
                     try:
                         process.join()
+                        pbar.update(1)
                     except Exception as e:
                         logger.error("Exception in joining process: %s", e)
                         traceback.print_exc()
                         process.terminate()
                     finally:
-                        pbar.update(1)
                         logger.debug("Process %s terminated.", process.pid)
                 logger.info(
                     "All processes in current batch finished. Simulations left: %i ",
@@ -340,8 +341,8 @@ def build_simulation_pool(scenarios):
     """
     simulatios_pool = []
     for scenario in scenarios:
-        logger.info("Adding simulations for scenario: %s. List size %i",
-                    scenario.name, len(scenario.simulations))
+        logger.debug("Adding simulations for scenario: %s. List size %i",
+                     scenario.name, len(scenario.simulations))
         simulatios_pool.extend(scenario.simulations)
     return simulatios_pool
 

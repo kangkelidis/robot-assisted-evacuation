@@ -154,7 +154,7 @@ def on_survivor_contact(candidate_helper, victim, helper_victim_distance,
     Returns:
         str: The robot action to take.
     """
-    logger.info('on_contact.py called by {}'.format(simulation_id))
+    logger.debug('on_contact.py called by {}'.format(simulation_id))
     # Find the simulation's scenario
     scenario_name = get_scenario_name(simulation_id)
     active_scenarios = load_scenarios_from_temp()
@@ -168,7 +168,7 @@ def on_survivor_contact(candidate_helper, victim, helper_victim_distance,
 
     action = strategy.get_robot_action(candidate_helper, victim, helper_victim_distance,
                                        first_responder_victim_distance)
-    logger.info("Selected action: {}".format(action))
+    logger.debug("Selected action: {}".format(action))
     store_action(action, simulation_id)
 
     return action

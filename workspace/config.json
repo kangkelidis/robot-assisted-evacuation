@@ -13,7 +13,7 @@
         "Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
-        "numOfSamples": 10,
+        "numOfSamples": 3,
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
@@ -67,8 +67,8 @@
             "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
             "numOfRobots": 1,
             "adaptationStrategy": "RandomStrategy",
-            "enableVideo": true,
-            "enabled": false
+            "enableVideo": false,
+            "enabled": true
         }
     ]
 }

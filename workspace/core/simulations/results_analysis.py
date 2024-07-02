@@ -106,11 +106,13 @@ def test_hypothesis(first_scenario_column, second_scenario_column,
     second_scenario_mean = np.mean(second_scenario_data).item()  # type:float
     second_scenario_stddev = np.std(second_scenario_data).item()  # type:float
 
-    print("{}->mean = {} std = {} len={}".format(first_scenario_column, first_scenario_mean,
-                                                 first_scenario_stddev, len(first_scenario_data)))
-    print("{}->mean = {} std = {} len={}".format(second_scenario_column, second_scenario_mean,
-                                                 second_scenario_stddev, len(second_scenario_data)))
-    print("Recommended Sample size: {}".format(
+    logger.info("{}->mean = {} std = {} len={}".format(
+        first_scenario_column, first_scenario_mean,
+        first_scenario_stddev, len(first_scenario_data)))
+    logger.info("{}->mean = {} std = {} len={}".format(
+        second_scenario_column, second_scenario_mean,
+        second_scenario_stddev, len(second_scenario_data)))
+    logger.info("Recommended Sample size: {}".format(
         calculate_sample_size(first_scenario_mean, second_scenario_mean, first_scenario_stddev,
                               second_scenario_stddev)))
 
@@ -129,19 +131,19 @@ def test_hypothesis(first_scenario_column, second_scenario_column,
     threshold = 0.05  # type:float
     u, p_value = mannwhitneyu(x=first_scenario_data, y=second_scenario_data,
                               alternative=alternative)
-    print("U={} , p={}".format(u, p_value))
+    logger.info("U={} , p={}".format(u, p_value))
 
     hypothesis_file_path = DATA_FOLDER + EXPERIMENT_FOLDER_NAME + "/hypothesis_tests.txt"
     if p_value > threshold:
-        print("FAILS TO REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
+        logger.info("FAILS TO REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
         # save the results
         with open(hypothesis_file_path, "a") as f:
             f.write("FAILS TO REJECT NULL HYPOTHESIS: {}\n".format(null_hypothesis))
             f.write(alternative_hypothesis)
             f.write("\n")
     else:
-        print("REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
-        print(alternative_hypothesis)
+        logger.info("REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
+        logger.info(alternative_hypothesis)
         # save the results
         with open(hypothesis_file_path, "a") as f:
             f.write("REJECT NULL HYPOTHESIS: {}\n".format(null_hypothesis))
@@ -161,7 +163,7 @@ def get_metrics(experiment_results):
         metrics_df (pd.DataFrame): The DataFrame containing the description of the results.
     """
     metrics_df = experiment_results.describe()
-    print(metrics_df)
+    logger.info("\n%s\n", metrics_df)
     return metrics_df
 
 

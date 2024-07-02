@@ -30,12 +30,24 @@ def setup_logger():
     """
     logger = logging.getLogger()
     if not logger.handlers and logger_imported:
+        # File handler for debug and above
         log_file = LOGS_FOLDER + 'simulation.log'
-        handler = ConcurrentRotatingFileHandler(log_file, "a", 512 * 1024, 5)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
+        file_handler = ConcurrentRotatingFileHandler(log_file, "a", 512 * 1024, 5)
+        file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(file_formatter)
+        file_handler.setLevel(logging.DEBUG)
+        logger.addHandler(file_handler)
+
+        # Console handler for info and above
+        console_handler = logging.StreamHandler()
+        console_formatter = logging.Formatter('%(message)s')
+        console_handler.setFormatter(console_formatter)
+        console_handler.setLevel(logging.INFO)
+        logger.addHandler(console_handler)
+
+        # Set the logger's level to DEBUG to capture everything
+        logger.setLevel(logging.DEBUG)
+
     return logger
 
 
@@ -164,6 +176,13 @@ def get_available_cpus():
 
 
 def get_custom_bar_format():
+    # type: () -> str
+    """
+    Creates a custom progress bar.
+
+    Returns:
+        str: The custom progress bar format.
+    """
     green_color = '\033[92m'
 
     # Reset color to default

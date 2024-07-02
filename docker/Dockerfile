@@ -16,11 +16,6 @@ RUN wget $NETLOGO_URL \
     && rm $NETLOGO_NAME-64.tgz \
     && apt-get update && apt-get install -y libxrender1 libxtst6
 
-# Copy only environment.yml
-COPY ./env/environment.yml /home/env/environment.yml
-
-# Installing Anaconda
-
 # Install base utilities
 RUN apt-get update \
     && apt-get install -y build-essential \
@@ -36,8 +31,8 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-py27_4.8.3-Linux
 # Put conda in path so we can use conda activate
 ENV PATH=$CONDA_DIR/bin:$PATH
 
-# Disable output buffering for Python
-ENV PYTHONUNBUFFERED=1
+# Copy only environment.yml
+COPY ./env/environment.yml /home/env/environment.yml
 
 # Creating the conda environment
 RUN conda env create -f /home/env/environment.yml
@@ -49,9 +44,9 @@ ENV DISPLAY=
 
 # Executing evacuation simulations
 WORKDIR "/home/workspace"
-# ENTRYPOINT ["conda", "run", "-n", "robot-assisted-evacuation", "python", "-u", "start.py"]
 
-# Custom entrypoint script
+# entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
 ENTRYPOINT ["/entrypoint.sh"]

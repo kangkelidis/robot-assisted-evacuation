@@ -146,12 +146,12 @@ class Scenario(Updateable):
             scenario_name: The name of the scenario.
         """
         for simulation_index in range(self.netlogo_params.num_of_samples):
-            self.logger.info("Building simulation n.{} for scenario: {}".format(
+            self.logger.debug("Building simulation n.{} for scenario: {}".format(
                 simulation_index, self.name))
             simulation = Simulation(
                 self.name, simulation_index, self.netlogo_params)
             self.simulations.append(simulation)
-        self.logger.info("Finished building simulations for scenario: {}. size of list {}".format(
+        self.logger.debug("Finished building simulations for scenario: {}. size of list {}".format(
             self.name, self.simulations.__len__()))
 
     def gather_results(self):
