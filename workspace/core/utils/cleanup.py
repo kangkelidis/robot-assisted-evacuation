@@ -2,8 +2,9 @@
 This module provides functionality for cleaning up the workspace
 from folders created by the NetLogo simulations.
 """
-
+# TODO: delete results dated folder if empty
 import os
+from pathlib import Path
 
 from paths import ROBOTS_ACTIONS_FILE_NAME, SCENARIOS_TEMP_FILE_NAME
 
@@ -42,14 +43,16 @@ def cleanup_workspace(directory):
             print("Deleting folder: ", file_name)
             os.system("rm -r " + path)
 
-    temp_file_path = 'workspace/core/netlogo/' + SCENARIOS_TEMP_FILE_NAME
-    if os.path.exists(temp_file_path):
-        os.remove(temp_file_path)
+    directory_path = Path(directory)
+    temp_file_path = directory_path / 'core/netlogo/' / SCENARIOS_TEMP_FILE_NAME
+    if os.path.exists(str(temp_file_path)):
+        os.remove(str(temp_file_path))
 
-    temp_file_path = 'workspace/core/netlogo/' + ROBOTS_ACTIONS_FILE_NAME
-    if os.path.exists(temp_file_path):
-        os.remove(temp_file_path)
+    temp_file_path = directory_path / 'core/netlogo/' / ROBOTS_ACTIONS_FILE_NAME
+    if os.path.exists(str(temp_file_path)):
+        os.remove(str(temp_file_path))
 
 
 if __name__ == '__main__':
+    # When called directly, from parent directory
     cleanup_workspace('workspace/')

@@ -293,7 +293,7 @@ def execute_parallel_simulations(simulations, netlogo_model_path):
                     if simulations:
                         simulation = simulations.pop()
                         # Simulation objects are not passed to the Process,
-                        # becouse they will be copied
+                        # because they will be coppied
                         process = Process(target=simulation_processor,
                                           args=(results_queue,
                                                 simulation.id,

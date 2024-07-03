@@ -7,6 +7,7 @@ import traceback
 from core.simulations.results_analysis import perform_analysis
 from core.simulations.simulation import Scenario
 from core.simulations.simulation_manager import start_experiments
+from core.utils.cleanup import cleanup_workspace
 from core.utils.helper import setup_folders, setup_logger
 from examples.default_scenarios import get_default_experiment_scenarios
 from experimental.batchrun import batch_run
@@ -51,6 +52,10 @@ def main():
     except Exception as e:
         logger.critical("Error in main: %s", e)
         traceback.print_exc()
+    except KeyboardInterrupt:
+        logger.info("KeyboardInterrupt: Cleaning up workspace.")
+    finally:
+        cleanup_workspace('/home/workspace/')
 
 
 if __name__ == "__main__":

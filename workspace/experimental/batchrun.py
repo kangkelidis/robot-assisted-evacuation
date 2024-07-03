@@ -75,7 +75,7 @@ def batch_run(scenario, parameters, num_samples):
     batch_run(scenario, {num_of_robots: range(1, 11)}, 5) will run the scenario 50 times.
     - 5 times with num_of_robots equal to 1, 5 times equal to 2 ...
 
-    batch_run(scenario, {num_of_robots: range(1, 10], num_of_staff: [2, 10]}, 5)
+    batch_run(scenario, {num_of_robots: range(1, 11), num_of_staff: [2, 10]}, 5)
     will run the scenario 100 times.
     - 5 times with num_of_robots equal to 1, num_of_staff equal = 2,
     - 5 times with num_of_robots equal to 1, num_of_staff equal = 10,
