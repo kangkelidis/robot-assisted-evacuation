@@ -82,10 +82,11 @@ def batch_run(scenario, parameters, num_samples):
     - 5 times with num_of_robots equal to 2, num_of_staff equal = 2...
 
     Args:
-        scenario: The scenario to run.
-        parameters: A dictionary of parameters to iterate and their respective range of values.
-                    Single, or multiple values for each parameter name.
-        num_samples: The number of samples to run each combination of parameters.
+        scenario (Scenario): The scenario to run.
+        parameters (dict): A dictionary of parameters to iterate and
+                           their respective range of values.
+                           Single, or multiple values for each parameter name.
+        num_samples (int): The number of samples to run each combination of parameters.
 
     Returns:
         Scenrios: A list of scenarios with different combinations of parameters.

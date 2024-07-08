@@ -9,6 +9,7 @@ from core.simulations.simulation import Scenario
 from core.simulations.simulation_manager import start_experiments
 from core.utils.cleanup import cleanup_workspace
 from core.utils.helper import setup_folders, setup_logger
+from core.utils.paths import WORKSPACE_FOLDER
 from examples.default_scenarios import get_default_experiment_scenarios
 from experimental.batchrun import batch_run
 
@@ -46,7 +47,6 @@ def main():
         # Alternatively, if no parameters are passed,
         # the scenarios from congig.json will be used.
         experiments_results = start_experiments()
-
         perform_analysis(experiments_results)
         logger.info("******* ==Experiment Finished== *******\n")
     except Exception as e:
@@ -55,7 +55,7 @@ def main():
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt: Cleaning up workspace.")
     finally:
-        cleanup_workspace('/home/workspace/')
+        cleanup_workspace(WORKSPACE_FOLDER)
 
 
 if __name__ == "__main__":

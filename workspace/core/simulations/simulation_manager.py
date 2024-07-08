@@ -32,7 +32,7 @@ from core.utils.paths import *
 from core.utils.video_generation import generate_video
 from netlogo_commands import *
 from pyNetLogo import NetLogoException
-from tqdm import tqdm  # Import tqdm
+from tqdm import tqdm  # type: ignore
 
 logger = setup_logger()
 
