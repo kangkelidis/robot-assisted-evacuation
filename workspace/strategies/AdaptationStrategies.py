@@ -3,26 +3,41 @@ This module contains the base class for adaptation strategies.
 """
 
 
-class Gender:
+from enum import Enum, auto
+
+
+class Gender(Enum):
     """
     Enum for Survivor gender.
     """
-    FEMALE, MALE = range(2)
+    FEMALE = auto()
+    MALE = auto()
 
 
-class CulturalCluster:
+class CulturalCluster(Enum):
     """
     Enum for cultural cluster.
     """
-    ARAB, NEAR_EAST, LATIN_AMERICA, EAST_EUROPE, LATIN_EUROPE, NORDIC, GERMANIC, AFRICAN, ANGLO, \
-        CONFUCIAN, FAR_EAST = (range(11))
+    ARAB = auto()
+    NEAR_EAST = auto()
+    LATIN_AMERICA = auto()
+    EAST_EUROPE = auto()
+    LATIN_EUROPE = auto()
+    NORDIC = auto()
+    GERMANIC = auto()
+    AFRICAN = auto()
+    ANGLO = auto()
+    CONFUCIAN = auto()
+    FAR_EAST = auto()
 
 
-class Age:
+class Age(Enum):
     """
     Enum for age.
     """
-    CHILD, ADULT, ELDERLY = range(3)
+    CHILD = auto()
+    ADULT = auto()
+    ELDERLY = auto()
 
 
 class Survivor:
@@ -30,14 +45,14 @@ class Survivor:
     Class representing a survivor.
 
     Attributes:
-        gender (int): The gender of the survivor.
-        cultural_cluster (int): The cultural cluster of the survivor.
-        age (int): The age of the survivor.
+        gender: The gender of the survivor.
+        cultural_cluster: The cultural cluster of the survivor.
+        age: The age of the survivor.
     """
-    def __init__(self, gender, cultural_cluster, age):
-        self.gender = int(gender)  # type: int
-        self.cultural_cluster = int(cultural_cluster)  # type: int
-        self.age = int(age)  # type: int
+    def __init__(self, gender: int, cultural_cluster: int, age: int) -> None:
+        self.gender = int(gender)
+        self.cultural_cluster = int(cultural_cluster)
+        self.age = int(age)
 
 
 class AdaptationStrategy(object):
@@ -47,16 +62,16 @@ class AdaptationStrategy(object):
     The get_robot_action method should be overridden and implemented by the subclasses.
 
     Attributes:
-        ASK_FOR_HELP_ROBOT_ACTION (str): The robot action to ask for help.
-        CALL_STAFF_ROBOT_ACTION (str): The robot action to call staff.
+        ASK_FOR_HELP_ROBOT_ACTION: The robot action to ask for help.
+        CALL_STAFF_ROBOT_ACTION: The robot action to call staff.
     """
 
     ASK_FOR_HELP_ROBOT_ACTION = "ask-help"
     CALL_STAFF_ROBOT_ACTION = "call-staff"
 
-    def get_robot_action(self, candidate_helper, victim, helper_victim_distance,
-                         first_responder_victim_distance):
-        # type: (Survivor, Survivor, float, float) -> str
+    def get_robot_action(self, candidate_helper: Survivor, victim: Survivor,
+                         helper_victim_distance: float,
+                         first_responder_victim_distance: float) -> str:
         """
         Gets the robot action based on the candidate helper, victim, and distances.
 
@@ -65,13 +80,13 @@ class AdaptationStrategy(object):
         which in turn will call this function to determine the robot action.
 
         Args:
-            candidate_helper (Survivor): The candidate helper.
-            victim (Survivor): The victim.
-            helper_victim_distance (float): Distance between the candidate helper and the victim.
-            first_responder_victim_distance (float): Distance between the first responder and
+            candidate_helper: The candidate helper.
+            victim: The victim.
+            helper_victim_distance: Distance between the candidate helper and the victim.
+            first_responder_victim_distance: Distance between the first responder and
                                                      the victim.
 
         Returns:
-            str: The robot action to take.
+            The robot action to take.
         """
         raise NotImplementedError("Subclasses must override get_robot_action")

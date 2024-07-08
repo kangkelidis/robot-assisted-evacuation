@@ -6,21 +6,20 @@ from folders created by the NetLogo simulations.
 import os
 from pathlib import Path
 
-from paths import ROBOTS_ACTIONS_FILE_NAME, SCENARIOS_TEMP_FILE_NAME
+from core.utils.paths import ROBOTS_ACTIONS_FILE_NAME, SCENARIOS_TEMP_FILE_NAME
 
 
-def is_netlogo_folder(path):
-    # type: (str) -> bool
+def is_netlogo_folder(path: str) -> bool:
     """
     Checks if the folder is created by NetLogo.
 
     A NetLogo folder is a folder that contains the reporter commands for the simulation.
 
     Args:
-        path (str): The path to check.
+        path: The path to check.
 
     Returns:
-        bool: True if the folder is created by NetLogo, False otherwise.
+        True if the folder is created by NetLogo, False otherwise.
     """
     return os.path.isdir(path) and \
         (os.path.isfile(os.path.join(path, "count turtles.txt")) or
@@ -29,13 +28,12 @@ def is_netlogo_folder(path):
          not os.listdir(path))
 
 
-def cleanup_workspace(directory):
-    # type: (str) -> None
+def cleanup_workspace(directory: str) -> None:
     """
     Deletes all the excess folders created by Netlogo and the tempfiles by the program.
 
     Args:
-        directory (str): The path to the directory to clean up.
+        directory: The path to the directory to clean up.
     """
     for file_name in os.listdir(directory):
         path = os.path.join(directory, file_name)

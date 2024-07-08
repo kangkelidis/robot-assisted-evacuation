@@ -11,7 +11,6 @@ Classes:
 """
 
 import os
-from typing import Dict, List
 
 import pandas as pd  # type: ignore
 from core.utils.helper import (convert_camelCase_to_snake_case,
@@ -21,8 +20,7 @@ from core.utils.paths import (DATA_FOLDER, NETLOGO_FOLDER,
 
 
 class Updateable(object):
-    def update(self, params):
-        # type: (Dict) -> None
+    def update(self, params: dict) -> None:
         """
         Updates the object's parameters that are in the provided dictionary.
 
@@ -78,8 +76,8 @@ class Result(object):
     - success: Whether the simulation was successful (finished on time and no errors).
     """
     # ? how should we handle the unsuccessful simulations?
-    def __init__(self, simulation_id=None, evacuation_ticks=None,
-                 evacuation_time=None, success=None):
+    def __init__(self, simulation_id: str = None, evacuation_ticks: int = None,
+                 evacuation_time: float = None, success: bool = None) -> None:
         self.simulation_id = simulation_id
         self.evacuation_ticks = evacuation_ticks
         self.evacuation_time = evacuation_time
@@ -87,8 +85,8 @@ class Result(object):
         self.success = success
 
     def __str__(self):
-        return "Evacuation ticks: {}, Evacuation time: {:.2f}".format(
-            self.evacuation_ticks, self.evacuation_time)
+        return (f"Evacuation ticks: {self.evacuation_ticks}, "
+                f"Evacuation time: {self.evacuation_time:.2f}")
 
 
 class Scenario(Updateable):
@@ -107,25 +105,22 @@ class Scenario(Updateable):
     - results_df: A DataFrame containing the results of the scenario.
     - logger: A logger object for logging messages.
     """
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         self.name = ''
         self.description = ''
         self.netlogo_params = NetLogoParams()
         self.adaptation_strategy = None
         self.enabled = True
-        self.simulations = []  # type: List[Simulation]
-        self.results = []  # type: List[Result]
-        self.results_df = None  # type: pd.DataFrame
+        self.simulations: list[Simulation] = []
+        self.results: list[Result] = []
+        self.results_df: pd.DataFrame = None
         self.logger = setup_logger()
 
-    def update(self, params):
-        # type: (Dict) -> None
-        super(Scenario, self).update(params)
+    def update(self, params: dict) -> None:
+        super().update(params)
         self.netlogo_params.update(params)
 
-    def copy(self):
-        # type: () -> Scenario
+    def copy(self) -> 'Scenario':
         new_scenario = Scenario()
         new_scenario.name = self.name
         new_scenario.description = self.description
@@ -137,25 +132,19 @@ class Scenario(Updateable):
         new_scenario.netlogo_params.update(self.netlogo_params.__dict__)
         return new_scenario
 
-    def build_simulations(self):
-        # type: (str) -> None
+    def build_simulations(self) -> None:
         """
         Builds the simulation objects for this scenario and saves them in a list.
-
-        Args:
-            scenario_name: The name of the scenario.
         """
         for simulation_index in range(self.netlogo_params.num_of_samples):
-            self.logger.debug("Building simulation n.{} for scenario: {}".format(
-                simulation_index, self.name))
+            self.logger.debug(f"Building simulation n.{simulation_index} for scenario: {self.name}")
             simulation = Simulation(
                 self.name, simulation_index, self.netlogo_params)
             self.simulations.append(simulation)
-        self.logger.debug("Finished building simulations for scenario: {}. size of list {}".format(
-            self.name, self.simulations.__len__()))
+        self.logger.debug(f"Finished building simulations for scenario: {self.name}. "
+                          f"Size of list: {len(self.simulations)}")
 
-    def gather_results(self):
-        # type: () -> None
+    def gather_results(self) -> None:
         """
         Gathers the results of the simulations in this scenario.
         Also collects the robots actions from the temp file.
@@ -164,8 +153,7 @@ class Scenario(Updateable):
             simulation.get_robots_actions()
             self.results.append(simulation.result)
 
-    def save_results(self):
-        # type: () -> None
+    def save_results(self) -> None:
         """
         Creates a dataframe with the results and saves it as a csv.
         """
@@ -186,29 +174,28 @@ class Scenario(Updateable):
             if not os.path.exists(scenarios_folder_path):
                 os.makedirs(scenarios_folder_path)
         except Exception as e:
-            self.logger.error("Error creating folder: {}".format(e))
+            self.logger.error(f"Error creating folder: {e}")
 
         try:
             results_file_name = self.name + "_results.csv"
             results_file_path = os.path.join(scenarios_folder_path, results_file_name)
             df.to_csv(results_file_path)
         except Exception as e:
-            self.logger.error("Error saving results file: {}".format(e))
+            self.logger.error(f"Error saving results file: {e}")
 
         # save params
         try:
             params_file_name = self.name + "_params.txt"
             params_file_path = os.path.join(scenarios_folder_path, params_file_name)
             with open(params_file_path, 'w') as f:
-                f.write("description: {}\n".format(self.description))
-                f.write("adaptation_strategy: {}\n".format(self.adaptation_strategy))
+                f.write(f"description: {self.description}\n")
+                f.write(f"adaptation_strategy: {self.adaptation_strategy}\n")
                 for key, value in self.netlogo_params.__dict__.items():
-                    f.write("{}: {}\n".format(key, value))
+                    f.write(f"{key}: {value}\n")
         except Exception as e:
-            self.logger.error("Error saving params file: {}".format(e))
+            self.logger.error(f"Error saving params file: {e}")
 
-    def expand_robots_actions(self, df):
-        # type: (pd.DataFrame) -> pd.DataFrame
+    def expand_robots_actions(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Turns the column containing the list of robot actions into 3 columns,
         containing the count for each action (ask-help and call-staff) and their total.
@@ -232,15 +219,13 @@ class Simulation(object):
     A simulation object with the neccesary parameters to run a simulation in NetLogo.
     Also contains the results object created by the simulation.
     """
-    def __init__(self, scenario_name, index, netlogo_params):
-        # type: (str, int, NetLogoParams) -> None
+    def __init__(self, scenario_name: str, index: int, netlogo_params: NetLogoParams) -> None:
         self.scenario_name = scenario_name
         self.id = generate_simulation_id(scenario_name, index)
-        self.netlogo_params = netlogo_params  # type: NetLogoParams
+        self.netlogo_params = netlogo_params
         self.result = Result()
 
-    def get_robots_actions(self):
-        # type: () -> None
+    def get_robots_actions(self) -> None:
         """
         Collects the robots actions from the temp file and appends them to the robot_actions list.
         """

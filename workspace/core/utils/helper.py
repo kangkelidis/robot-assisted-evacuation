@@ -17,8 +17,7 @@ except ImportError:
     print("Import error. concurrent_log_handler in logging.py")
 
 
-def setup_logger():
-    # type: () -> logging.Logger
+def setup_logger() -> logging.Logger:
     """
     Creates a logger object and sets up the logging configuration.
 
@@ -26,7 +25,7 @@ def setup_logger():
     log file in the LOGS_FOLDER directory.
 
     Returns:
-        logging.Logger: The configured logger object.
+        The configured logger object.
     """
     logger = logging.getLogger()
     if not logger.handlers and logger_imported:
@@ -54,8 +53,7 @@ def setup_logger():
 logger = setup_logger()
 
 
-def convert_camelCase_to_snake_case(camelCase_str):
-    # type: (str) -> str
+def convert_camelCase_to_snake_case(camelCase_str: str) -> str:
     """
     Converts a camelCase string to a snake_case string.
 
@@ -64,16 +62,15 @@ def convert_camelCase_to_snake_case(camelCase_str):
     letters to lowercase.
 
     Args:
-        camelCase_str (str): The camelCase string to be converted.
+        camelCase_str: The camelCase string to be converted.
 
     Returns:
-        str: The converted snake_case string.
+        The converted snake_case string.
     """
     return ''.join(['_' + i.lower() if i.isupper() else i for i in camelCase_str]).lstrip('_')
 
 
-def generate_simulation_id(scenario_name, index):
-    # type: (str, int) -> str
+def generate_simulation_id(scenario_name: str, index: int) -> str:
     """
     Generates a simulation ID based on the scenario and index.
 
@@ -81,18 +78,17 @@ def generate_simulation_id(scenario_name, index):
     simulation ID in the format "scenario_index".
 
     Args:
-        scenario_name (str): The name of the scenario.
-        index (int): The index of the simulation.
+        scenario_name: The name of the scenario.
+        index: The index of the simulation.
 
     Returns:
-        str: The generated simulation ID.
+        The generated simulation ID.
     """
     scenario_name = scenario_name.replace("_", "-")
     return scenario_name + "_" + str(index)
 
 
-def get_scenario_name(simulation_id):
-    # type: (str) -> str
+def get_scenario_name(simulation_id: str) -> str:
     """
     Extracts the scenario name from a simulation ID.
 
@@ -100,16 +96,15 @@ def get_scenario_name(simulation_id):
     by splitting the ID on the "_" character and returning the first part.
 
     Args:
-        simulation_id (str): The simulation ID.
+        simulation_id: The simulation ID.
 
     Returns:
-        str: The scenario name.
+        The scenario name.
     """
     return simulation_id.split("_")[0]
 
 
-def get_scenario_index(simulation_id):
-    # type: (str) -> str
+def get_scenario_index(simulation_id: str) -> str:
     """
     Extracts the scenario index from a simulation ID.
 
@@ -117,16 +112,15 @@ def get_scenario_index(simulation_id):
     by splitting the ID on the "_" character and returning the second part.
 
     Args:
-        simulation_id (str): The simulation ID.
+        simulation_id: The simulation ID.
 
     Returns:
-        str: The scenario index.
+        The scenario index.
     """
     return simulation_id.split("_")[1]
 
 
-def setup_folders():
-    # type: () -> None
+def setup_folders() -> None:
     """
     Creates the necessary folders for the workspace.
 
@@ -155,8 +149,7 @@ def timeout_exception_handler(signum, frame):
     raise Exception("The function took too long to execute.")
 
 
-def get_available_cpus():
-    # type: () -> int
+def get_available_cpus() -> int:
     """
     Returns the number of CPUs available in the system.
 
@@ -165,23 +158,22 @@ def get_available_cpus():
     number of CPUs cannot be determined, it returns 4 as a fallback.
 
     Returns:
-        int: The number of available CPUs.
+        The number of available CPUs.
     """
     try:
         num_cpus = cpu_count()  # type: int
     except Exception as e:
         num_cpus = 4
-        logger.error("Exception in getting number of CPUs. 4 used. : %s", e)
+        logger.error(f"Exception in getting number of CPUs. 4 used. : {e}")
     return num_cpus
 
 
-def get_custom_bar_format():
-    # type: () -> str
+def get_custom_bar_format() -> str:
     """
     Creates a custom progress bar.
 
     Returns:
-        str: The custom progress bar format.
+        The custom progress bar format.
     """
     green_color = '\033[92m'
 

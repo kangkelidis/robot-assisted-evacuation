@@ -25,7 +25,7 @@ from core.utils.helper import (get_experiment_folder, get_scenario_index,
 from core.utils.paths import DATA_FOLDER, IMAGE_FOLDER
 from scipy.stats import mannwhitneyu
 
-PLOT_STYLE = 'seaborn-darkgrid'
+PLOT_STYLE = 'seaborn-v0_8-darkgrid'
 EXPERIMENT_FOLDER_NAME = get_experiment_folder()
 
 logger = setup_logger()

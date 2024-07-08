@@ -56,8 +56,7 @@ simulationParams = [
 ]
 
 
-def get_default_experiment_scenarios():
-    # type: () -> List[Scenario]
+def get_default_experiment_scenarios() -> List[Scenario]:
     """
     Returns the list of default scenarios.
 

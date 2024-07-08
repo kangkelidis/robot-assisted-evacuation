@@ -16,7 +16,7 @@ from experimental.batchrun import batch_run
 logger = setup_logger()
 
 
-def test_batch_run():
+def test_batch_run() -> None:
     scenario = Scenario()
     scenario.name = "test"
     scenario.adaptation_strategy = "RandomStrategy"
@@ -33,7 +33,7 @@ def test_batch_run():
     perform_analysis(experiments_results)
 
 
-def main():
+def main() -> None:
     """
     Main function to initiate and analyse the simulations.
     """
@@ -50,7 +50,7 @@ def main():
         perform_analysis(experiments_results)
         logger.info("******* ==Experiment Finished== *******\n")
     except Exception as e:
-        logger.critical("Error in main: %s", e)
+        logger.critical(f"Error in main: {e}")
         traceback.print_exc()
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt: Cleaning up workspace.")
