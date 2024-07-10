@@ -33,6 +33,8 @@ RESULTS_CSV_FILE = DATA_FOLDER + "experiments.csv"
 
 # Contains the adaptation strategies
 STRATEGIES_FOLDER = WORKSPACE_FOLDER + "strategies/"
+# Contains the saved configurations and scenarios
+EXAMPLES_FOLDER = WORKSPACE_FOLDER + "examples/"
 
 CONFIG_FILE = WORKSPACE_FOLDER + 'config.json'
 # Temporary file to store and retrieve active scenarios during execution

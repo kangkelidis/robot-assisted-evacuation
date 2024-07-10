@@ -17,12 +17,11 @@ import os
 import signal
 import time
 from multiprocessing import Process, Queue
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd  # type: ignore
 import pyNetLogo
-from core.simulations.load_config import (load_netlogo_model_path,
-                                          load_scenarios)
+from core.simulations.load_config import get_netlogo_model_path, load_scenarios
 from core.simulations.netlogo_commands import *
 from core.simulations.simulation import (NetLogoParams, Result, Scenario,
                                          Simulation)
@@ -36,7 +35,7 @@ from tqdm import tqdm  # type: ignore
 logger = setup_logger()
 
 
-def update_simulations_with(results_queue: Queue[Result], simulations: list[Simulation]) -> None:
+def update_simulations_with(results_queue: Queue, simulations: list[Simulation]) -> None:
     """
     Updates the Simulation objects with the results from the results_queue.
 
@@ -115,7 +114,7 @@ def setup_simulation(simulation_id: str,
 
 
 def get_netlogo_report(simulation_id: str,
-                       netlogo_link: pyNetLogo.pyNetLogoLink,
+                       netlogo_link: pyNetLogo.NetLogoLink,
                        netlogo_params: NetLogoParams) -> Optional[int]:
     """
     Runs the simulation and returns the results.
@@ -244,7 +243,7 @@ def run_simulation(simulation_id: str,
     return Result(simulation_id, None, None, False)
 
 
-def simulation_processor(results_queue: Queue[Result],
+def simulation_processor(results_queue: Queue,
                          simulation_id: str,
                          netlogo_params: NetLogoParams,
                          netlogo_model_path: str) -> None:
@@ -387,16 +386,16 @@ def log_execution_time(start_time: float, end_time: float) -> None:
     logger.info("--------------------------------------------")
 
 
-def start_experiments(scenarios: list[Scenario] = None) -> pd.DataFrame:
+def start_experiments(config: dict[str, Any], scenarios: list[Scenario]) -> pd.DataFrame:
     """
     Starts the simulations for the provided scenarios.
 
-    If no scenarios are provided, it loads them from the config file.
     It runs the simulations in parallel and saves the result in their respective Scenario objects.
     Then it combines all the results and saves them in a csv file.
     Finally, it returns the results for further analysis.
 
     Args:
+        config: The configuration parameters for the simulations.
         scenarios: The scenarios to be executed.
 
     Returns:
@@ -404,11 +403,7 @@ def start_experiments(scenarios: list[Scenario] = None) -> pd.DataFrame:
     """
     start_time = time.time()
 
-    # Load scenarios from the config file if not provided and create simulations
-    if scenarios is None:
-        scenarios = load_scenarios()
-
-    netlogo_model_path = load_netlogo_model_path()
+    netlogo_model_path = config.get('netlogoModelPath')
     simulations_pool = build_simulation_pool(scenarios)
 
     execute_parallel_simulations(simulations_pool, netlogo_model_path)

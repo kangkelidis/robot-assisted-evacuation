@@ -1,4 +1,9 @@
 {
+    ":_comment": [
+        "Load a saved configuration. Use the name of the file in the examples folder.",
+        "Use null to use this file."],
+    "loadConfigFrom": null,
+
     "_comment": [
         "The netlogo model to be used for the simulations.",
         "This model must be in the core/netlogo folder."],

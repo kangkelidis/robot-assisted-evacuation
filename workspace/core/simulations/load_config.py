@@ -9,24 +9,75 @@ from typing import Any
 
 from core.simulations.simulation import Scenario
 from core.utils.helper import setup_logger
-from core.utils.paths import (CONFIG_FILE, NETLOGO_FOLDER, NETLOGO_HOME,
-                              SCENARIOS_TEMP_FILE_NAME)
+from core.utils.paths import (CONFIG_FILE, EXAMPLES_FOLDER, NETLOGO_FOLDER,
+                              NETLOGO_HOME, SCENARIOS_TEMP_FILE_NAME)
 
 logger = setup_logger()
 
 CONFIG: dict[str, Any] | None = None
 
 
+def _load_json_file(config_file_path: str) -> dict[str, Any]:
+    """
+    Loads the JSON file and checks for errors.
+
+    Args:
+        config_file_path: The path to the JSON configuration file.
+
+    Returns:
+        config: The configuration dictionary.
+    """
+    try:
+        with open(config_file_path, 'r') as file:
+            config: dict[str, Any] = json.load(file)
+    except IOError:
+        raise IOError(f"Configuration file not found. Path given: {config_file_path}")
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid JSON format in configuration file: {config_file_path}")
+
+    return config
+
+
+def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
+    """
+    Gets the parameters from the configuration file and checks for required keys.
+
+    Args:
+        config: The configuration dictionary.
+
+    Returns:
+        config: The updated configuration dictionary.
+    """
+    # Load a saved configuration file if specified
+    if config['loadConfigFrom']:
+        config_file_path = os.path.join(EXAMPLES_FOLDER, config['loadConfigFrom'])
+        if not config_file_path.endswith('.json'):
+            config_file_path += '.json'
+        logger.debug(f"Loading configuration from {config_file_path}")
+        config = _load_json_file(config_file_path)
+
+    required_keys = ['loadConfigFrom', 'netlogoModeName', 'targetScenarioForAnalysis',
+                     'scenarioParams', 'simulationScenarios']
+    for key in required_keys:
+        if key not in config:
+            raise KeyError(f"Missing key in configuration file: {key}")
+
+    netlogo_model_path = os.path.join(NETLOGO_HOME, NETLOGO_FOLDER, config['netlogoModeName'])
+    logger.debug(f"NetLogo model path: {netlogo_model_path}")
+    if not os.path.exists(netlogo_model_path):
+        raise IOError(f"NetLogo model path does not exist: {netlogo_model_path}")
+    config['netlogoModelPath'] = netlogo_model_path
+
+    for scenario in config['simulationScenarios']:
+        if 'name' not in scenario or not scenario['name']:
+            raise ValueError("Each scenario must have a non-empty 'name' key.")
+
+    return config
+
+
 def load_config(config_file_path: str) -> dict[str, Any]:
     """
-    Loads the JSON configuration file and checks for the following keys:
-
-    - netlogoModeName
-    - targetScenarioForAnalysis
-    - scenarioParams
-    - simulationScenarios
-
-    Then the scenarios are loaded and returned as a dictionary.
+    Loads the specified JSON configuration file.
 
     Args:
         config_file_path: The path to the JSON configuration file.
@@ -37,57 +88,39 @@ def load_config(config_file_path: str) -> dict[str, Any]:
     global CONFIG
     if CONFIG:
         return CONFIG
-    try:
-        with open(config_file_path, 'r') as file:
-            config: dict[str, Any] = json.load(file)
-    except IOError:
-        raise IOError(f"Configuration file not found. Path given: {config_file_path}")
-    except json.JSONDecodeError:
-        raise ValueError(f"Invalid JSON format in configuration file: {config_file_path}")
 
-    required_keys = ['netlogoModeName', 'targetScenarioForAnalysis', 'scenarioParams',
-                     'simulationScenarios']
-    for key in required_keys:
-        if key not in config:
-            raise KeyError(f"Missing key in configuration file: {key}")
-
-    for scenario in config['simulationScenarios']:
-        if 'name' not in scenario or not scenario['name']:
-            raise ValueError("Each scenario must have a non-empty 'name' key.")
-
-    netlogo_model_path = os.path.join(NETLOGO_HOME, NETLOGO_FOLDER, config['netlogoModeName'])
-    logger.debug("NetLogo model path: {}".format(netlogo_model_path))
-    if not os.path.exists(netlogo_model_path):
-        raise IOError(f"NetLogo model path does not exist: {netlogo_model_path}")
-    config['netlogoModelPath'] = netlogo_model_path
+    config = _load_json_file(config_file_path)
+    config = _get_params_from(config)
 
     CONFIG = config
-    logger.debug('Config checked and loaded. Loading Scenarios...')
+    logger.debug('Config checked and loaded.')
     return config
 
 
-def load_netlogo_model_path() -> str:
+def get_netlogo_model_path() -> str:
     config = load_config(CONFIG_FILE)
     return config['netlogoModelPath']
 
 
-def load_target_scenario() -> str:
+def get_target_scenario() -> str:
     config = load_config(CONFIG_FILE)
     return config['targetScenarioForAnalysis']
 
 
-def load_scenarios() -> list[Scenario]:
+def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
     """
-    Loads the config file, creates Scenario objects and saves them to a temporary file.
+    Creates Scenario objects from the config and saves them to a temporary file.
 
     Creates and returns a list of Scenario objects using the scenarioParams and
     scenario-specific parameters from the simulationScenarios
     that are 'enabled' in the config.json file.
 
+    Args:
+        config: The configuration dictionary.
+
     Returns:
         scenarios: A list of Scenario objects.
     """
-    config = load_config(CONFIG_FILE)
     scenarios = []
 
     for scenario_dict in config['simulationScenarios']:

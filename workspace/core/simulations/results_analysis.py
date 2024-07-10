@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
 import statsmodels.api as sm
-from core.simulations.load_config import load_target_scenario
+from core.simulations.load_config import get_target_scenario
 from core.utils.helper import (get_experiment_folder, get_scenario_index,
                                get_scenario_name, setup_logger)
 from core.utils.paths import DATA_FOLDER, IMAGE_FOLDER
@@ -225,7 +225,7 @@ def perform_analysis(experiment_results):
     processed_data = process_data(experiment_results)
     plot_results(processed_data)
 
-    target_scenario = load_target_scenario()
+    target_scenario = get_target_scenario()
     scenarios = processed_data.columns.tolist()
     if target_scenario in scenarios:
         for alternative_scenario in scenarios:
