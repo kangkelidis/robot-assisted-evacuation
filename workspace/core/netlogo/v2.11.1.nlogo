@@ -1222,8 +1222,10 @@ to move-staff  ; staff behavior ;nw
   if [pcolor] of patch-here = EXIT_COLOR and count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
 end
 
-to-report seed-simulation
-  let current-seed new-seed
+to-report seed-simulation [current-seed]
+  if current-seed = 0 [
+    set current-seed new-seed
+  ]
   random-seed current-seed
 
   report current-seed

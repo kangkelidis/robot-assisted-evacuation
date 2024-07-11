@@ -38,6 +38,7 @@ class NetLogoParams(Updateable):
     Holds the NetLogo parameters for a simulation.
 
     Attributes:
+    - seed: The seed for the simulation.
     - num_of_samples: The number of simulations to run.
     - num_of_robots: The number of robots in the simulation.
     - num_of_passengers: The number of passengers in the simulation.
@@ -51,6 +52,7 @@ class NetLogoParams(Updateable):
     - enable_video: Whether to enable video recording of the simulation.
     """
     def __init__(self):
+        self.seed = 0
         self.num_of_samples = 30
         self.num_of_robots = 1
         self.num_of_passengers = 800
@@ -69,6 +71,7 @@ class Result(object):
     Holds the results of a simulation.
 
     Attributes:
+    - seed: The seed used for the simulation.
     - simulation_id: Combines the scenario name and the simulation number.
     - evacuation_ticks: The number of ticks it took to evacuate the room.
     - evacuation_time: The time it took to execute the simulation.
@@ -76,17 +79,19 @@ class Result(object):
     - success: Whether the simulation was successful (finished on time and no errors).
     """
     # ? how should we handle the unsuccessful simulations?
-    def __init__(self, simulation_id: str = None, evacuation_ticks: int = None,
-                 evacuation_time: float = None, success: bool = None) -> None:
+    def __init__(self, seed: int = 0, simulation_id: str = '', evacuation_ticks: int | None = None,
+                 evacuation_time: float | None = None, success: bool = False) -> None:
         self.simulation_id = simulation_id
         self.evacuation_ticks = evacuation_ticks
         self.evacuation_time = evacuation_time
-        self.robot_actions = []
+        self.robot_actions: list[str] = []
         self.success = success
+        self.seed = seed
 
     def __str__(self):
         return (f"Evacuation ticks: {self.evacuation_ticks}, "
-                f"Evacuation time: {self.evacuation_time:.2f}")
+                f"Evacuation time: {self.evacuation_time:.2f}, "
+                f"Seed: {self.seed}")
 
 
 class Scenario(Updateable):
@@ -113,7 +118,7 @@ class Scenario(Updateable):
         self.enabled = True
         self.simulations: list[Simulation] = []
         self.results: list[Result] = []
-        self.results_df: pd.DataFrame = None
+        self.results_df: pd.DataFrame | None = None
         self.logger = setup_logger()
 
     def update(self, params: dict) -> None:
@@ -138,8 +143,7 @@ class Scenario(Updateable):
         """
         for simulation_index in range(self.netlogo_params.num_of_samples):
             self.logger.debug(f"Building simulation n.{simulation_index} for scenario: {self.name}")
-            simulation = Simulation(
-                self.name, simulation_index, self.netlogo_params)
+            simulation = Simulation(self.name, simulation_index, self.netlogo_params)
             self.simulations.append(simulation)
         self.logger.debug(f"Finished building simulations for scenario: {self.name}. "
                           f"Size of list: {len(self.simulations)}")
@@ -160,7 +164,7 @@ class Scenario(Updateable):
         results_dicts = [result.__dict__ for result in self.results]
         df = pd.DataFrame(results_dicts)
         df = self.expand_robots_actions(df)
-        columns_order = ['simulation_id', 'success', 'evacuation_ticks', 'evacuation_time',
+        columns_order = ['simulation_id', 'seed', 'success', 'evacuation_ticks', 'evacuation_time',
                          'robot_ask_help', 'robot_call_staff', 'total_actions']
         self.results_df = df[columns_order]
 
@@ -179,7 +183,7 @@ class Scenario(Updateable):
         try:
             results_file_name = self.name + "_results.csv"
             results_file_path = os.path.join(scenarios_folder_path, results_file_name)
-            df.to_csv(results_file_path)
+            self.results_df.to_csv(results_file_path)
         except Exception as e:
             self.logger.error(f"Error saving results file: {e}")
 
@@ -224,6 +228,7 @@ class Simulation(object):
         self.id = generate_simulation_id(scenario_name, index)
         self.netlogo_params = netlogo_params
         self.result = Result()
+        self.seed = self.generate_seed(index)
 
     def get_robots_actions(self) -> None:
         """
@@ -235,3 +240,23 @@ class Simulation(object):
         df = pd.read_csv(robots_actions_file_path)
         actions_df = df[df['id'] == self.id]
         self.result.robot_actions.extend(actions_df['Action'].tolist())
+
+    def generate_seed(self, index) -> None:
+        """
+        Generates a seed for the simulation based on the netlogo_params seed and index.
+
+        Each simulation round will have the same seed, unless the netlogo_params seed is 0.
+        Simulations in batch runs will behave the way.
+        The seed number must be an integer in the range -2147483648 to 2147483647.
+
+        Args:
+            index: The index of the simulation.
+
+        Returns:
+            seed: An integer seed for the simulation.
+        """
+        #  use the netlogo random-seed if 0
+        if self.netlogo_params.seed != 0:
+            seed: int = (self.netlogo_params.seed * (index + 1)) % 2147483647
+            return seed
+        return 0

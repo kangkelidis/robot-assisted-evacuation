@@ -6,6 +6,7 @@ for NetLogo simulations.
 import logging
 import os
 from multiprocessing import cpu_count
+from typing import Any
 
 from core.utils.paths import *
 
@@ -51,6 +52,19 @@ def setup_logger() -> logging.Logger:
 
 
 logger = setup_logger()
+
+
+def convert_dict_to_snake_case(dictionary: dict[str, Any]) -> dict[str, Any]:
+    """
+    Converts the keys of a dictionary from camelCase to snake_case.
+
+    Args:
+        dictionary: The dictionary to be converted.
+
+    Returns:
+        The converted dictionary.
+    """
+    return {convert_camelCase_to_snake_case(key): value for key, value in dictionary.items()}
 
 
 def convert_camelCase_to_snake_case(camelCase_str: str) -> str:
@@ -101,6 +115,8 @@ def get_scenario_name(simulation_id: str) -> str:
     Returns:
         The scenario name.
     """
+    if "_" not in simulation_id:
+        raise ValueError(f"simulation_id must contain an underscore ('_'). {simulation_id}")
     return simulation_id.split("_")[0]
 
 
@@ -117,6 +133,8 @@ def get_scenario_index(simulation_id: str) -> str:
     Returns:
         The scenario index.
     """
+    if "_" not in simulation_id:
+        raise ValueError(f"simulation_id must contain an underscore ('_'). {simulation_id}")
     return simulation_id.split("_")[1]
 
 

@@ -5,10 +5,11 @@ and creating Scenario objects.
 
 import json
 import os
-from typing import Any
+from typing import Any, Iterable
 
+from core.simulations.batchrun import batch_run
 from core.simulations.simulation import Scenario
-from core.utils.helper import setup_logger
+from core.utils.helper import convert_dict_to_snake_case, setup_logger
 from core.utils.paths import (CONFIG_FILE, EXAMPLES_FOLDER, NETLOGO_FOLDER,
                               NETLOGO_HOME, SCENARIOS_TEMP_FILE_NAME)
 
@@ -107,6 +108,23 @@ def get_target_scenario() -> str:
     return config['targetScenarioForAnalysis']
 
 
+def _has_iterable_values(parameters: dict[str, Any]) -> bool:
+    """
+    Checks if a value of the parameters is iterable.
+
+    Args:
+        parameters: A dictionary of parameters to iterate and their respective range of values.
+
+    Returns:
+        True if a value is iterable, False otherwise.
+    """
+    for value in parameters.values():
+        if isinstance(value, Iterable) and not isinstance(value, str):
+            return True
+
+    return False
+
+
 def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
     """
     Creates Scenario objects from the config and saves them to a temporary file.
@@ -123,18 +141,26 @@ def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
     """
     scenarios = []
 
-    for scenario_dict in config['simulationScenarios']:
+    list_of_scenarios: list[dict[str, Any]] = config['simulationScenarios']
+    for scenario_dict in list_of_scenarios:
         # Only build the scenario if it is enabled
         if scenario_dict.get('enabled', False):
             global_params = config['scenarioParams']
             scenario_obj = Scenario()
             # Scenario params override global params
-            params_to_update = global_params.copy()  # Make a copy of the global_params
-            params_to_update.update(scenario_dict)  # Update the copy with scenario_dict
-            scenario_obj.update(params_to_update)
-            logger.debug(f'Building simulations for scenario: {scenario_obj.name}')
-            scenario_obj.build_simulations()
-            scenarios.append(scenario_obj)
+            scenario_params = global_params.copy()  # Make a copy of the global_params
+            scenario_params.update(scenario_dict)  # Update the copy with scenario_dict
+            scenario_obj.update(scenario_params)
+
+            if _has_iterable_values(scenario_params):
+                scenario_params = convert_dict_to_snake_case(scenario_params)
+                logger.debug(f"Building scenarios for {scenario_obj.name} with iterable values.")
+                batch = batch_run(scenario_obj, scenario_params, scenario_params['num_of_samples'])
+                scenarios.extend(batch)
+            else:
+                logger.debug(f'Building simulations for scenario: {scenario_obj.name}')
+                scenario_obj.build_simulations()
+                scenarios.append(scenario_obj)
 
     save_scenarios(scenarios)
     logger.debug(f"{len(scenarios)} scenarios loaded and saved to {SCENARIOS_TEMP_FILE_NAME}.")

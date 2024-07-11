@@ -18,7 +18,8 @@
         "Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
-        "numOfSamples": 3,
+        "seed": 10,
+        "numOfSamples": 5,
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
@@ -45,7 +46,7 @@
             "allowPassengerSupport": false,
             "adaptationStrategy": null,
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         },
         {
             "name": "staff-support",
@@ -55,7 +56,7 @@
             "allowPassengerSupport": false,
             "adaptationStrategy": null,
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         },
         {
             "name": "passenger-support",
@@ -69,8 +70,18 @@
         },
         {
             "name": "adaptive-support",
+            "seed": 0,
             "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
             "numOfRobots": 1,
+            "adaptationStrategy": "RandomStrategy",
+            "enableVideo": false,
+            "enabled": true
+        },
+        {
+            "name": "test",
+            "seed": 999,
+            "description": "Test scenario.",
+            "numOfRobots": [1, 2],
             "adaptationStrategy": "RandomStrategy",
             "enableVideo": false,
             "enabled": true

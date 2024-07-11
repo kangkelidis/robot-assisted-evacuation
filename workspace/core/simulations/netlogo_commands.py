@@ -7,7 +7,7 @@ NETLOGO_VERSION = "5"
 TURTLE_PRESENT_REPORTER = "count turtles"
 EVACUATED_REPORTER = "number_passengers - count agents + 1"
 DEAD_REPORTER = "count agents with [ st_dead = 1 ]"
-SEED_SIMULATION_REPORTER = "seed-simulation"
+SEED_SIMULATION_REPORTER = "seed-simulation {}"
 
 SET_SIMULATION_ID_COMMAND = 'set SIMULATION_ID "{}"'
 SET_STAFF_SUPPORT_COMMAND = "set REQUEST_STAFF_SUPPORT {}"

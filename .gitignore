@@ -8,3 +8,5 @@ workspace/results/frames/*
 workspace/results/img/*
 workspace/results/video/*
 workspace/logs/*
+
+.mypy_cache/*
