@@ -1220,6 +1220,8 @@ to move-staff  ; staff behavior ;nw
 ;   if [pcolor] of patch-here = FIRE_COLOR or [pcolor] of patch-here = WALL_COLOR [move-to back_step]
 ;  ]
   if [pcolor] of patch-here = EXIT_COLOR and count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
+  ; v.2.11.2 remove staff if no passengers are left
+  if count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
 end
 
 to-report seed-simulation [current-seed]

@@ -199,6 +199,6 @@ def get_custom_bar_format() -> str:
     reset_color = '\033[0m'
 
     # Custom bar_format with green color
-    custom_bar_format = "{}{{l_bar}}{{bar}}{}| {{n_fmt}}/{{total_fmt}} [{{elapsed}}<{{remaining}}, \
+    custom_bar_format = "{}{{l_bar}}{{bar}}{}| {{n_fmt}}/{{total_fmt}} [Elapsed: {{elapsed}}, Remaining: {{remaining}}, \
         {{rate_fmt}}{{postfix}}]".format(green_color, reset_color)
     return custom_bar_format

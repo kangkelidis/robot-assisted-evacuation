@@ -108,6 +108,26 @@ def get_target_scenario() -> str:
     return config['targetScenarioForAnalysis']
 
 
+def _check_for_range(parameters: dict[str, Any]) -> dict[str, Any]:
+    """
+    Checks if a value of the parameters in JSON is a range
+    and replaces it with a python range Iterable if it is.
+
+    {"start": 1, "end": 10, "step": 1} -> range(1, 10, 1)
+
+    Args:
+        parameters: A dictionary of parameters to iterate and their respective range of values.
+
+    Returns:
+        parameters: The updated dictionary of parameters.
+    """
+    for key, value in parameters.items():
+        if isinstance(value, dict) and 'start' in value and 'end' in value:
+            parameters[key] = range(value['start'], value['end'], value.get('step', 1))
+
+    return parameters
+
+
 def _has_iterable_values(parameters: dict[str, Any]) -> bool:
     """
     Checks if a value of the parameters is iterable.
@@ -118,6 +138,8 @@ def _has_iterable_values(parameters: dict[str, Any]) -> bool:
     Returns:
         True if a value is iterable, False otherwise.
     """
+    _check_for_range(parameters)
+
     for value in parameters.values():
         if isinstance(value, Iterable) and not isinstance(value, str):
             return True

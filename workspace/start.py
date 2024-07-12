@@ -40,4 +40,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    # send a get request to the server
+    import requests
+
+    url = "http://localhost:5000/run"
+    response = requests.get(url)
+    print(response.text)
+

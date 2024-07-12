@@ -55,5 +55,6 @@ dependencies:
     - typing
     - concurrent-log-handler
     - tqdm
+    - requests
     - flask
 prefix: /anaconda3/envs/robot-assisted-evacuation

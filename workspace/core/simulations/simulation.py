@@ -66,7 +66,7 @@ class NetLogoParams(Updateable):
         self.enable_video = False
 
 
-class Result(object):
+class Result(Updateable):
     """
     Holds the results of a simulation.
 
@@ -80,11 +80,11 @@ class Result(object):
     """
     # ? how should we handle the unsuccessful simulations?
     def __init__(self, seed: int = 0, simulation_id: str = '', evacuation_ticks: int | None = None,
-                 evacuation_time: float | None = None, success: bool = False) -> None:
+                 evacuation_time: float | None = None, success: bool = False, robot_actions: list[str] = []) -> None:
         self.simulation_id = simulation_id
         self.evacuation_ticks = evacuation_ticks
         self.evacuation_time = evacuation_time
-        self.robot_actions: list[str] = []
+        self.robot_actions: list[str] = robot_actions
         self.success = success
         self.seed = seed
 
@@ -125,6 +125,7 @@ class Scenario(Updateable):
         super().update(params)
         self.netlogo_params.update(params)
 
+    # TODO: refactor this method
     def copy(self) -> 'Scenario':
         new_scenario = Scenario()
         new_scenario.name = self.name
@@ -142,7 +143,6 @@ class Scenario(Updateable):
         Builds the simulation objects for this scenario and saves them in a list.
         """
         for simulation_index in range(self.netlogo_params.num_of_samples):
-            self.logger.debug(f"Building simulation n.{simulation_index} for scenario: {self.name}")
             simulation = Simulation(self.name, simulation_index, self.netlogo_params)
             self.simulations.append(simulation)
         self.logger.debug(f"Finished building simulations for scenario: {self.name}. "
@@ -154,6 +154,7 @@ class Scenario(Updateable):
         Also collects the robots actions from the temp file.
         """
         for simulation in self.simulations:
+            # TODO: delete this line
             simulation.get_robots_actions()
             self.results.append(simulation.result)
 
@@ -218,7 +219,7 @@ class Scenario(Updateable):
         return df
 
 
-class Simulation(object):
+class Simulation(Updateable):
     """
     A simulation object with the neccesary parameters to run a simulation in NetLogo.
     Also contains the results object created by the simulation.
@@ -229,7 +230,12 @@ class Simulation(object):
         self.netlogo_params = netlogo_params
         self.result = Result()
         self.seed = self.generate_seed(index)
+        self.netlogo_seed = None
+        # TODO: add them to the Resul
+        self.actions = []
+        self.responses = []
 
+    # TODO: delete this method
     def get_robots_actions(self) -> None:
         """
         Collects the robots actions from the temp file and appends them to the robot_actions list.

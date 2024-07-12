@@ -35,7 +35,7 @@ from tqdm import tqdm  # type: ignore
 
 logger = setup_logger()
 
-
+# TODO: remove
 def update_simulations_with(results_queue: Queue, simulations: list[Simulation]) -> None:
     """
     Updates the Simulation objects with the results from the results_queue.
@@ -185,7 +185,7 @@ def initialise_netlogo_link(netlogo_model_path: str) -> pyNetLogo.NetLogoLink:
     netlogo_link.load_model(netlogo_model_path)
     return netlogo_link
 
-
+# TODO: remove
 def get_evacuation_ticks(metrics_dataframe: pd.DataFrame, simulation_id: str) -> Optional[int]:
     """
     Calculates and returns the number of ticks it took for the evacuation to finish.
@@ -240,7 +240,11 @@ def run_simulation(simulation_id: str,
                                              simulation_seed,
                                              netlogo_link,
                                              netlogo_params)
-        evacuation_ticks = get_netlogo_report(simulation_id, netlogo_link, netlogo_params)
+        # evacuation_ticks = get_netlogo_report(simulation_id, netlogo_link, netlogo_params)
+        # TODO: put a time limit on the simulation
+        while netlogo_link.report('count turtles with [color != DEAD_PASSENGERS_COLOR]') > 0:
+            netlogo_link.command('go')  
+        evacuation_ticks = netlogo_link.report('ticks')
         netlogo_link.kill_workspace()
 
         endtime = time.time()
@@ -259,7 +263,7 @@ def run_simulation(simulation_id: str,
     return Result(current_seed, simulation_id, None, None, False)
 
 
-def simulation_processor(results_queue: Queue,
+def simulation_processor(
                          simulation_id: str,
                          simulation_seed: int,
                          netlogo_params: NetLogoParams,
@@ -280,7 +284,13 @@ def simulation_processor(results_queue: Queue,
                                     simulation_seed,
                                     netlogo_model_path,
                                     netlogo_params)
-    results_queue.put(result)
+    # results_queue.put(result)
+    # results_queue.cancel_join_thread()
+    
+    import requests
+    url = "http://localhost:5000/put_results"
+    response = requests.post(url, json=result.__dict__)
+
     logger.debug(f"Simulation id: {simulation_id} finished. - Result: {result}.")
 
 
@@ -298,11 +308,13 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
         netlogo_model_path: The path to the NetLogo model.
     """
     # Using multiprocessing.Queue to allow for inter-process communication and store the results
-    results_queue: Queue[Result] = Queue()
+    # results_queue: Queue = Queue()
     # Makes a shallow copy of the list of Simulation to update them with the results
     simulations_copy = simulations[:]
     num_cpus = get_available_cpus()
     logger.info(f"Total number of simulations to run: {len(simulations)}.")
+
+    timeout = 100  # Timeout in seconds
 
     try:
         with tqdm(total=len(simulations), desc="Running Simulations",
@@ -315,19 +327,23 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
                         # Simulation objects are not passed to the Process,
                         # because they will be coppied
                         process = Process(target=simulation_processor,
-                                          args=(results_queue,
+                                          args=(
                                                 simulation.id,
                                                 simulation.seed,
                                                 simulation.netlogo_params,
                                                 netlogo_model_path))
                         processes.append(process)
                         process.start()
-                        logger.debug(
-                            f"Started process {process.pid}. Simulations left: {len(simulations)}")
+                        logger.debug(f"Started process {process.pid}. ID: {simulation.id}. "
+                                     f"Simulations left: {len(simulations)}")
 
                 for process in processes:
                     try:
-                        process.join()
+                        process.join(timeout)
+                        if process.is_alive():
+                            process.terminate()
+                            logger.debug(f"Terminated process {process.pid} due to timeout.")
+                            raise TimeoutError(f"Process {process.pid} timed out.")
                         pbar.update(1)
                     except Exception as e:
                         logger.error(f"Exception in joining process: {e}")
@@ -338,7 +354,7 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
                     f"All processes in current batch ended. Simulations left: {len(simulations)}")
             logger.info("Finished all simulations.")
 
-        update_simulations_with(results_queue, simulations_copy)
+        # update_simulations_with(results_queue, simulations_copy)
 
     except Exception as e:
         logger.error(f"Exception in parallel simulation: {e}")
@@ -380,7 +396,7 @@ def save_and_return_simulation_results(scenarios: list[Scenario]) -> pd.DataFram
         scenario.save_results()
         experiments_results = pd.concat(
             [experiments_results, scenario.results_df], ignore_index=True)
-
+    experiments_data = get_experiment_data(scenarios)
     try:
         experiment_folder_name = get_experiment_folder()
         experiment_folder_path = os.path.join(DATA_FOLDER, experiment_folder_name)
@@ -391,12 +407,51 @@ def save_and_return_simulation_results(scenarios: list[Scenario]) -> pd.DataFram
 
     try:
         results_file_name = "experiment_results.csv"
+        data_file_name = "experiment_data.csv"
         results_file_path = os.path.join(experiment_folder_path, results_file_name)
+        data_file_path = os.path.join(experiment_folder_path, data_file_name)
         experiments_results.to_csv(results_file_path)
+        experiments_data.to_csv(data_file_path)
     except Exception as e:
         logger.error(f"Error saving results file: {e}")
 
-    return experiments_results
+    return {'results': experiments_results, 'data': experiments_data}
+
+
+def get_experiment_data(scenarios: list[Scenario]) -> pd.DataFrame:
+    """
+    Returns a dataframe with the all the data from all the simulations of the scenarios.
+
+    The dataframe contains all the parameters and results of each simulation.
+
+    Args:
+        scenarios: The scenarios to get the data from.
+
+    Returns:
+        experiments_data: The combined data of all simulations.
+    """
+    aggregated_data = []
+
+    for scenario in scenarios:
+        params = scenario.netlogo_params.__dict__
+        info = {'name': scenario.name, 'strategy': scenario.adaptation_strategy}
+
+        scenario_data = []
+        for simulation in scenario.simulations:
+            result = simulation.result.__dict__
+            simulation_data = {
+                'simulation_id': simulation.id,
+                'simulation_seed': simulation.seed,
+                'simulation_actions': simulation.actions,
+                'simulation_responses': simulation.responses
+            }
+
+            scenario_data.append({**info, **params, **result, **simulation_data}),
+
+        aggregated_data.extend(scenario_data)
+
+    experiments_data = pd.DataFrame(aggregated_data)
+    return experiments_data
 
 
 def log_execution_time(start_time: float, end_time: float) -> None:
@@ -425,7 +480,7 @@ def start_experiments(config: dict[str, Any], scenarios: list[Scenario]) -> pd.D
     netlogo_model_path = config.get('netlogoModelPath')
     simulations_pool = build_simulation_pool(scenarios)
     execute_parallel_simulations(simulations_pool, netlogo_model_path)
-
+    # TODO: add responses, no need to save robot actions to temp file
     experiments_results = save_and_return_simulation_results(scenarios)
     end_time = time.time()
     log_execution_time(start_time, end_time)

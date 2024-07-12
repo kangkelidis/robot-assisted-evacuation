@@ -7,6 +7,7 @@ import os
 import sys
 from typing import Optional
 
+from core.simulations.simulation import Result, Scenario, Simulation
 from core.utils.helper import get_scenario_name, setup_logger
 from core.utils.paths import (NETLOGO_FOLDER, ROBOTS_ACTIONS_FILE_NAME,
                               SCENARIOS_TEMP_FILE_NAME, STRATEGIES_FOLDER)
@@ -18,7 +19,7 @@ logger = setup_logger()
 
 app = Flask(__name__)
 
-
+SCENARIOS = []
 class ScenarioNotFoundError(Exception):
     pass
 
@@ -173,13 +174,44 @@ def on_survivor_contact(candidate_helper: Survivor,
 
     return action
 
+# @app.route('/finished', methods=['POST'])
+# def finished():
+#     data = request.json
+#     simulation_id = data["simulation_id"]
+#     ticks = data["ticks"]
+#     scenario_name = get_scenario_name(simulation_id)
+#     scenario: Scenario = next((s for s in SCENARIOS if s.name == scenario_name), None)
+#     simulation: Simulation = next((s for s in scenario.simulations if s.id == simulation_id), None)
+#     r: Result = simulation.result
+#     r.evacuation_ticks = ticks
+#     r.simulation_id = simulation_id
+#     r.success = True
+#     return "Simulation finished"
+
+
+@app.route('/put_results', methods=['POST'])
+def put_results():
+    data = request.json
+    results = Result(**data)
+    simulation_id = results.simulation_id
+    scenario_name = get_scenario_name(simulation_id)
+
+    scenario: Scenario = next((s for s in SCENARIOS if s.name == scenario_name), None)
+    simulation: Simulation = next((s for s in scenario.simulations if s.id == simulation_id), None)
+    simulation.result = results
+
+    return "Results received"
 
 @app.route('/passenger_response', methods=['POST'])
 def passenger_response():
     data = request.json
     simulation_id = data["simulation_id"]
     response = data["response"]
-    print(f"Simulation ID: {simulation_id}, Response: {response}")
+
+    scenario_name: str = get_scenario_name(simulation_id)
+    scenario: Scenario = next((s for s in SCENARIOS if s.name == scenario_name), None)
+    simulation = next((s for s in scenario.simulations if s.id == simulation_id), None)
+    simulation.responses.append(response)
 
     return "Response received"
 
@@ -196,8 +228,48 @@ def handler():
 
     action = on_survivor_contact(candidate_helper, victim, helper_victim_distance,
                                  first_responder_victim_distance, simulation_id)
-    print(f"Simulation ID: {simulation_id}, Action: {action}")
+    scenario_name: str = get_scenario_name(simulation_id)
+    scenario: Scenario = next((s for s in SCENARIOS if s.name == scenario_name), None)
+    simulation = next((s for s in scenario.simulations if s.id == simulation_id), None)
+    simulation.actions.append(action)
     return action
+
+
+@app.route('/run', methods=['GET'])
+def run():
+    import traceback
+    from typing import Any
+
+    from core.simulations.load_config import load_config, load_scenarios
+    from core.simulations.results_analysis import perform_analysis
+    from core.simulations.simulation import Scenario
+    from core.simulations.simulation_manager import start_experiments
+    from core.utils.cleanup import cleanup_workspace
+    from core.utils.helper import setup_folders, setup_logger
+    from core.utils.paths import CONFIG_FILE, WORKSPACE_FOLDER
+    logger = setup_logger()
+    try:
+        logger.info("******* ==Starting Experiment== *******")
+        setup_folders()
+
+        config: dict[str, Any] = load_config(CONFIG_FILE)
+        scenarios: list[Scenario] = load_scenarios(config)
+        global SCENARIOS
+        SCENARIOS = scenarios
+        experiments_results = start_experiments(config, scenarios)
+
+        perform_analysis(experiments_results)
+
+        logger.info("******* ==Experiment Finished== *******\n")
+    except Exception as e:
+        logger.critical(f"Error in main: {e}")
+        traceback.print_exc()
+    except KeyboardInterrupt:
+        logger.info("KeyboardInterrupt: Cleaning up workspace.")
+    finally:
+        cleanup_workspace(WORKSPACE_FOLDER)
+
+    return 'ok'
 
 
 if __name__ == "__main__":

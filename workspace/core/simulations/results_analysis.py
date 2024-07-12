@@ -220,6 +220,20 @@ def process_data(experiment_results):
     return processed_data
 
 
+def plot_num_of_robots(experiment_data: pd.DataFrame) -> None:
+    """
+    Plots the number of robots in the simulation.
+
+    Args:
+        experiment_data (pd.DataFrame): The DataFrame containing the experiment data.
+    """
+    plt.style.use(PLOT_STYLE)
+    plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/num_of_robots"
+    ax = sns.lineplot(data=experiment_data, x='num_of_robots', y='evacuation_ticks', hue='num_of_staff')
+    ax.set_title("Evacuation Ticks vs Number of Robots")
+    plt.savefig(plt_path + ".png", bbox_inches='tight', pad_inches=0)
+    plt.clf()
+
 def perform_analysis(experiment_results):
     # type: (pd.DataFrame) -> None
     """
@@ -229,6 +243,9 @@ def perform_analysis(experiment_results):
         experiment_results (pd.DataFrame): DataFrame with all simulations' results.
     """
     logger.info("Performing analysis.")
+    experiment_data = experiment_results['data']
+    plot_num_of_robots(experiment_data)
+    experiment_results = experiment_results['results']
     processed_data = process_data(experiment_results)
     plot_results(processed_data)
 
