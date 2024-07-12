@@ -10,34 +10,34 @@ class Gender(Enum):
     """
     Enum for Survivor gender.
     """
-    FEMALE = auto()
-    MALE = auto()
+    FEMALE = 0
+    MALE = 1
 
 
 class CulturalCluster(Enum):
     """
     Enum for cultural cluster.
     """
-    ARAB = auto()
-    NEAR_EAST = auto()
-    LATIN_AMERICA = auto()
-    EAST_EUROPE = auto()
-    LATIN_EUROPE = auto()
-    NORDIC = auto()
-    GERMANIC = auto()
-    AFRICAN = auto()
-    ANGLO = auto()
-    CONFUCIAN = auto()
-    FAR_EAST = auto()
+    ARAB = 0
+    NEAR_EAST = 1
+    LATIN_AMERICA = 2
+    EAST_EUROPE = 3
+    LATIN_EUROPE = 4
+    NORDIC = 5
+    GERMANIC = 6
+    AFRICAN = 7
+    ANGLO = 8
+    CONFUCIAN = 9
+    FAR_EAST = 10
 
 
 class Age(Enum):
     """
     Enum for age.
     """
-    CHILD = auto()
-    ADULT = auto()
-    ELDERLY = auto()
+    CHILD = 0
+    ADULT = 1
+    ELDERLY = 2
 
 
 class Survivor:
@@ -55,6 +55,8 @@ class Survivor:
         self.age = int(age)
 
 
+# TODO: Turn to Singleton, so the server will always use the same object,
+#       unless we want a new class for each scenario
 class AdaptationStrategy(object):
     """
     Base class for adaptation strategies.

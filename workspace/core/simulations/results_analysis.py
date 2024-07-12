@@ -9,6 +9,8 @@ function to calculate Cohen's d for independent samples
 Inspired by: https://machinelearningmastery.com/effect-size-measures-in-python/
 """
 
+import textwrap
+
 import matplotlib  # type: ignore
 
 matplotlib.use('Agg')
@@ -177,7 +179,12 @@ def plot_results(experiment_results):
     """
     plt.style.use(PLOT_STYLE)
     plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/violin_plot"
-    _ = sns.violinplot(data=experiment_results, order=None).set_title("title")
+    ax = sns.violinplot(data=experiment_results, order=None)
+    ax.set_title("title")
+    locs = ax.get_xticks()
+    labels = [textwrap.fill(label.get_text(), 12) for label in ax.get_xticklabels()]
+    ax.xaxis.set_major_locator(plt.FixedLocator(locs))
+    ax.set_xticklabels(labels, rotation=45, ha='right')
     plt.savefig(plt_path + ".png", bbox_inches='tight', pad_inches=0)
     plt.savefig(plt_path + ".eps", bbox_inches='tight', pad_inches=0)
     plt.clf()

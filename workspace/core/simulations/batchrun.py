@@ -36,8 +36,8 @@ def _get_scenario_name(scenario: Scenario, kwargs: dict[str, Any]) -> str:
     Returns:
         A name for the scenario based on the parameters.
     """
-    name = scenario.name + "-" + ''.join(
-        [f"{key}={value}" for key, value in kwargs.items()])
+    name = scenario.name + "--" + ''.join(
+        [f"+{key}={value}" for key, value in kwargs.items()])
     name = name.replace("_", "-")
     return name
 

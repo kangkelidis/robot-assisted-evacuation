@@ -12,13 +12,13 @@
     "_comment": [
         "The scenario that will be used for the analysis.",
         "This scenario must be in the simulationScenarios array."],
-    "targetScenarioForAnalysis": "adaptive-support",
+    "targetScenarioForAnalysis": "near-optimal-support",
 
     "_comment": [
         "Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
-        "seed": 10,
+        "seed": 21,
         "numOfSamples": 5,
         "numOfRobots": 1,
         "numOfPassengers": 800,
@@ -66,14 +66,21 @@
             "allowPassengerSupport": true,
             "adaptationStrategy": null,
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         },
         {
-            "name": "adaptive-support",
-            "seed": 0,
+            "name": "random-support",
             "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
             "numOfRobots": 1,
             "adaptationStrategy": "RandomStrategy",
+            "enableVideo": false,
+            "enabled": true
+        },
+        {
+            "name": "near-optimal-support",
+            "description": "Almost optimal",
+            "numOfRobots": 1,
+            "adaptationStrategy": "OptimalStrategy",
             "enableVideo": false,
             "enabled": true
         },
@@ -84,7 +91,7 @@
             "numOfRobots": [1, 2],
             "adaptationStrategy": "RandomStrategy",
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         }
     ]
 }

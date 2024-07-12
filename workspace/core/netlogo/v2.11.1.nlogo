@@ -1394,6 +1394,10 @@ to request-passanger-help
   let selected_fallen_person victim-found
   let do-help offer-help? candidate-helper selected_fallen_person
 
+  ; v.2.11.2
+  let curl-command (word "curl -X POST http://localhost:5000/passenger_response -H \"Content-Type: application/json\" -d '{\"simulation_id\": \"" SIMULATION_ID "\", \"response\": \"" do-help "\"}'")
+  let no (shell:exec "sh" "-c" curl-command)
+
   ; TODO: Remove later
   log-turtle "Requesting help. Bystander: " candidate-helper
 
@@ -1584,12 +1588,18 @@ to-report request-candidate-help?
     ]
   ]
 
+  ; v.2.11.2
+  ; post to the server
+  let curl-command (word "curl -X POST http://localhost:5000/on_survivor_contact -H \"Content-Type: application/json\" -d '{\"simulation_id\":\"" simulation-id "\", \"helper_gender\":\"" helper-gender "\", \"helper_culture\":\"" helper-culture "\", \"helper_age\":\"" helper-age "\", \"fallen_gender\":\"" fallen-gender "\", \"fallen_culture\":\"" fallen-culture "\", \"fallen_age\":\"" fallen-age "\", \"helper_fallen_distance\":\"" helper-fallen-distance "\", \"staff_fallen_distance\":\"" staff-fallen-distance "\"}'")
+  let controller-response (shell:exec "sh" "-c" curl-command)
+
+  
   ; Calling the adaptive controller using Python
-  let controller-response (shell:exec
-    (item 0 CONTROLLER_PYTHON_COMMAND) (item 1 CONTROLLER_PYTHON_COMMAND) (item 2 CONTROLLER_PYTHON_COMMAND) (item 3 CONTROLLER_PYTHON_COMMAND) (item 4 CONTROLLER_PYTHON_COMMAND)
-    CONTROLLER_PYTHON_SCRIPT
-    simulation-id helper-gender helper-culture helper-age fallen-gender fallen-culture fallen-age helper-fallen-distance staff-fallen-distance
-  )
+  ;let controller-response (shell:exec
+  ;  (item 0 CONTROLLER_PYTHON_COMMAND) (item 1 CONTROLLER_PYTHON_COMMAND) (item 2 CONTROLLER_PYTHON_COMMAND) (item 3 CONTROLLER_PYTHON_COMMAND) (item 4 CONTROLLER_PYTHON_COMMAND)
+  ;  CONTROLLER_PYTHON_SCRIPT
+  ;  simulation-id helper-gender helper-culture helper-age fallen-gender fallen-culture fallen-age helper-fallen-distance staff-fallen-distance
+  ;)
 
   log-turtle "staff-fallen-distance " staff-fallen-distance
   log-turtle "helper-fallen-distance " helper-fallen-distance
@@ -1814,10 +1824,11 @@ to-report offer-help? [passenger selected_fallen_person]
     if [st_gender] of passenger = 0 [set row 4]                 ; males are at rows 0 to 3 and women are at rows 4 to 7.
     if social_identity = 0 [set row row + 2]     ; social_identity = 1 are at rows 0-1 (males) and 4-5(females)
     if [st_age] of passenger = 2 [set row row + 1]              ;adults (st_age = 1) are at rows 0 and 2 (males) and rows 4 and 6 (females)
+    ; IS THIS CORRECT? SHOULD IT BE selected_fallen_person?
     let col 0
-    if [st_gender] of passenger = 0 [set col 3]                 ; males are at columns 0 to 2 and women are at columns 3 to 5.
-    if [st_age] of passenger = 1    [set col col + 1]           ;adults (st_age = 1) are at colum 1 (males) and colum 4 (females)
-    if [st_age] of passenger = 2    [set col col + 2]           ;eldery (st_age = 2) are at colum 2 (males) and colum 5 (females)
+    if [st_gender] of selected_fallen_person = 0 [set col 3]                 ; males are at columns 0 to 2 and women are at columns 3 to 5.
+    if [st_age] of selected_fallen_person = 1    [set col col + 1]           ;adults (st_age = 1) are at colum 1 (males) and colum 4 (females)
+    if [st_age] of selected_fallen_person = 2    [set col col + 2]           ;eldery (st_age = 2) are at colum 2 (males) and colum 5 (females)
 
 
     let helping_chance matrix:get helping_chance_matrix row col

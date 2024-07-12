@@ -13,3 +13,4 @@ class RandomStrategy(AdaptationStrategy):
             return self.ASK_FOR_HELP_ROBOT_ACTION
         else:
             return self.CALL_STAFF_ROBOT_ACTION
+        

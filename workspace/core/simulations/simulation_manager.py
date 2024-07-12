@@ -334,7 +334,7 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
                         process.terminate()
                     finally:
                         logger.debug(f"Process {process.pid} terminated.")
-                logger.info(
+                logger.debug(
                     f"All processes in current batch ended. Simulations left: {len(simulations)}")
             logger.info("Finished all simulations.")
 

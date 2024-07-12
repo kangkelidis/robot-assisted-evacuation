@@ -40,7 +40,7 @@ The config.json contains parameters that can be adjusted by the user.
 
 `scenarioParams` contains global parameters that are used for all simulations. These  parameters can be overridden by specifying the same parameter in the `simulationScenarios` .
 
-- `seed`: A number that generates the seed for the simulations. Use zero for random.
+- `seed`: A number that generates the seed for the simulations. Use a non-zero number to use the same seed for each simulation round (a round consists of a single simulation for each scenario), use zero to generate a random seed for each simulation.
 - `numOfSamples`: The number of simulations to run for each scenario.
 - `numOfRobots`: The number of robots.
 - `numOfPassengers`: The number of passengers.
