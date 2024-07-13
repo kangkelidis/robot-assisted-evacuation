@@ -3,52 +3,28 @@ This module, manages the parallel execution of simulations in NetLogo.
 
 It provides functionality to run simulations and save the results.
 It uses the pyNetLogo library, to configure simulation parameters and retrieve simulation results.
-
-Key functionalities include:
-- Initialization of the NetLogo link and model loading.
-- Configuration of simulation parameters and execution of setup commands in NetLogo.
-- Running simulations in parallel, utilizing available CPU resources.
-- Collecting and processing simulation results from a multiprocessing queue.
-- Saving simulation results into a CSV file for further analysis.
 """
 
-import math
 import os
-import signal
 import time
 import traceback
 from multiprocessing import Process, Queue
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd  # type: ignore
 import pyNetLogo
-from core.simulations.load_config import get_netlogo_model_path, load_scenarios
+import requests
 from core.simulations.netlogo_commands import *
 from core.simulations.simulation import (NetLogoParams, Result, Scenario,
                                          Simulation)
 from core.utils.helper import (get_available_cpus, get_custom_bar_format,
-                               setup_logger, timeout_exception_handler)
+                               setup_logger)
 from core.utils.paths import *
 from core.utils.video_generation import generate_video
 from pyNetLogo import NetLogoException
 from tqdm import tqdm  # type: ignore
 
 logger = setup_logger()
-
-# TODO: remove
-def update_simulations_with(results_queue: Queue, simulations: list[Simulation]) -> None:
-    """
-    Updates the Simulation objects with the results from the results_queue.
-
-    Args:
-        results_queue: The queue containing the results.
-        simulations: The Simulation objects to be updated.
-    """
-    simulations_dict = {simulation.id: simulation for simulation in simulations}
-    while not results_queue.empty():
-        simulation_result = results_queue.get()
-        if simulation_result.simulation_id in simulations_dict:
-            simulations_dict[simulation_result.simulation_id].result = simulation_result
 
 
 def execute_comands(simulation_id: str,
@@ -72,10 +48,6 @@ def execute_comands(simulation_id: str,
         SET_NUM_OF_STAFF_COMMAND: netlogo_params.num_of_staff,
         SET_FALL_LENGTH_COMMAND: netlogo_params.fall_length,
         SET_FALL_CHANCE_COMMAND: netlogo_params.fall_chance,
-        SET_STAFF_SUPPORT_COMMAND: "TRUE" if netlogo_params.allow_staff_support
-        else "FALSE",
-        SET_PASSENGER_SUPPORT_COMMAND: "TRUE" if netlogo_params.allow_passenger_support
-        else "FALSE",
         SET_FRAME_GENERATION_COMMAND: "TRUE" if netlogo_params.enable_video else "FALSE",
         SET_ROOM_ENVIRONMENT_TYPE: netlogo_params.room_type
     }
@@ -92,8 +64,8 @@ def execute_comands(simulation_id: str,
 
 def setup_simulation(simulation_id: str,
                      simulation_seed: int,
-                     netlogo_link: pyNetLogo.NetLogoLink,
-                     netlogo_params: NetLogoParams) -> int:
+                     simulation_params: NetLogoParams,
+                     netlogo_link: pyNetLogo.NetLogoLink) -> int:
     """
     Prepares the simulation.
 
@@ -103,8 +75,8 @@ def setup_simulation(simulation_id: str,
     Args:
         simulation_id: The simulation id in the form of <scenario_indx>.
         simulation_seed: The seed for the simulation.
+        simulation_params: The parameters to be set in NetLogo.
         netlogo_link: The NetLogo link object.
-        netlogo_params: The parameters to be set in NetLogo.
 
     Returns:
         current_seed: The seed used by netlogo for the simulation.
@@ -113,7 +85,7 @@ def setup_simulation(simulation_id: str,
     netlogo_link.command('clear')
 
     logger.debug(f'Cleared environment for id: {simulation_id}')
-    execute_comands(simulation_id, netlogo_params, netlogo_link)
+    execute_comands(simulation_id, simulation_params, netlogo_link)
 
     current_seed: int = int(netlogo_link.report(SEED_SIMULATION_REPORTER.format(simulation_seed)))
     logger.debug(f"Simulation {simulation_id},  Current seed: {current_seed}")
@@ -122,50 +94,6 @@ def setup_simulation(simulation_id: str,
     logger.debug(f"Setup completed for id: {simulation_id}")
 
     return current_seed
-
-
-def get_netlogo_report(simulation_id: str,
-                       netlogo_link: pyNetLogo.NetLogoLink,
-                       netlogo_params: NetLogoParams) -> Optional[int]:
-    """
-    Runs the simulation and returns the results.
-
-    If the simulation is unsucessful, it tries again. If it still fails, it returns None.
-
-    Args:
-        simulation_id: The simulation id in the form of <scenario_indx>.
-        netlogo_link: The NetLogo link object.
-        netlogo_params: The parameters to be set in NetLogo.
-
-    Returns:
-        evacuation_ticks: The number of ticks it took for the evacuation to finish.
-    """
-    # ! Only works the first time, alarm does not reset.
-    signal.signal(signal.SIGALRM, timeout_exception_handler)
-    TIME_LIMIT_SECONDS = 120
-    MAX_RETRIES = 2
-
-    for i in range(MAX_RETRIES):
-        try:
-            signal.alarm(TIME_LIMIT_SECONDS)
-            logger.debug(f"Starting reporter for {simulation_id}, attempt no. {i + 1}")
-            metrics_dataframe: pd.DataFrame = netlogo_link.repeat_report(
-                netlogo_reporter=[TURTLE_PRESENT_REPORTER, EVACUATED_REPORTER, DEAD_REPORTER],
-                reps=netlogo_params.max_netlogo_ticks)
-            signal.alarm(0)
-
-            if metrics_dataframe is not None:
-                evacuation_ticks = get_evacuation_ticks(metrics_dataframe, simulation_id)
-                # Repeat the simulation if it did not finish under max ticks.
-                if evacuation_ticks is not None:
-                    return evacuation_ticks
-
-        except Exception as e:
-            logger.error(f"Exception in {simulation_id} attempt no.{i + 1}: {e}")
-            signal.alarm(0)
-
-    logger.error(f"Simulation {simulation_id} failed. Did not return any results")
-    return None
 
 
 def initialise_netlogo_link(netlogo_model_path: str) -> pyNetLogo.NetLogoLink:
@@ -185,177 +113,175 @@ def initialise_netlogo_link(netlogo_model_path: str) -> pyNetLogo.NetLogoLink:
     netlogo_link.load_model(netlogo_model_path)
     return netlogo_link
 
-# TODO: remove
-def get_evacuation_ticks(metrics_dataframe: pd.DataFrame, simulation_id: str) -> Optional[int]:
-    """
-    Calculates and returns the number of ticks it took for the evacuation to finish.
 
-    It uses the results from NetLogo to find the first tick where only dead turtles remain.
-    If the evacuation did not finish within the tick limit, it returns None.
+def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink) -> int | None:
+    """
+    Runs the NetLogo model and returns the number of ticks it took for the evacuation to finish.
+    If the evacuation does not finish, it returns None.
 
     Args:
-        metrics_dataframe: The metrics dataframe from NetLogo.
-        simulation_id: The simulation id in the form of <scenario_indx>.
+        netlogo_link: The NetLogo link object.
 
     Returns:
         evacuation_ticks: The number of ticks it took for the evacuation to finish.
+                          None if it did not finish.
     """
-    evacuation_finished = metrics_dataframe[
-        metrics_dataframe[TURTLE_PRESENT_REPORTER] == metrics_dataframe[DEAD_REPORTER]]
-
-    evacuation_ticks = evacuation_finished.index.min()  # type: float
-    # Evacuation did not finish on time.
-    if math.isnan(evacuation_ticks):
-        logger.warning(f"Id: {simulation_id} - Evacuation did not finish on time.")
-        return None
-
-    return int(evacuation_ticks)
+    evacuation_ticks = None
+    try:
+        while not netlogo_link.report(EVACUATION_FINISHED_REPORTER):
+            netlogo_link.command('go')
+        evacuation_ticks = netlogo_link.report('ticks')
+    except NetLogoException as e:
+        logger.error(f"NetLogo exception: {e}")
+    except Exception as e:
+        logger.error(f"Exception: {e}")
+    return evacuation_ticks
 
 
 def run_simulation(simulation_id: str,
                    simulation_seed: int,
-                   netlogo_model_path: str,
-                   netlogo_params: NetLogoParams) -> Result:
+                   simulation_params: NetLogoParams,
+                   netlogo_link: pyNetLogo.NetLogoLink) -> Result:
     """
     Runs a single simulation with the provided parameters and returns the results.
 
-    Initialises a new Netlogo link, sets up the simulation using Neltlogo commands,
+    Sets up the simulation using Neltlogo commands,
     calculates the execution time, generates a video if applicable and
     creates and returns a Result object.
 
     Args:
         simulation_id: The simulation id in the form of <scenario_indx>.
-        simulation_seed: The seed for the simulation.
-        netlogo_model_path: The path to the NetLogo model.
-        netlogo_params: The parameters to be set in NetLogo.
+        simulation_seed: The seed for the simulation. To be used in Netlogo to create a random seed.
+        simulation_params: The parameters to be set in NetLogo.
+        neltogo_link: The link to the NetLogo model.
 
     Returns:
         result: The result object containing the simulation results.
     """
-    try:
-        start_time = time.time()
+    start_time = time.time()
+    current_seed: int = setup_simulation(simulation_id, simulation_seed, simulation_params,
+                                         netlogo_link)
+    evacuation_ticks: int = _run_netlogo_model(netlogo_link)
+    endtime = time.time()
+    evacuation_time = round(endtime - start_time, 2)
 
-        netlogo_link = initialise_netlogo_link(netlogo_model_path)
-        current_seed: int = setup_simulation(simulation_id,
-                                             simulation_seed,
-                                             netlogo_link,
-                                             netlogo_params)
-        # evacuation_ticks = get_netlogo_report(simulation_id, netlogo_link, netlogo_params)
-        # TODO: put a time limit on the simulation
-        while netlogo_link.report('count turtles with [color != DEAD_PASSENGERS_COLOR]') > 0:
-            netlogo_link.command('go')  
-        evacuation_ticks = netlogo_link.report('ticks')
-        netlogo_link.kill_workspace()
+    if simulation_params.enable_video:
+        generate_video(simulation_id)
 
-        endtime = time.time()
-        evacuation_time = round(endtime - start_time, 2)
-
-        if netlogo_params.enable_video:
-            generate_video(simulation_id)
-
-        return Result(current_seed, simulation_id, evacuation_ticks, evacuation_time,
-                      evacuation_ticks is not None)
-
-    except NetLogoException as e:
-        logger.error(f"id:{id} NetLogo exception: {e}")
-    except Exception as e:
-        logger.error(f"id:{id} Exception: {e}")
-    return Result(current_seed, simulation_id, None, None, False)
+    return Result(current_seed, simulation_id, evacuation_ticks, evacuation_time,
+                  evacuation_ticks is not None)
 
 
-def simulation_processor(
-                         simulation_id: str,
-                         simulation_seed: int,
-                         netlogo_params: NetLogoParams,
-                         netlogo_model_path: str) -> None:
+def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: str,
+                    index: int, q: Queue) -> None:
     """
-    Used to run a simulation in a dedicated Process.
+    Used to run a batch of simulations in a dedicated Process.
 
-    It runs the simulation and puts the results in the thread safe results_queue.
+    It runs the simulations in the batch sequentially. It loads the netlogo model and
+    runs each simulation before killing the link.
 
     Args:
-        results_queue: The queue to store the results.
-        simulation_id: The simulation id in the form of <scenario_indx>.
-        simulation_seed: The seed for the simulation.
-        netlogo_params: The parameters to be set in NetLogo.
+        simulation_batch: A list of dictionaries containing the simulation id, seed and parameters.
         netlogo_model_path: The path to the NetLogo model.
+        index: The index of the current batch.
     """
-    result: Result = run_simulation(simulation_id,
-                                    simulation_seed,
-                                    netlogo_model_path,
-                                    netlogo_params)
-    # results_queue.put(result)
-    # results_queue.cancel_join_thread()
-    
-    import requests
-    url = "http://localhost:5000/put_results"
-    response = requests.post(url, json=result.__dict__)
+    netlogo_link = initialise_netlogo_link(netlogo_model_path)
 
-    logger.debug(f"Simulation id: {simulation_id} finished. - Result: {result}.")
+    for simulation in simulation_batch:
+        result = run_simulation(
+            simulation['id'], simulation['seed'], simulation['params'], netlogo_link)
+        q.get()
+        url = "http://localhost:5000/put_results"
+        requests.post(url, json=result.__dict__)
+        logger.debug(f"Simulation id: {simulation['id']} finished. - Result: {result}.")
+
+    logger.debug(f"Finished batch {index + 1}")
+    netlogo_link.kill_workspace()
+
+
+def build_batches(simulations: list[Simulation], num_cpus: int) -> list[list[dict[str, Any]]]:
+    """
+    Builds batches of simulations to be executed in parallel.
+
+    It splits the list of simulations into batches and creates a list of dictionaries
+    containing the simulation id, seed and parameters for each simualtion in each batch.
+    Objects are not passed by refernce to the Process, but by value. This is why the
+    simulations are converted to dictionaries.
+
+    [[ {id: 1, seed: 123, params: {num_of_robots: 10, ...}}, ...], ...]
+
+    Args:
+        simulations: The simulations to be batched.
+        num_cpus: The number of CPUs available.
+
+    Returns:
+        simulation_batches: The list of simulation batches.
+    """
+    # Initialize an empty list for each CPU
+    simulation_batches = [[] for _ in range(num_cpus)]
+    simulations_dict = [{'id': sim.id, 'seed': sim.seed, 'params': sim.netlogo_params}
+                        for sim in simulations]
+
+    used_cores = set()
+    # Assign simulations to CPUs
+    for i, simulation in enumerate(simulations_dict):
+        cpu_index = i % num_cpus
+        simulation_batches[cpu_index].append(simulation)
+        used_cores.add(cpu_index)
+    logger.info(
+        f"Total number of simulations to run: {len(simulations)}. Total cores: {len(used_cores)}")
+
+    return simulation_batches
 
 
 def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_path: str) -> None:
     """
     Executes the simulations in parallel using the available CPUs.
 
-    It creates a pool of processes to run a single simulation in each,
-    using the paramaters from each Simulation object.
-    It uses the number of CPUs available to run simulations in paraller.
-    It waits for all processes to finish and updates the Simulation objects with the results.
+    It creates a Process for each core and runs (total simulations / number of cores) simulations
+    in each, using the paramaters from each Simulation object.
 
     Args:
         simulations: The simulations to be executed.
         netlogo_model_path: The path to the NetLogo model.
     """
-    # Using multiprocessing.Queue to allow for inter-process communication and store the results
-    # results_queue: Queue = Queue()
-    # Makes a shallow copy of the list of Simulation to update them with the results
-    simulations_copy = simulations[:]
     num_cpus = get_available_cpus()
-    logger.info(f"Total number of simulations to run: {len(simulations)}.")
+    simulation_batches = build_batches(simulations, num_cpus)
 
-    timeout = 100  # Timeout in seconds
+    logger.info("Setting up Simulations...")
+    pbar = tqdm(total=len(simulations), desc="Simulations Progress", bar_format=get_custom_bar_format())
 
+    q = Queue()
+    for _ in range(len(simulations)):
+        q.put(1)
     try:
-        with tqdm(total=len(simulations), desc="Running Simulations",
-                  bar_format=get_custom_bar_format()) as pbar:
-            while simulations:
-                processes = []
-                for _ in range(num_cpus):
-                    if simulations:
-                        simulation = simulations.pop()
-                        # Simulation objects are not passed to the Process,
-                        # because they will be coppied
-                        process = Process(target=simulation_processor,
-                                          args=(
-                                                simulation.id,
-                                                simulation.seed,
-                                                simulation.netlogo_params,
-                                                netlogo_model_path))
-                        processes.append(process)
-                        process.start()
-                        logger.debug(f"Started process {process.pid}. ID: {simulation.id}. "
-                                     f"Simulations left: {len(simulations)}")
+        processes = []
+        for index, batch in enumerate(simulation_batches):
+            process = Process(target=batch_processor,
+                              args=(batch, netlogo_model_path, index, q))
+            processes.append(process)
+            process.start()
 
-                for process in processes:
-                    try:
-                        process.join(timeout)
-                        if process.is_alive():
-                            process.terminate()
-                            logger.debug(f"Terminated process {process.pid} due to timeout.")
-                            raise TimeoutError(f"Process {process.pid} timed out.")
-                        pbar.update(1)
-                    except Exception as e:
-                        logger.error(f"Exception in joining process: {e}")
-                        process.terminate()
-                    finally:
-                        logger.debug(f"Process {process.pid} terminated.")
-                logger.debug(
-                    f"All processes in current batch ended. Simulations left: {len(simulations)}")
-            logger.info("Finished all simulations.")
+        # Progress bar update
+        prev_size = len(simulations) + 1
+        while any(p.is_alive() for p in processes):
+            size = q.qsize()
+            if size < len(simulations) and size != prev_size:
+                # Only update if the size has changed by more than 10%
+                if prev_size - size > len(simulations) * 0.1:
+                    print(' ')
+                    pbar.n = len(simulations) - size
+                    pbar.refresh()
+                    prev_size = size
 
-        # update_simulations_with(results_queue, simulations_copy)
+        for process in processes:
+            process.join()
 
+        q.close()
+        pbar.n = len(simulations)
+        pbar.refresh()
+        pbar.close()
+        logger.info("\nFinished all simulations.")
     except Exception as e:
         logger.error(f"Exception in parallel simulation: {e}")
         traceback.print_exc()

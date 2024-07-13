@@ -173,7 +173,8 @@ def get_available_cpus() -> int:
 
     This function attempts to determine the number of CPUs available on the system
     using the `cpu_count()` function from the `multiprocessing` module. If the
-    number of CPUs cannot be determined, it returns 4 as a fallback.
+    number of CPUs cannot be determined, it returns 1 as a fallback and will run
+    simulations sequentially.
 
     Returns:
         The number of available CPUs.
@@ -181,8 +182,8 @@ def get_available_cpus() -> int:
     try:
         num_cpus = cpu_count()  # type: int
     except Exception as e:
-        num_cpus = 4
-        logger.error(f"Exception in getting number of CPUs. 4 used. : {e}")
+        num_cpus = 1
+        logger.error(f"Exception in getting number of CPUs. 1 used. : {e}")
     return num_cpus
 
 

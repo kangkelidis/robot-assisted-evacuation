@@ -59,8 +59,6 @@ class NetLogoParams(Updateable):
         self.num_of_staff = 10
         self.fall_length = 500
         self.fall_chance = 0.05
-        self.allow_staff_support = True
-        self.allow_passenger_support = True
         self.max_netlogo_ticks = 2000
         self.room_type = 8
         self.enable_video = False

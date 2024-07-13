@@ -146,6 +146,9 @@ to setup-environment
   set STAFF_HELP_FACTOR 0.50
   set PASSENGER_HELP_FACTOR 0.98
   set ROBOT_REQUEST_BONUS 0.2
+
+  set REQUEST_STAFF_SUPPORT TRUE
+  set REQUEST_BYSTANDER_SUPPORT TRUE
   
   ; For evacuation time experiments, keep them all false.
   set ENABLE_LOGGING FALSE

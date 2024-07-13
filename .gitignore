@@ -10,3 +10,4 @@ workspace/results/video/*
 workspace/logs/*
 
 .mypy_cache/*
+*.log

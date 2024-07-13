@@ -195,7 +195,6 @@ def put_results():
     results = Result(**data)
     simulation_id = results.simulation_id
     scenario_name = get_scenario_name(simulation_id)
-
     scenario: Scenario = next((s for s in SCENARIOS if s.name == scenario_name), None)
     simulation: Simulation = next((s for s in scenario.simulations if s.id == simulation_id), None)
     simulation.result = results

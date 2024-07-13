@@ -1,39 +1,32 @@
 {
-    ":_comment": [
-        "Load a saved configuration. Use the name of the file in the examples folder.",
+    "": ["Load a saved configuration. Use the name of the file in the examples folder.",
         "Use null to use this file."],
     "loadConfigFrom": null,
 
-    "_comment": [
-        "The netlogo model to be used for the simulations.",
+    "": ["The netlogo model to be used for the simulations.",
         "This model must be in the core/netlogo folder."],
     "netlogoModeName": "v2.11.1.nlogo",
 
-    "_comment": [
-        "The scenario that will be used for the analysis.",
+    "": ["The scenario that will be used for the analysis.",
         "This scenario must be in the simulationScenarios array."],
-    "targetScenarioForAnalysis": "near-optimal-support",
+    "targetScenarioForAnalysis": "random-support",
 
-    "_comment": [
-        "Global parameters for every simulation. To override these parameters,",
+    "": ["Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
         "seed": 21,
-        "numOfSamples": 5,
+        "numOfSamples": 4,
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
         "fallLength": 500,
         "fallChance": 0.05,
-        "allowStaffSupport": true,
-        "allowPassengerSupport": true,
         "maxNetlogoTicks": 2000,
         "roomType": 8,
         "enableVideo": false
     },
 
-    "_comment": [
-        "Scenarios for the simulation.", 
+    "": ["Scenarios for the simulation.", 
         "SAR adaptation strategy name must match file name in scenarios folder.",
         "Each scenario can have its own parameters that will override the global parameters.",
         "Must have a name"],
@@ -42,9 +35,6 @@
             "name": "no-support",
             "description": "There are no SAR robots in the simulation.",
             "numOfRobots": 0,
-            "allowStaffSupport": false,
-            "allowPassengerSupport": false,
-            "adaptationStrategy": null,
             "enableVideo": false,
             "enabled": false
         },
@@ -52,9 +42,7 @@
             "name": "staff-support",
             "description": "The SAR always asks help from a staff member.",
             "numOfRobots": 1,
-            "allowStaffSupport": true,
-            "allowPassengerSupport": false,
-            "adaptationStrategy": null,
+            "adaptationStrategy": "AlwaysCallStaffStrategy",
             "enableVideo": false,
             "enabled": false
         },
@@ -62,19 +50,22 @@
             "name": "passenger-support",
             "description": "The SAR always asks help from a passenger.",
             "numOfRobots": 1,
-            "allowStaffSupport": false,
-            "allowPassengerSupport": true,
-            "adaptationStrategy": null,
+            "adaptationStrategy": "AlwaysAskHelpStrategy",
             "enableVideo": false,
             "enabled": false
         },
         {
             "name": "random-support",
+            "seed": 12,
+            "fallLength": 500,
+            "fallChance": 0.05,
+            "numOfPassengers": 800,
             "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
             "numOfRobots": 1,
+            "numOfSamples": 120,
             "adaptationStrategy": "RandomStrategy",
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
         {
             "name": "near-optimal-support",
@@ -83,7 +74,7 @@
             "numOfRobots": [1, 2],
             "adaptationStrategy": ["RandomStrategy", "OptimalStrategy"],
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         },
         {
             "name": "test",

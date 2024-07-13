@@ -189,7 +189,7 @@ def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
 
     return scenarios
 
-
+#  TODO: remove
 def save_scenarios(scenarios: list[Scenario]) -> None:
     """Saves the scenarios to a temporary file, so that they can be accessed by on_contact.py.
 
