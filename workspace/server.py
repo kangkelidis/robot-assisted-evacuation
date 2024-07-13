@@ -9,21 +9,18 @@ import traceback
 from typing import Any, Optional
 
 from flask import Flask, request
-
-sys.path.append("/home/workspace/")
-from src.adaptation_strategy import AdaptationStrategy, Survivor
-from src.load_config import load_config, load_scenarios
-from src.on_contact import on_survivor_contact
-from src.results_analysis import perform_analysis
-from src.simulation import Result, Scenario, Simulation
-from src.simulation_manager import start_experiments
-from utils.cleanup import cleanup_workspace
-from utils.helper import (find_scenario_by_name, find_simulation_in,
-                          get_scenario_name, setup_folders, setup_logger)
+# sys.path.append("/home/workspace/")
+# from src.adaptation_strategy import AdaptationStrategy, Survivor
+# from src.on_contact import on_survivor_contact
+# from src.simulation import Result, Scenario, Simulation
+# from src.simulation_manager import start_experiments
+# from utils.cleanup import cleanup_workspace
+# from utils.helper import (find_scenario_by_name, find_simulation_in,
+#                           get_scenario_name, setup_folders, setup_logger)
 from utils.paths import (CONFIG_FILE, NETLOGO_FOLDER, STRATEGIES_FOLDER,
                          WORKSPACE_FOLDER)
 
-logger = setup_logger()
+# logger = setup_logger()
 
 app = Flask(__name__)
 
@@ -33,6 +30,8 @@ SCENARIOS = []
 
 @app.route('/put_results', methods=['POST'])
 def put_results():
+    from src.simulation import Result, Scenario, Simulation
+    from utils.helper import get_scenario_name
     data = request.json
     results = Result(**data)
     simulation_id = results.simulation_id
@@ -46,6 +45,8 @@ def put_results():
 
 @app.route('/passenger_response', methods=['POST'])
 def passenger_response():
+    from src.simulation import Scenario
+    from utils.helper import get_scenario_name
     data = request.json
     simulation_id = data["simulation_id"]
     response = data["response"]
@@ -60,6 +61,13 @@ def passenger_response():
 
 @app.route('/on_survivor_contact', methods=['POST'])
 def on_survivor_contact_handler():
+    from src.adaptation_strategy import Survivor
+    from src.on_contact import on_survivor_contact
+    from src.simulation import Scenario, Simulation
+    from utils.helper import (find_scenario_by_name, find_simulation_in,
+                              get_scenario_name, setup_logger)
+
+    logger = setup_logger()
     """
     Called by the NetLogo model when the robot makes contact with a fallen victim.
     """
@@ -72,7 +80,8 @@ def on_survivor_contact_handler():
     simulation_id = data["simulation_id"]
 
     logger.debug(f'on_contact.py called by {simulation_id}')
-    scenario: Scenario = find_scenario_by_name(simulation_id, SCENARIOS)
+    scenario_name = get_scenario_name(simulation_id)
+    scenario: Scenario = find_scenario_by_name(scenario_name, SCENARIOS)
     simulation: Simulation = find_simulation_in(scenario, simulation_id)
 
     action = on_survivor_contact(candidate_helper, victim, helper_victim_distance,
@@ -84,34 +93,30 @@ def on_survivor_contact_handler():
 
 @app.route('/run', methods=['GET'])
 def run():
-    """
-    Main function, runs the experiment.
-    """
-    try:
-        logger.info("******* ==Starting Experiment== *******")
-        setup_folders()
+    from src.load_config import load_config, load_scenarios
+    from src.results_analysis import perform_analysis
+    from src.simulation import Scenario
+    from src.simulation_manager import start_experiments
+    from utils.helper import setup_logger
 
-        config: dict[str, Any] = load_config(CONFIG_FILE)
-        scenarios: list[Scenario] = load_scenarios(config)
-        global SCENARIOS
-        SCENARIOS = scenarios
-        experiments_results = start_experiments(config, scenarios)
-
-        perform_analysis(experiments_results)
-
-        logger.info("******* ==Experiment Finished== *******\n")
-    except Exception as e:
-        logger.error(f"Error in main: {e}")
-        traceback.print_exc()
-    except KeyboardInterrupt:
-        logger.info("KeyboardInterrupt: Cleaning up workspace.")
-    finally:
-        cleanup_workspace(WORKSPACE_FOLDER)
+    logger = setup_logger()
+    logger.info("******* ==Starting Experiment== *******")
+    config: dict[str, Any] = load_config(CONFIG_FILE)
+    scenarios: list[Scenario] = load_scenarios(config)
+    global SCENARIOS
+    SCENARIOS = scenarios
+    experiments_results = start_experiments(config, scenarios)
+    # perform_analysis(experiments_results)
+    logger.info("******* ==Experiment Finished== *******\n")
 
     return 'Experiment finished'
 
 
-if __name__ == "__main__":
+def main():
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
+
+
+if __name__ == "__main__":
+    main()

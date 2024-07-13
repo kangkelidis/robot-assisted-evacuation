@@ -172,10 +172,10 @@ def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
         scenario_obj = Scenario()
         # Scenario params override global params
         scenario_params = {**global_params, **scenario_dict}
+        scenario_params = convert_dict_to_snake_case(scenario_params)
         scenario_obj.update(scenario_params)
 
         if _has_iterable_values(scenario_params):
-            scenario_params = convert_dict_to_snake_case(scenario_params)
             logger.debug(f"Building scenarios for {scenario_obj.name} with iterable values.")
             batch = batch_run(scenario_obj, scenario_params, scenario_params['num_of_samples'])
             scenarios.extend(batch)

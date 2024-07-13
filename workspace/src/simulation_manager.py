@@ -229,7 +229,9 @@ def build_batches(simulations: list[Simulation], num_cpus: int) -> list[list[dic
         used_cores.add(cpu_index)
     logger.info(
         f"Total number of simulations to run: {len(simulations)}. Total cores: {len(used_cores)}")
-
+    # BUG: check it with only one simulation
+    # remove empty lists
+    simulation_batches = [batch for batch in simulation_batches if batch]
     return simulation_batches
 
 

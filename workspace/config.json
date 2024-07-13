@@ -62,7 +62,7 @@
             "numOfPassengers": 800,
             "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
             "numOfRobots": 1,
-            "numOfSamples": 120,
+            "numOfSamples": 10,
             "adaptationStrategy": "RandomStrategy",
             "enableVideo": false,
             "enabled": true

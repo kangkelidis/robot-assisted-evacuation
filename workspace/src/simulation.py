@@ -123,6 +123,7 @@ class Scenario(Updateable):
     def update(self, params: dict) -> None:
         super().update(params)
         self.netlogo_params.update(params)
+        self.adaptation_strategy = AdaptationStrategy.get_strategy(params.get('adaptation_strategy'))
 
     # TODO: refactor this method
     def copy(self) -> 'Scenario':
@@ -153,8 +154,6 @@ class Scenario(Updateable):
         Also collects the robots actions from the temp file.
         """
         for simulation in self.simulations:
-            # TODO: delete this line
-            simulation.get_robots_actions()
             self.results.append(simulation.result)
 
     def save_results(self) -> None:
@@ -230,21 +229,9 @@ class Simulation(Updateable):
         self.result = Result()
         self.seed = self.generate_seed(index)
         self.netlogo_seed = None
-        # TODO: add them to the Resul
+        # TODO: add them to the Result
         self.actions = []
         self.responses = []
-
-    # TODO: delete this method
-    def get_robots_actions(self) -> None:
-        """
-        Collects the robots actions from the temp file and appends them to the robot_actions list.
-        """
-        robots_actions_file_path = NETLOGO_FOLDER + ROBOTS_ACTIONS_FILE_NAME
-        if not os.path.exists(robots_actions_file_path):
-            return
-        df = pd.read_csv(robots_actions_file_path)
-        actions_df = df[df['id'] == self.id]
-        self.result.robot_actions.extend(actions_df['Action'].tolist())
 
     def generate_seed(self, index) -> None:
         """
