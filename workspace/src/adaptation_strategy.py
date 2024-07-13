@@ -2,8 +2,7 @@
 This module contains the base class for adaptation strategies.
 """
 
-
-from enum import Enum, auto
+from enum import Enum
 
 
 class Gender(Enum):
@@ -78,15 +77,14 @@ class AdaptationStrategy(object):
         Gets the robot action based on the candidate helper, victim, and distances.
 
         During the simulation, if the robot encounters a fallen victim,
-        the Netlogo model will execute the `on_contact.py` file,
-        which in turn will call this function to determine the robot action.
+        the NetLogo model will call this function to determine the robot's action.
 
         Args:
             candidate_helper: The candidate helper.
             victim: The victim.
             helper_victim_distance: Distance between the candidate helper and the victim.
             first_responder_victim_distance: Distance between the first responder and
-                                                     the victim.
+                                             the victim.
 
         Returns:
             The robot action to take.

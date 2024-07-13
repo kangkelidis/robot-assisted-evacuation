@@ -1,8 +1,8 @@
 
 import random
 
-from strategies.AdaptationStrategies import (AdaptationStrategy, Age,
-                                             CulturalCluster, Gender, Survivor)
+from src.adaptation_strategy import (AdaptationStrategy, Age, CulturalCluster,
+                                     Gender, Survivor)
 
 
 class OptimalStrategy(AdaptationStrategy):

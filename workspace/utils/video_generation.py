@@ -7,8 +7,8 @@ import glob
 import os
 
 import natsort
-from core.utils.paths import FRAMES_FOLDER, VIDEO_FOLDER, get_experiment_folder
 from PIL import Image  # type: ignore
+from utils.paths import FRAMES_FOLDER, VIDEO_FOLDER, get_experiment_folder
 
 
 def generate_video(simulation_id: str, frame_duration: int = 200) -> None:

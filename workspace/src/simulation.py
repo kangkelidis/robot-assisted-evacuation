@@ -11,12 +11,13 @@ Classes:
 """
 
 import os
+from typing import Optional
 
 import pandas as pd  # type: ignore
-from core.utils.helper import (convert_camelCase_to_snake_case,
-                               generate_simulation_id, setup_logger)
-from core.utils.paths import (DATA_FOLDER, NETLOGO_FOLDER,
-                              ROBOTS_ACTIONS_FILE_NAME, get_experiment_folder)
+from src.adaptation_strategy import AdaptationStrategy
+from utils.helper import (convert_camelCase_to_snake_case,
+                          generate_simulation_id, setup_logger)
+from utils.paths import DATA_FOLDER, NETLOGO_FOLDER, get_experiment_folder
 
 
 class Updateable(object):
@@ -112,7 +113,7 @@ class Scenario(Updateable):
         self.name = ''
         self.description = ''
         self.netlogo_params = NetLogoParams()
-        self.adaptation_strategy = None
+        self.adaptation_strategy: Optional[AdaptationStrategy] = None
         self.enabled = True
         self.simulations: list[Simulation] = []
         self.results: list[Result] = []

@@ -4,8 +4,8 @@ This module creates the default Scenarios for the simulation.
 
 from typing import List
 
-from core.simulations.load_config import save_scenarios
-from core.simulations.simulation import Scenario
+from core.src.load_config import save_scenarios
+from core.src.simulation import Scenario
 
 scenarioParams = {
     'num_of_samples': 30,

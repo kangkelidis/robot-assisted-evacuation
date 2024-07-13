@@ -16,7 +16,8 @@ from core.netlogo.on_contact import (ScenarioNotFoundError,
                                      load_scenarios_from_temp, main,
                                      on_survivor_contact, store_action)
 from core.utils.paths import ROBOTS_ACTIONS_FILE_NAME
-from strategies.AdaptationStrategies import AdaptationStrategy, Survivor
+
+from workspace.src.adaptation_strategy import AdaptationStrategy, Survivor
 
 
 class TestOnContactHelperFunctions(unittest.TestCase):

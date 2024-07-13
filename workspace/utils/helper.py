@@ -2,20 +2,21 @@
 This module provides a set of utility functions for setting up and managing the workspace
 for NetLogo simulations.
 """
+from __future__ import annotations
 
 import logging
 import os
 from multiprocessing import cpu_count
-from typing import Any
+from typing import Any, Optional, Union
 
-from core.utils.paths import *
+from utils.paths import *
 
 logger_imported = False
 try:
     from concurrent_log_handler import ConcurrentRotatingFileHandler
     logger_imported = True
 except ImportError:
-    print("Import error. concurrent_log_handler in logging.py")
+    print("Import error. concurrent_log_handler not installed.")
 
 
 def setup_logger() -> logging.Logger:
@@ -203,3 +204,44 @@ def get_custom_bar_format() -> str:
     custom_bar_format = "{}{{l_bar}}{{bar}}{}| {{n_fmt}}/{{total_fmt}} [Elapsed: {{elapsed}}, Remaining: {{remaining}}, \
         {{rate_fmt}}{{postfix}}]".format(green_color, reset_color)
     return custom_bar_format
+
+
+def find_scenario_by_name(scenario_name: str, scenarios: list['Scenario']) -> 'Scenario':
+    """
+    Returns the scenario with the given name from the list of scenarios.
+
+    Args:
+        scenario_name: The name of the scenario to find.
+        scenarios: The list of scenarios.
+
+    Returns:
+        The scenario object.
+    """
+    for scenario in scenarios:
+        if scenario.name == scenario_name:
+            return scenario
+    raise NameError(f"No matching scenario found for name {scenario_name}")
+
+
+def find_simulation_in(scenario_s: Union[list[Scenario], Scenario], simulation_id: str) -> Simulation:
+    """
+    Returns the simulation with the given ID from the list of scenarios.
+
+    Args:
+        scenario_s: Either a list of scenarios or a single scenario.
+        simulation_id: The ID of the simulation to find.
+
+    Returns:
+        The Simulation object.
+    """
+    if isinstance(scenario_s, list):
+        scenario_name = get_scenario_name(simulation_id)
+        scenario_s = find_scenario_by_name(scenario_name, scenario_s)
+
+    simulation: Optional['Simulation'] = \
+        next((s for s in scenario_s.simulations if s.id == simulation_id), None)
+
+    if simulation is None:
+        raise NameError(f"No matching simulation found for ID {simulation_id}")
+
+    return simulation

@@ -1,4 +1,4 @@
-from strategies.AdaptationStrategies import AdaptationStrategy
+from src.adaptation_strategy import AdaptationStrategy
 
 
 class AlwaysCallStaffStrategy(AdaptationStrategy):

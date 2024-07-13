@@ -6,8 +6,6 @@ from folders created by the NetLogo simulations.
 import os
 from pathlib import Path
 
-from core.utils.paths import ROBOTS_ACTIONS_FILE_NAME, SCENARIOS_TEMP_FILE_NAME
-
 
 def is_netlogo_folder(path: str) -> bool:
     """
@@ -40,15 +38,6 @@ def cleanup_workspace(directory: str) -> None:
         if is_netlogo_folder(path):
             print("Deleting folder: ", file_name)
             os.system("rm -r " + path)
-
-    directory_path = Path(directory)
-    temp_file_path = directory_path / 'core/netlogo/' / SCENARIOS_TEMP_FILE_NAME
-    if os.path.exists(str(temp_file_path)):
-        os.remove(str(temp_file_path))
-
-    temp_file_path = directory_path / 'core/netlogo/' / ROBOTS_ACTIONS_FILE_NAME
-    if os.path.exists(str(temp_file_path)):
-        os.remove(str(temp_file_path))
 
 
 if __name__ == '__main__':

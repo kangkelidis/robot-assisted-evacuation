@@ -21,11 +21,11 @@ import numpy as np
 import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
 import statsmodels.api as sm
-from core.simulations.load_config import get_target_scenario
-from core.utils.helper import (get_experiment_folder, get_scenario_index,
-                               get_scenario_name, setup_logger)
-from core.utils.paths import DATA_FOLDER, IMAGE_FOLDER
 from scipy.stats import mannwhitneyu
+from src.load_config import get_target_scenario
+from utils.helper import (get_experiment_folder, get_scenario_index,
+                          get_scenario_name, setup_logger)
+from utils.paths import DATA_FOLDER, IMAGE_FOLDER
 
 PLOT_STYLE = 'seaborn-v0_8-darkgrid'
 EXPERIMENT_FOLDER_NAME = get_experiment_folder()

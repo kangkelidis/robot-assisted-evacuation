@@ -10,14 +10,14 @@ WORKSPACE_FOLDER = "/home/workspace/"
 NETLOGO_HOME = "/home/netlogo_installation/"
 
 # Contains the core logic of the project
-CORE_FOLDER = WORKSPACE_FOLDER + "core/"
+SRC_FOLDER = WORKSPACE_FOLDER + "src/"
 # Core subdirectories
 # Coontains the model and config files
-NETLOGO_FOLDER = CORE_FOLDER + "netlogo/"
+NETLOGO_FOLDER = WORKSPACE_FOLDER + "netlogo/"
 # Contains the logic for running the simulations
-SIMULATIONS_FOLDER = CORE_FOLDER + "simulations/"
+SIMULATIONS_FOLDER = WORKSPACE_FOLDER + "simulations/"
 # Contains the utility functions
-UTILS_FOLDER = CORE_FOLDER + "utils/"
+UTILS_FOLDER = WORKSPACE_FOLDER + "utils/"
 
 # Contains the logs
 LOGS_FOLDER = WORKSPACE_FOLDER + "logs/"
@@ -35,12 +35,10 @@ RESULTS_CSV_FILE = DATA_FOLDER + "experiments.csv"
 STRATEGIES_FOLDER = WORKSPACE_FOLDER + "strategies/"
 # Contains the saved configurations and scenarios
 EXAMPLES_FOLDER = WORKSPACE_FOLDER + "examples/"
-
+# Path to the configuration file
 CONFIG_FILE = WORKSPACE_FOLDER + 'config.json'
-# Temporary file to store and retrieve active scenarios during execution
-SCENARIOS_TEMP_FILE_NAME = 'scenarios_temp.json'
-ROBOTS_ACTIONS_FILE_NAME = 'robots_actions_temp.csv'
 
+# Folder name for the directory to save the results of the current experiment
 EXPERIMENT_FOLDER_NAME = None
 
 

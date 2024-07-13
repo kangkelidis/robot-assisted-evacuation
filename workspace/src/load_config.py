@@ -7,11 +7,11 @@ import json
 import os
 from typing import Any, Iterable
 
-from core.simulations.batchrun import batch_run
-from core.simulations.simulation import Scenario
-from core.utils.helper import convert_dict_to_snake_case, setup_logger
-from core.utils.paths import (CONFIG_FILE, EXAMPLES_FOLDER, NETLOGO_FOLDER,
-                              NETLOGO_HOME, SCENARIOS_TEMP_FILE_NAME)
+from src.batch_run import batch_run
+from src.simulation import Scenario
+from utils.helper import convert_dict_to_snake_case, setup_logger
+from utils.paths import (CONFIG_FILE, EXAMPLES_FOLDER, NETLOGO_FOLDER,
+                         NETLOGO_HOME)
 
 logger = setup_logger()
 
@@ -49,7 +49,7 @@ def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
     Returns:
         config: The updated configuration dictionary.
     """
-    # Load a saved configuration file if specified
+    # Load a saved json configuration file from the example folder if specified
     if config['loadConfigFrom']:
         config_file_path = os.path.join(EXAMPLES_FOLDER, config['loadConfigFrom'])
         if not config_file_path.endswith('.json'):
@@ -64,7 +64,6 @@ def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
             raise KeyError(f"Missing key in configuration file: {key}")
 
     netlogo_model_path = os.path.join(NETLOGO_HOME, NETLOGO_FOLDER, config['netlogoModeName'])
-    logger.debug(f"NetLogo model path: {netlogo_model_path}")
     if not os.path.exists(netlogo_model_path):
         raise IOError(f"NetLogo model path does not exist: {netlogo_model_path}")
     config['netlogoModelPath'] = netlogo_model_path
@@ -149,11 +148,11 @@ def _has_iterable_values(parameters: dict[str, Any]) -> bool:
 
 def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
     """
-    Creates Scenario objects from the config and saves them to a temporary file.
+    Creates Scenario objects from the config.
 
     Creates and returns a list of Scenario objects using the scenarioParams and
     scenario-specific parameters from the simulationScenarios
-    that are 'enabled' in the config.json file.
+    that are 'enabled' in the config.
 
     Args:
         config: The configuration dictionary.
@@ -166,47 +165,25 @@ def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
     list_of_scenarios: list[dict[str, Any]] = config['simulationScenarios']
     for scenario_dict in list_of_scenarios:
         # Only build the scenario if it is enabled
-        if scenario_dict.get('enabled', False):
-            global_params = config['scenarioParams']
-            scenario_obj = Scenario()
-            # Scenario params override global params
-            scenario_params = global_params.copy()  # Make a copy of the global_params
-            scenario_params.update(scenario_dict)  # Update the copy with scenario_dict
-            scenario_obj.update(scenario_params)
+        if not scenario_dict.get('enabled', False):
+            continue
 
-            if _has_iterable_values(scenario_params):
-                scenario_params = convert_dict_to_snake_case(scenario_params)
-                logger.debug(f"Building scenarios for {scenario_obj.name} with iterable values.")
-                batch = batch_run(scenario_obj, scenario_params, scenario_params['num_of_samples'])
-                scenarios.extend(batch)
-            else:
-                logger.debug(f'Building simulations for scenario: {scenario_obj.name}')
-                scenario_obj.build_simulations()
-                scenarios.append(scenario_obj)
+        global_params: dict[str, Any] = config['scenarioParams']
+        scenario_obj = Scenario()
+        # Scenario params override global params
+        scenario_params = {**global_params, **scenario_dict}
+        scenario_obj.update(scenario_params)
 
-    save_scenarios(scenarios)
-    logger.debug(f"{len(scenarios)} scenarios loaded and saved to {SCENARIOS_TEMP_FILE_NAME}.")
+        if _has_iterable_values(scenario_params):
+            scenario_params = convert_dict_to_snake_case(scenario_params)
+            logger.debug(f"Building scenarios for {scenario_obj.name} with iterable values.")
+            batch = batch_run(scenario_obj, scenario_params, scenario_params['num_of_samples'])
+            scenarios.extend(batch)
+        else:
+            logger.debug(f'Building simulations for scenario: {scenario_obj.name}')
+            scenario_obj.build_simulations()
+            scenarios.append(scenario_obj)
+
+    logger.debug(f"{len(scenarios)} scenarios loaded from config.")
 
     return scenarios
-
-#  TODO: remove
-def save_scenarios(scenarios: list[Scenario]) -> None:
-    """Saves the scenarios to a temporary file, so that they can be accessed by on_contact.py.
-
-    Args:
-        scenarios: A list of Scenario objects.
-    """
-    try:
-        temp_file_path = NETLOGO_FOLDER + SCENARIOS_TEMP_FILE_NAME
-        with open(temp_file_path, 'w') as temp_file:
-            scenarios_dict = [{
-                'name': scenario.name,
-                'adaptation_strategy': scenario.adaptation_strategy}
-                for scenario in scenarios]
-            json.dump(scenarios_dict, temp_file)
-    except IOError as e:
-        logger.error(f"Failed to write to file: {e}")
-    except TypeError as e:
-        logger.error(f"Type error during serialization: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")

@@ -5,7 +5,7 @@
 
     "": ["The netlogo model to be used for the simulations.",
         "This model must be in the core/netlogo folder."],
-    "netlogoModeName": "v2.11.1.nlogo",
+    "netlogoModeName": "model.nlogo",
 
     "": ["The scenario that will be used for the analysis.",
         "This scenario must be in the simulationScenarios array."],

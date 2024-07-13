@@ -1,7 +1,7 @@
 """
-A method to run a scenario using a different comninbation of parameters.
+A method to run a scenario using a different combination of parameters.
 
-Should take a scenario, a dictionary of parameteres to iterate and their respective range of values,
+Should take a scenario, a dictionary of parameters to iterate and their respective range of values,
 and number of samples to run each combination of parameters.
 
 Note:
@@ -19,8 +19,8 @@ ParametersType = Mapping[str, Union[Any, Iterable[Any]]]
 workspace_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(workspace_path)
 
-from core.simulations.simulation import Scenario
-from core.utils.helper import setup_logger
+from src.simulation import Scenario
+from utils.helper import setup_logger
 
 logger = setup_logger()
 
@@ -84,7 +84,7 @@ def batch_run(scenario: Scenario, parameters: ParametersType, num_samples: int) 
         num_samples: The number of samples to run each combination of parameters.
 
     Returns:
-        Scenrios: A list of scenarios with different combinations of parameters.
+        Scenarios: A list of scenarios with different combinations of parameters.
     """
     keys = list(parameters.keys())
     # check that every key is in the scenario

@@ -14,15 +14,14 @@ from typing import Any
 import pandas as pd  # type: ignore
 import pyNetLogo
 import requests
-from core.simulations.netlogo_commands import *
-from core.simulations.simulation import (NetLogoParams, Result, Scenario,
-                                         Simulation)
-from core.utils.helper import (get_available_cpus, get_custom_bar_format,
-                               setup_logger)
-from core.utils.paths import *
-from core.utils.video_generation import generate_video
 from pyNetLogo import NetLogoException
+from src.simulation import NetLogoParams, Result, Scenario, Simulation
 from tqdm import tqdm  # type: ignore
+from utils.helper import (get_available_cpus, get_custom_bar_format,
+                          setup_logger)
+from utils.netlogo_commands import *
+from utils.paths import *
+from utils.video_generation import generate_video
 
 logger = setup_logger()
 
