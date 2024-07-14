@@ -177,6 +177,7 @@ def plot_results(experiment_results):
     Args:
         experiment_results (pd.DataFrame): The DataFrame containing the experiment results.
     """
+    experiment_results = process_data(experiment_results)
     plt.style.use(PLOT_STYLE)
     plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/violin_plot"
     ax = sns.violinplot(data=experiment_results, order=None)
@@ -229,12 +230,14 @@ def plot_num_of_robots(experiment_data: pd.DataFrame) -> None:
     """
     plt.style.use(PLOT_STYLE)
     plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/num_of_robots"
-    ax = sns.lineplot(data=experiment_data, x='num_of_robots', y='evacuation_ticks', hue='num_of_staff')
+    ax = sns.lineplot(
+        data=experiment_data, x='num_of_robots', y='evacuation_ticks', hue='num_of_staff')
     ax.set_title("Evacuation Ticks vs Number of Robots")
     plt.savefig(plt_path + ".png", bbox_inches='tight', pad_inches=0)
     plt.clf()
 
-def perform_analysis(experiment_results):
+
+def perform_analysis(data_file_path: str):
     # type: (pd.DataFrame) -> None
     """
     Performs the analysis of the experiment results.
@@ -242,21 +245,18 @@ def perform_analysis(experiment_results):
     Args:
         experiment_results (pd.DataFrame): DataFrame with all simulations' results.
     """
-    logger.info("Performing analysis.")
-    experiment_data = experiment_results['data']
-    plot_num_of_robots(experiment_data)
-    experiment_results = experiment_results['results']
-    processed_data = process_data(experiment_results)
-    plot_results(processed_data)
+    experiment_data = pd.read_csv(data_file_path)
+
+    plot_results(experiment_data)
 
     target_scenario = get_target_scenario()
-    scenarios = processed_data.columns.tolist()
+    scenarios = experiment_data['scenario'].unique().tolist()
     if target_scenario in scenarios:
         for alternative_scenario in scenarios:
             if alternative_scenario != target_scenario:
                 test_hypothesis(first_scenario_column=target_scenario,
                                 second_scenario_column=alternative_scenario,
-                                results_dataframe=processed_data,
+                                results_dataframe=experiment_data,
                                 alternative="less")
     else:
         logger.error(

@@ -65,7 +65,7 @@
             "numOfSamples": 10,
             "adaptationStrategy": "RandomStrategy",
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         },
         {
             "name": "near-optimal-support",
@@ -82,10 +82,24 @@
             "description": "Test scenario.",
             "numOfRobots": {"start": 1, "end": 5, "step": 1},
             "numOfStaff": [1, 5, 10],
+            "fallChance": [0.05, 0.10],
             "fallLength": {"start": 300, "end": 1000, "step": 100},
             "adaptationStrategy": "OptimalStrategy",
+            "numOfSamples": 10,
             "enableVideo": false,
             "enabled": false
+        },
+        {
+            "name": "test-fall-length",
+            "seed": 999,
+            "description": "Test scenario.",
+            "numOfRobots": 1,
+            "numOfStaff": 10,
+            "fallLength": {"start": 100, "end": 1000, "step": 100},
+            "adaptationStrategy": "OptimalStrategy",
+            "numOfSamples": 50,
+            "enableVideo": false,
+            "enabled": true
         }
     ]
 }

@@ -10,14 +10,9 @@ https://github.com/projectmesa/mesa
 """
 
 import itertools
-import os
-import sys
 from typing import Any, Iterable, Mapping, Union
 
 ParametersType = Mapping[str, Union[Any, Iterable[Any]]]
-
-workspace_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(workspace_path)
 
 from src.simulation import Scenario
 from utils.helper import setup_logger
@@ -36,8 +31,8 @@ def _get_scenario_name(scenario: Scenario, kwargs: dict[str, Any]) -> str:
     Returns:
         A name for the scenario based on the parameters.
     """
-    name = scenario.name + "--" + ''.join(
-        [f"+{key}={value}" for key, value in kwargs.items()])
+    name = scenario.name + "-" + ''.join(
+        [f"-{key}={value}" for key, value in kwargs.items()])
     name = name.replace("_", "-")
     return name
 
@@ -96,7 +91,7 @@ def batch_run(scenario: Scenario, parameters: ParametersType, num_samples: int) 
     kwargs_list: list[dict[str, Any]] = _build_kwargs(parameters)
 
     for kwargs in kwargs_list:
-        new_scenario = scenario.copy()
+        new_scenario = scenario.duplicate()
         new_scenario.name = _get_scenario_name(scenario, kwargs)
         new_scenario.netlogo_params.num_of_samples = num_samples
 
@@ -109,6 +104,6 @@ def batch_run(scenario: Scenario, parameters: ParametersType, num_samples: int) 
         new_scenario.build_simulations()
         scenarios.append(new_scenario)
 
-    logger.info(f"Expanded scenario {scenario.name} to {len(scenarios)} scenarios.")
+    logger.debug(f"Expanded scenario {scenario.name} to {len(scenarios)} scenarios.")
 
     return scenarios

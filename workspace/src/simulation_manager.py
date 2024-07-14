@@ -5,16 +5,16 @@ It provides functionality to run simulations and save the results.
 It uses the pyNetLogo library, to configure simulation parameters and retrieve simulation results.
 """
 
-import os
 import time
 import traceback
 from multiprocessing import Process, Queue
-from typing import Any
+from typing import Any, Optional
 
 import pandas as pd  # type: ignore
 import pyNetLogo
 import requests
 from pyNetLogo import NetLogoException
+from src.server import BASE_URL
 from src.simulation import NetLogoParams, Result, Scenario, Simulation
 from tqdm import tqdm  # type: ignore
 from utils.helper import (get_available_cpus, get_custom_bar_format,
@@ -26,13 +26,13 @@ from utils.video_generation import generate_video
 logger = setup_logger()
 
 
-def execute_comands(simulation_id: str,
-                    netlogo_params: NetLogoParams,
-                    netlogo_link: pyNetLogo.NetLogoLink) -> None:
+def execute_commands(simulation_id: str,
+                     netlogo_params: NetLogoParams,
+                     netlogo_link: pyNetLogo.NetLogoLink) -> None:
     """
-    Executes Netlogo commands to setup global model parameters in NetLogo.
+    Executes NetLogo commands to setup global model parameters in NetLogo.
 
-    Each parameter is mapped to a Netlogo command and executed.
+    Each parameter is mapped to a NetLogo command and executed.
     The process is performed before the initail simulation setup.
 
     Args:
@@ -57,8 +57,8 @@ def execute_comands(simulation_id: str,
             logger.debug(f"Executed {command.format(value)}")
 
     except Exception as e:
-        logger.error(f"Commands failed for id: {id}. Exception: {e}")
-    logger.debug(f"Commands executed for id: {id}")
+        logger.error(f"Commands failed for id: {simulation_id}. Exception: {e}")
+    logger.debug(f"Commands executed for id: {simulation_id}")
 
 
 def setup_simulation(simulation_id: str,
@@ -68,8 +68,8 @@ def setup_simulation(simulation_id: str,
     """
     Prepares the simulation.
 
-    Clears the environment in Netlogo, executes the commands using the parameters provided
-    and calls the set-up function of the Netlogo model.
+    Clears the environment in NetLogo, executes the commands using the parameters provided
+    and calls the set-up function of the NetLogo model.
 
     Args:
         simulation_id: The simulation id in the form of <scenario_indx>.
@@ -84,7 +84,7 @@ def setup_simulation(simulation_id: str,
     netlogo_link.command('clear')
 
     logger.debug(f'Cleared environment for id: {simulation_id}')
-    execute_comands(simulation_id, simulation_params, netlogo_link)
+    execute_commands(simulation_id, simulation_params, netlogo_link)
 
     current_seed: int = int(netlogo_link.report(SEED_SIMULATION_REPORTER.format(simulation_seed)))
     logger.debug(f"Simulation {simulation_id},  Current seed: {current_seed}")
@@ -132,7 +132,8 @@ def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink) -> int | None:
         evacuation_ticks = netlogo_link.report('ticks')
     except NetLogoException as e:
         logger.error(f"NetLogo exception: {e}")
-    except Exception as e:
+    # ! cannot catch the exception in the java environment
+    except BaseException as e:
         logger.error(f"Exception: {e}")
     return evacuation_ticks
 
@@ -160,15 +161,17 @@ def run_simulation(simulation_id: str,
     start_time = time.time()
     current_seed: int = setup_simulation(simulation_id, simulation_seed, simulation_params,
                                          netlogo_link)
-    evacuation_ticks: int = _run_netlogo_model(netlogo_link)
+    evacuation_ticks: Optional[int] = _run_netlogo_model(netlogo_link)
     endtime = time.time()
     evacuation_time = round(endtime - start_time, 2)
 
     if simulation_params.enable_video:
         generate_video(simulation_id)
 
-    return Result(current_seed, simulation_id, evacuation_ticks, evacuation_time,
-                  evacuation_ticks is not None)
+    return Result(netlogo_seed=current_seed,
+                  evacuation_ticks=evacuation_ticks,
+                  evacuation_time=evacuation_time,
+                  success=evacuation_ticks is not None)
 
 
 def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: str,
@@ -189,9 +192,15 @@ def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: 
     for simulation in simulation_batch:
         result = run_simulation(
             simulation['id'], simulation['seed'], simulation['params'], netlogo_link)
+        # update the queue to indicate that the simulation has finished to the progress bar
         q.get()
-        url = "http://localhost:5000/put_results"
-        requests.post(url, json=result.__dict__)
+        # Convert result object to dict excluding 'robot_actions' and 'robot_responses'
+        data = {key: value for key, value in result.__dict__.items()
+                if key not in ['robot_actions', 'robot_responses']}
+        data['simulation_id'] = simulation['id']
+
+        url = BASE_URL + "/put_results"
+        requests.put(url, json=data)
         logger.debug(f"Simulation id: {simulation['id']} finished. - Result: {result}.")
 
     logger.debug(f"Finished batch {index + 1}")
@@ -203,8 +212,8 @@ def build_batches(simulations: list[Simulation], num_cpus: int) -> list[list[dic
     Builds batches of simulations to be executed in parallel.
 
     It splits the list of simulations into batches and creates a list of dictionaries
-    containing the simulation id, seed and parameters for each simualtion in each batch.
-    Objects are not passed by refernce to the Process, but by value. This is why the
+    containing the simulation id, seed and parameters for each simulation in each batch.
+    Objects are not passed by reference to the Process, but by value. This is why the
     simulations are converted to dictionaries.
 
     [[ {id: 1, seed: 123, params: {num_of_robots: 10, ...}}, ...], ...]
@@ -227,11 +236,11 @@ def build_batches(simulations: list[Simulation], num_cpus: int) -> list[list[dic
         cpu_index = i % num_cpus
         simulation_batches[cpu_index].append(simulation)
         used_cores.add(cpu_index)
-    logger.info(
-        f"Total number of simulations to run: {len(simulations)}. Total cores: {len(used_cores)}")
-    # BUG: check it with only one simulation
     # remove empty lists
     simulation_batches = [batch for batch in simulation_batches if batch]
+    total_bathes_len = sum(len(batch) for batch in simulation_batches)
+    logger.info(
+        f"Total number of simulations to run: {total_bathes_len}. Total cores: {len(used_cores)}")
     return simulation_batches
 
 
@@ -240,7 +249,7 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
     Executes the simulations in parallel using the available CPUs.
 
     It creates a Process for each core and runs (total simulations / number of cores) simulations
-    in each, using the paramaters from each Simulation object.
+    in each, using the parameters from each Simulation object.
 
     Args:
         simulations: The simulations to be executed.
@@ -249,12 +258,13 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
     num_cpus = get_available_cpus()
     simulation_batches = build_batches(simulations, num_cpus)
 
-    logger.info("Setting up Simulations...")
-    pbar = tqdm(total=len(simulations), desc="Simulations Progress", bar_format=get_custom_bar_format())
+    logger.info(f"Setting up {len(simulations)} Simulations...")
 
     q = Queue()
     for _ in range(len(simulations)):
         q.put(1)
+    # note: this could be optimized by moving simulation to a process that has finished its batch 
+    # from another that has many more simulations left to run
     try:
         processes = []
         for index, batch in enumerate(simulation_batches):
@@ -262,27 +272,33 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
                               args=(batch, netlogo_model_path, index, q))
             processes.append(process)
             process.start()
+            logger.debug(f"Started batch {index + 1} with {len(batch)} simulations")
+
+        # here we could monitor the alive processes and if one finished early we could
+        # assign its simulation left to a NEW process
 
         # Progress bar update
+        logger.info(" ")
+        pbar = tqdm(total=len(simulations), desc="Simulations Progress",
+                    bar_format=get_custom_bar_format())
         prev_size = len(simulations) + 1
         while any(p.is_alive() for p in processes):
             size = q.qsize()
             if size < len(simulations) and size != prev_size:
                 # Only update if the size has changed by more than 10%
-                if prev_size - size > len(simulations) * 0.1:
-                    print(' ')
-                    pbar.n = len(simulations) - size
-                    pbar.refresh()
-                    prev_size = size
+                # if prev_size - size > len(simulations) * 0.1:
+                pbar.n = len(simulations) - size
+                pbar.update(prev_size - size)
+                print(pbar.display(), '\033[A', flush=True)
+                prev_size = size
 
         for process in processes:
             process.join()
 
         q.close()
-        pbar.n = len(simulations)
+        pbar.n = len(simulations) - size
         pbar.refresh()
-        pbar.close()
-        logger.info("\nFinished all simulations.")
+        logger.info(f"\nFinished {size} simulations.")
     except Exception as e:
         logger.error(f"Exception in parallel simulation: {e}")
         traceback.print_exc()
@@ -298,96 +314,74 @@ def build_simulation_pool(scenarios: list[Scenario]) -> list[Simulation]:
     Returns:
         simulations_pool: The list of all simulations.
     """
-    simulatios_pool = []
+    simulations_pool = []
     for scenario in scenarios:
         logger.debug(
             f"Adding simulations for: {scenario.name}. List size {len(scenario.simulations)}")
-        simulatios_pool.extend(scenario.simulations)
-    return simulatios_pool
+        simulations_pool.extend(scenario.simulations)
+    return simulations_pool
 
 
-def save_and_return_simulation_results(scenarios: list[Scenario]) -> pd.DataFrame:
+def save_simulations_results(scenarios: list[Scenario], data_path: str) -> None:
     """
-    Gets the robot actions for each simulation and saves the results for each scenario.
-    Then it combines all the results in a dataframe, saves it as a csv and returns it.
+    Gather the results from each simulation and saves a csv for each scenario, in their
+    respective folder under the current experiment folder.
+    Then it combines all the results in a single dataFrame and saves it as a csv.
 
     Args:
         scenarios: The scenarios to get the results from.
+        data_path: The path to save the results.
 
     Returns:
-        experiments_results: The combined results of all simulations.
+        experiments_data: A dataFrame with data from all the simulations
     """
-    experiments_results = pd.DataFrame()
+    # Combine all the results
+    experiments_data = pd.DataFrame()
     for scenario in scenarios:
-        scenario.gather_results()
-        scenario.save_results()
-        experiments_results = pd.concat(
-            [experiments_results, scenario.results_df], ignore_index=True)
-    experiments_data = get_experiment_data(scenarios)
-    try:
-        experiment_folder_name = get_experiment_folder()
-        experiment_folder_path = os.path.join(DATA_FOLDER, experiment_folder_name)
-        if not os.path.exists(experiment_folder_path):
-            os.makedirs(experiment_folder_path)
-    except Exception as e:
-        logger.error(f"Error creating folder: {e}")
+        scenario_data = scenario.get_data()
+        experiments_data = pd.concat(
+            [experiments_data, scenario_data], ignore_index=True)
 
+    # Save the data
     try:
-        results_file_name = "experiment_results.csv"
-        data_file_name = "experiment_data.csv"
-        results_file_path = os.path.join(experiment_folder_path, results_file_name)
-        data_file_path = os.path.join(experiment_folder_path, data_file_name)
-        experiments_results.to_csv(results_file_path)
-        experiments_data.to_csv(data_file_path)
+        experiments_data.to_csv(data_path)
     except Exception as e:
         logger.error(f"Error saving results file: {e}")
-
-    return {'results': experiments_results, 'data': experiments_data}
-
-
-def get_experiment_data(scenarios: list[Scenario]) -> pd.DataFrame:
-    """
-    Returns a dataframe with the all the data from all the simulations of the scenarios.
-
-    The dataframe contains all the parameters and results of each simulation.
-
-    Args:
-        scenarios: The scenarios to get the data from.
-
-    Returns:
-        experiments_data: The combined data of all simulations.
-    """
-    aggregated_data = []
-
-    for scenario in scenarios:
-        params = scenario.netlogo_params.__dict__
-        info = {'name': scenario.name, 'strategy': scenario.adaptation_strategy}
-
-        scenario_data = []
-        for simulation in scenario.simulations:
-            result = simulation.result.__dict__
-            simulation_data = {
-                'simulation_id': simulation.id,
-                'simulation_seed': simulation.seed,
-                'simulation_actions': simulation.actions,
-                'simulation_responses': simulation.responses
-            }
-
-            scenario_data.append({**info, **params, **result, **simulation_data}),
-
-        aggregated_data.extend(scenario_data)
-
-    experiments_data = pd.DataFrame(aggregated_data)
-    return experiments_data
 
 
 def log_execution_time(start_time: float, end_time: float) -> None:
     minutes, seconds = divmod(end_time - start_time, 60)
     logger.info(f"Experiment finished after {int(minutes)} minutes and {seconds:.2f} seconds")
-    logger.info("--------------------------------------------")
 
 
-def start_experiments(config: dict[str, Any], scenarios: list[Scenario]) -> pd.DataFrame:
+def update_simulations_pool(simulations_pool) -> list[Simulation]:
+    """
+    Queries the server for the list of unfinished simulations
+    and updates the next iteration of the simulations pool.
+
+    Args:
+        simulations_pool: The previous iteration of the simulations pool.
+
+    Returns:
+        new_pool: The updated simulations pool.
+    """
+    responses = requests.get(BASE_URL + "/get_unfinished_simulations")
+    data = responses.json()
+    unfinished_simulations = data['ids']
+
+    new_pool = []
+    for simulation in simulations_pool:
+        if simulation.id in unfinished_simulations:
+            new_pool.append(simulation)
+
+    if len(new_pool) != len(simulations_pool):
+        logger.warning(f"An error prevented {len(unfinished_simulations)} simulations to execute. "
+                       f"Trying again...")
+
+    return new_pool
+
+
+def start_experiments(config: dict[str, Any], scenarios: list[Scenario], data_path: str) -> None:
     """
     Starts the simulations for the provided scenarios.
 
@@ -398,17 +392,18 @@ def start_experiments(config: dict[str, Any], scenarios: list[Scenario]) -> pd.D
     Args:
         config: The configuration parameters for the simulations.
         scenarios: The scenarios to be executed.
-
-    Returns:
-        experiments_results: The combined results of all simulations.
+        data_path: The path to save the results.
     """
     start_time = time.time()
 
     netlogo_model_path = config.get('netlogoModelPath')
     simulations_pool = build_simulation_pool(scenarios)
-    execute_parallel_simulations(simulations_pool, netlogo_model_path)
-    # TODO: add responses, no need to save robot actions to temp file
-    experiments_results = save_and_return_simulation_results(scenarios)
+    current_pool = simulations_pool[:]
+    # Run the simulations until all are finished
+    while current_pool:
+        execute_parallel_simulations(current_pool, netlogo_model_path)
+        current_pool = update_simulations_pool(simulations_pool)
+
+    save_simulations_results(scenarios, data_path)
     end_time = time.time()
     log_execution_time(start_time, end_time)
-    return experiments_results

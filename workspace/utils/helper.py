@@ -144,8 +144,8 @@ def setup_folders() -> None:
     Creates the necessary folders for the workspace.
 
     This function sets up the folder structure for the NetLogo simulation workspace.
-    It creates the RESULTS_FOLDER, LOGS_FOLDER, and various subfolders for data,
-    frames, images, and videos.
+    It creates the RESULTS_FOLDER, LOGS_FOLDER, and various sub-folders for data,
+    frames, images, and videos. And creates a folder for the current experiment.
     """
     if not os.path.exists(RESULTS_FOLDER):
         os.makedirs(RESULTS_FOLDER)
@@ -201,8 +201,10 @@ def get_custom_bar_format() -> str:
     reset_color = '\033[0m'
 
     # Custom bar_format with green color
-    custom_bar_format = "{}{{l_bar}}{{bar}}{}| {{n_fmt}}/{{total_fmt}} [Elapsed: {{elapsed}}, Remaining: {{remaining}}, \
-        {{rate_fmt}}{{postfix}}]".format(green_color, reset_color)
+    custom_bar_format = (
+        "{}{{l_bar}}{{bar}}{}| {{n_fmt}}/{{total_fmt}} [Elapsed: {{elapsed}}, "
+        "Remaining: {{remaining}}, {{rate_fmt}}{{postfix}}]"
+    ).format(green_color, reset_color)
     return custom_bar_format
 
 
@@ -220,10 +222,11 @@ def find_scenario_by_name(scenario_name: str, scenarios: list['Scenario']) -> 'S
     for scenario in scenarios:
         if scenario.name == scenario_name:
             return scenario
-    raise NameError(f"No matching scenario found for name {scenario_name}")
+    raise NameError(f"No matching scenario found for name {scenario_name} in {scenarios}")
 
 
-def find_simulation_in(scenario_s: Union[list[Scenario], Scenario], simulation_id: str) -> Simulation:
+def find_simulation_in(scenario_s: Union[list['Scenario'], 'Scenario'],
+                       simulation_id: str) -> 'Simulation':
     """
     Returns the simulation with the given ID from the list of scenarios.
 

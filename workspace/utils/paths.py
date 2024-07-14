@@ -29,7 +29,6 @@ DATA_FOLDER = RESULTS_FOLDER + "data/"
 FRAMES_FOLDER = RESULTS_FOLDER + "frames/"
 IMAGE_FOLDER = RESULTS_FOLDER + "img/"
 VIDEO_FOLDER = RESULTS_FOLDER + "video/"
-RESULTS_CSV_FILE = DATA_FOLDER + "experiments.csv"
 
 # Contains the adaptation strategies
 STRATEGIES_FOLDER = WORKSPACE_FOLDER + "strategies/"
@@ -40,6 +39,7 @@ CONFIG_FILE = WORKSPACE_FOLDER + 'config.json'
 
 # Folder name for the directory to save the results of the current experiment
 EXPERIMENT_FOLDER_NAME = None
+RESULTS_CSV_FILE = "experiment_data.csv"
 
 
 def get_experiment_folder():

@@ -68,9 +68,23 @@ def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
         raise IOError(f"NetLogo model path does not exist: {netlogo_model_path}")
     config['netlogoModelPath'] = netlogo_model_path
 
+    scenario_names = set()
     for scenario in config['simulationScenarios']:
+        if not scenario['enabled']:
+            continue
+
         if 'name' not in scenario or not scenario['name']:
             raise ValueError("Each scenario must have a non-empty 'name' key.")
+
+        # Check for duplicate scenario names
+        if scenario['name'] in scenario_names:
+            raise ValueError(f"Duplicate scenario name found: {scenario['name']}")
+        else:
+            scenario_names.add(scenario['name'])
+
+    if config['targetScenarioForAnalysis'] not in scenario_names:
+        logger.warning(f"CAUTION: Target scenario for analysis not found in simulation scenarios: "
+                       f"{config['targetScenarioForAnalysis']}")
 
     return config
 

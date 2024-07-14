@@ -63,8 +63,6 @@ class Survivor:
         self.age = int(age)
 
 
-# TODO: Turn to Singleton, so the server will always use the same object,
-#       unless we want a new class for each scenario
 class AdaptationStrategy(object):
     """
     Base class for adaptation strategies.
@@ -110,7 +108,9 @@ class AdaptationStrategy(object):
             traceback.print_exc()
         raise FileNotFoundError(f"Failed to get adaptation strategy {strategy_name}")
 
-    def get_robot_action(self, candidate_helper: Survivor, victim: Survivor,
+    def get_robot_action(self,
+                         candidate_helper: Survivor,
+                         victim: Survivor,
                          helper_victim_distance: float,
                          first_responder_victim_distance: float) -> str:
         """

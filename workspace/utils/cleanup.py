@@ -6,6 +6,8 @@ from folders created by the NetLogo simulations.
 import os
 from pathlib import Path
 
+from utils.paths import DATA_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER
+
 
 def is_netlogo_folder(path: str) -> bool:
     """
@@ -38,6 +40,13 @@ def cleanup_workspace(directory: str) -> None:
         if is_netlogo_folder(path):
             print("Deleting folder: ", file_name)
             os.system("rm -r " + path)
+
+    # Delete empty folders in the results folder
+    for folder in [DATA_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER]:
+        for folder in Path(folder).iterdir():
+            if folder.is_dir() and not list(folder.iterdir()):
+                print("Deleting empty folder: ", folder)
+                os.system(f"rm -r {folder}")
 
 
 if __name__ == '__main__':
