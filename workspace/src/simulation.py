@@ -11,8 +11,6 @@ Classes:
 """
 from __future__ import annotations
 
-import copy
-import os
 import random
 from typing import Optional
 
@@ -20,10 +18,11 @@ import pandas as pd  # type: ignore
 from src.adaptation_strategy import AdaptationStrategy
 from utils.helper import (convert_camelCase_to_snake_case,
                           generate_simulation_id, setup_logger)
-from utils.paths import DATA_FOLDER, NETLOGO_FOLDER, get_experiment_folder
 
 
 class Updatable(object):
+    logger = setup_logger()
+
     def update(self, params: dict) -> None:
         """
         Updates the object's parameters that are in the provided dictionary.
@@ -79,7 +78,7 @@ class Result(Updatable):
     - robot_actions: A list of the actions performed by the robots.
     - success: Whether the simulation was successful (finished on time and no errors).
     """
-    # ? how should we handle the unsuccessful simulations?
+    # ? TODO how should we handle the unsuccessful simulations?
     def __init__(self,
                  netlogo_seed: int = 0,
                  evacuation_ticks: Optional[int] = None,
@@ -90,6 +89,7 @@ class Result(Updatable):
         self.evacuation_time = evacuation_time
         self.robot_actions: list[str] = []
         self.robot_responses: list[str] = []
+        self.robot_contacts: int = 0
         self.success = success
         self.netlogo_seed = netlogo_seed
 
@@ -123,13 +123,13 @@ class Scenario(Updatable):
         self.enabled = True
         self.simulations: list[Simulation] = []
         self.results: list[Result] = []
-        self.logger = setup_logger()
 
     def update(self, params: dict) -> None:
         super().update(params)
         self.netlogo_params.update(params)
-        self.adaptation_strategy = AdaptationStrategy.get_strategy(
-            params.get('adaptation_strategy'))
+        if isinstance(params.get('adaptation_strategy'), str):
+            self.adaptation_strategy = AdaptationStrategy.get_strategy(
+                params.get('adaptation_strategy'))
 
     def duplicate(self) -> 'Scenario':
         new_scenario = Scenario()
@@ -192,18 +192,33 @@ class Simulation(Updatable):
             seed: An integer seed for the simulation.
         """
         #  use the netlogo random-seed if 0
-        if self.netlogo_params.seed != 0:
-            # Generate a seed based on the netlogo_params seed and the index
-            random.seed(self.netlogo_params.seed * (index + 1))
-            while True:
-                seed: int = random.randint(-2147483647, 2147483646)
-                if seed != 0:
-                    break
-            return seed
-        return 0
+        if self.netlogo_params.seed == 0:
+            return 0
+
+        # Generate a seed based on the netlogo_params seed and the index
+        random.seed(self.netlogo_params.seed * (index + 1))
+        while True:
+            seed: int = random.randint(-2147483647, 2147483646)
+            if seed != 0:
+                break
+        return seed
 
     def add_action(self, action: str) -> None:
         self.result.robot_actions.append(action)
+        self._add_contact(action)
 
     def add_response(self, response: str) -> None:
         self.result.robot_responses.append(response)
+        self._add_contact(response)
+
+    def _add_contact(self, action_or_response) -> None:
+        """
+        To count contacts with fallen victims.
+
+        This method is called when the robot's interaction with the victim ends.
+        Tha only happens if the robot calls for staff support or when the helper accepts to help.
+        """
+        accepted_responses = ["true", AdaptationStrategy.CALL_STAFF_ROBOT_ACTION]
+        if action_or_response in accepted_responses:
+            self.result.robot_contacts += 1
+            self.logger.debug(f"Contact with fallen victim: {self.result.robot_contacts}")

@@ -48,9 +48,8 @@ def put_results():
     simulation_id = data['simulation_id']
 
     global UNFINISHED_SIMULATION_IDS
-    UNFINISHED_SIMULATION_IDS.remove(simulation_id)
-
     with lock:
+        UNFINISHED_SIMULATION_IDS.remove(simulation_id)
         simulation: Simulation = find_simulation_in(SCENARIOS, simulation_id)
         simulation.result.update(data)
         # logger.info(f"simulation data: {simulation.result.__dict__}")
@@ -67,8 +66,8 @@ def passenger_response():
     from utils.helper import find_simulation_in
 
     data = request.json
-    simulation_id = data["simulation_id"]
-    response = data["response"]
+    simulation_id: str = data["simulation_id"]
+    response: str = data["response"]
 
     with lock:
         simulation: Simulation = find_simulation_in(SCENARIOS, simulation_id)
@@ -113,16 +112,23 @@ def on_survivor_contact_handler():
 @app.route('/start', methods=['POST'])
 def start():
     try:
+        import json
+
         from src.load_config import load_config, load_scenarios
         from src.simulation import Scenario
         from src.simulation_manager import start_experiments
-        from utils.paths import CONFIG_FILE
+        from utils.paths import CONFIG_FILE, DATA_FOLDER
 
         data = request.json
-        data_path = data["data_path"]
+        experiment_folder_name = data["experiment_folder_name"]
 
         config: dict[str, Any] = load_config(CONFIG_FILE)
         scenarios: list[Scenario] = load_scenarios(config)
+        # save the configuration file
+        file_path = os.path.join(DATA_FOLDER, experiment_folder_name, 'config.json')
+        with open(file_path, 'w') as file:
+            json.dump(config, file, indent=5)
+
         global SCENARIOS
         SCENARIOS = scenarios
 
@@ -132,8 +138,8 @@ def start():
                 UNFINISHED_SIMULATION_IDS.append(simulation.id)
 
         # Run the experiments, and saves the results
-        start_experiments(config, scenarios, data_path)
-    except Exception as e:
+        start_experiments(config, scenarios, experiment_folder_name)
+    except BaseException as e:
         error_message = f"Error on server: {str(e)}\n{traceback.format_exc()}"
         return error_message, 500
 

@@ -194,9 +194,10 @@ def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: 
             simulation['id'], simulation['seed'], simulation['params'], netlogo_link)
         # update the queue to indicate that the simulation has finished to the progress bar
         q.get()
-        # Convert result object to dict excluding 'robot_actions' and 'robot_responses'
+        # Convert result object to dict excluding keys that start with robot_ as they are
+        # updated from the server. ie 'robot_actions', 'robot_responses', 'robot_contacts'
         data = {key: value for key, value in result.__dict__.items()
-                if key not in ['robot_actions', 'robot_responses']}
+                if not key.startswith('robot_')}
         data['simulation_id'] = simulation['id']
 
         url = BASE_URL + "/put_results"
@@ -260,11 +261,12 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
 
     logger.info(f"Setting up {len(simulations)} Simulations...")
 
+    # * could use safe list to keep track of the simulations that are left to run
     q = Queue()
-    for _ in range(len(simulations)):
-        q.put(1)
-    # note: this could be optimized by moving simulation to a process that has finished its batch 
-    # from another that has many more simulations left to run
+    for simulation in simulations:
+        q.put(simulation.id)
+    # * note: this could be optimized by moving simulation to a process that has finished its batch
+    # * from another that has many more simulations left to run
     try:
         processes = []
         for index, batch in enumerate(simulation_batches):
@@ -274,8 +276,10 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
             process.start()
             logger.debug(f"Started batch {index + 1} with {len(batch)} simulations")
 
-        # here we could monitor the alive processes and if one finished early we could
-        # assign its simulation left to a NEW process
+        # * here we could monitor the alive processes and if one finished early we could
+        # * assign its simulation left to a NEW process
+        # * or stop the execution and let it start again, to avoid running less cores than available
+        # * do it if many simulations are left to run
 
         # Progress bar update
         logger.info(" ")
@@ -285,8 +289,6 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
         while any(p.is_alive() for p in processes):
             size = q.qsize()
             if size < len(simulations) and size != prev_size:
-                # Only update if the size has changed by more than 10%
-                # if prev_size - size > len(simulations) * 0.1:
                 pbar.n = len(simulations) - size
                 pbar.update(prev_size - size)
                 print(pbar.display(), '\033[A', flush=True)
@@ -298,7 +300,7 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
         q.close()
         pbar.n = len(simulations) - size
         pbar.refresh()
-        logger.info(f"\nFinished {size} simulations.")
+        logger.info(f"\nFinished {len(simulations) - size} simulations.")
     except Exception as e:
         logger.error(f"Exception in parallel simulation: {e}")
         traceback.print_exc()
@@ -322,7 +324,7 @@ def build_simulation_pool(scenarios: list[Scenario]) -> list[Simulation]:
     return simulations_pool
 
 
-def save_simulations_results(scenarios: list[Scenario], data_path: str) -> None:
+def save_simulations_results(scenarios: list[Scenario], experiment_folder_name: str) -> None:
     """
     Gather the results from each simulation and saves a csv for each scenario, in their
     respective folder under the current experiment folder.
@@ -330,7 +332,7 @@ def save_simulations_results(scenarios: list[Scenario], data_path: str) -> None:
 
     Args:
         scenarios: The scenarios to get the results from.
-        data_path: The path to save the results.
+        experiment_folder_name: The folder name to save the results.
 
     Returns:
         experiments_data: A dataFrame with data from all the simulations
@@ -344,6 +346,7 @@ def save_simulations_results(scenarios: list[Scenario], data_path: str) -> None:
 
     # Save the data
     try:
+        data_path = f"{DATA_FOLDER}/{experiment_folder_name}/experiment_data.csv"
         experiments_data.to_csv(data_path)
     except Exception as e:
         logger.error(f"Error saving results file: {e}")
@@ -374,14 +377,16 @@ def update_simulations_pool(simulations_pool) -> list[Simulation]:
         if simulation.id in unfinished_simulations:
             new_pool.append(simulation)
 
-    if len(new_pool) != len(simulations_pool):
+    if len(new_pool) != len(simulations_pool) and len(new_pool) != 0:
         logger.warning(f"An error prevented {len(unfinished_simulations)} simulations to execute. "
                        f"Trying again...")
 
     return new_pool
 
 
-def start_experiments(config: dict[str, Any], scenarios: list[Scenario], data_path: str) -> None:
+def start_experiments(config: dict[str, Any],
+                      scenarios: list[Scenario],
+                      experiment_folder_name: str) -> None:
     """
     Starts the simulations for the provided scenarios.
 
@@ -392,7 +397,7 @@ def start_experiments(config: dict[str, Any], scenarios: list[Scenario], data_pa
     Args:
         config: The configuration parameters for the simulations.
         scenarios: The scenarios to be executed.
-        data_path: The path to save the results.
+        experiment_folder_name: The name of the folder to save the results.
     """
     start_time = time.time()
 
@@ -400,10 +405,12 @@ def start_experiments(config: dict[str, Any], scenarios: list[Scenario], data_pa
     simulations_pool = build_simulation_pool(scenarios)
     current_pool = simulations_pool[:]
     # Run the simulations until all are finished
+    # * The issue is that docker needs to use some cores and that may lead to some processes
+    # * terminating early and simulations not being run
     while current_pool:
         execute_parallel_simulations(current_pool, netlogo_model_path)
         current_pool = update_simulations_pool(simulations_pool)
 
-    save_simulations_results(scenarios, data_path)
+    save_simulations_results(scenarios, experiment_folder_name)
     end_time = time.time()
     log_execution_time(start_time, end_time)

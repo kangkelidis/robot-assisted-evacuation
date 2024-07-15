@@ -3,10 +3,12 @@ Responsible for loading the JSON configuration file, checking its validity,
 and creating Scenario objects.
 """
 
+import copy
 import json
 import os
 from typing import Any, Iterable
 
+import numpy as np
 from src.batch_run import batch_run
 from src.simulation import Scenario
 from utils.helper import convert_dict_to_snake_case, setup_logger
@@ -69,8 +71,9 @@ def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
     config['netlogoModelPath'] = netlogo_model_path
 
     scenario_names = set()
-    for scenario in config['simulationScenarios']:
+    for scenario in copy.deepcopy(config['simulationScenarios']):
         if not scenario['enabled']:
+            config['simulationScenarios'].remove(scenario)
             continue
 
         if 'name' not in scenario or not scenario['name']:
@@ -85,6 +88,9 @@ def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
     if config['targetScenarioForAnalysis'] not in scenario_names:
         logger.warning(f"CAUTION: Target scenario for analysis not found in simulation scenarios: "
                        f"{config['targetScenarioForAnalysis']}")
+
+    # remove comments
+    config.pop('')
 
     return config
 
@@ -124,8 +130,9 @@ def get_target_scenario() -> str:
 def _check_for_range(parameters: dict[str, Any]) -> dict[str, Any]:
     """
     Checks if a value of the parameters in JSON is a range
-    and replaces it with a python range Iterable if it is.
+    and replaces it with a list if it is.
 
+    Using numpy.arange to work with floats and integers.
     {"start": 1, "end": 10, "step": 1} -> range(1, 10, 1)
 
     Args:
@@ -136,8 +143,7 @@ def _check_for_range(parameters: dict[str, Any]) -> dict[str, Any]:
     """
     for key, value in parameters.items():
         if isinstance(value, dict) and 'start' in value and 'end' in value:
-            parameters[key] = range(value['start'], value['end'], value.get('step', 1))
-
+            parameters[key] = np.arange(value['start'], value['end'], value.get('step', 1)).tolist()
     return parameters
 
 
@@ -178,10 +184,6 @@ def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
 
     list_of_scenarios: list[dict[str, Any]] = config['simulationScenarios']
     for scenario_dict in list_of_scenarios:
-        # Only build the scenario if it is enabled
-        if not scenario_dict.get('enabled', False):
-            continue
-
         global_params: dict[str, Any] = config['scenarioParams']
         scenario_obj = Scenario()
         # Scenario params override global params

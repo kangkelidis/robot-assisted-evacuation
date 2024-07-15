@@ -9,7 +9,7 @@
 
     "": ["The scenario that will be used for the analysis.",
         "This scenario must be in the simulationScenarios array."],
-    "targetScenarioForAnalysis": "random-support",
+    "targetScenarioForAnalysis": "original--adaptation-strategy=OptimalStrategy",
 
     "": ["Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
@@ -99,7 +99,51 @@
             "adaptationStrategy": "OptimalStrategy",
             "numOfSamples": 50,
             "enableVideo": false,
+            "enabled": false
+        },
+        {
+            "name": "test-staff",
+            "seed": 1234,
+            "description": "Test staff number.",
+            "numOfRobots": 1,
+            "numOfStaff": {"start": 0, "end": 21, "step": 1},
+            "adaptationStrategy": "OptimalStrategy",
+            "numOfSamples": 50,
+            "enableVideo": false,
+            "enabled": false
+        },
+        {
+            "name": "test-robots-fall-chance",
+            "seed": 1234,
+            "description": "Test staff number.",
+            "numOfRobots": [1, 2, 3],
+            "fallChance": {"start": 0.05, "end": 0.3, "step": 0.05},
+            "adaptationStrategy": "OptimalStrategy",
+            "numOfSamples": 30,
+            "enableVideo": false,
+            "enabled": false
+        },        {
+            "name": "test",
+            "seed": 1234,
+            "description": "How effective is the robot.",
+            "numOfRobots": {"start": 0, "end": 10, "step": 1},
+            "numOfStaff": 2,
+            "fallChance": 1,
+            "adaptationStrategy": "OptimalStrategy",
+            "numOfSamples": 1,
+            "enableVideo": false,
             "enabled": true
+        },
+        {
+            "name": "original",
+            "seed": 0,
+            "description": "Original 3 scenarios.",
+            "numOfRobots": 1,
+            "adaptationStrategy": ["OptimalStrategy", "AlwaysCallStaffStrategy", "AlwaysAskHelpStrategy"],
+            "numOfSamples": 10,
+            "enableVideo": false,
+            "enabled": false
         }
+
     ]
 }

@@ -164,10 +164,6 @@ def setup_folders() -> None:
             os.makedirs(experiment_folder_path)
 
 
-def timeout_exception_handler(signum, frame):
-    raise Exception("The function took too long to execute.")
-
-
 def get_available_cpus() -> int:
     """
     Returns the number of CPUs available in the system.
@@ -176,6 +172,10 @@ def get_available_cpus() -> int:
     using the `cpu_count()` function from the `multiprocessing` module. If the
     number of CPUs cannot be determined, it returns 1 as a fallback and will run
     simulations sequentially.
+
+    Note:
+        Docker will need to use some of the cores available on the system. This may
+        lead in a situation where a process running in one of the cores will be terminated.
 
     Returns:
         The number of available CPUs.

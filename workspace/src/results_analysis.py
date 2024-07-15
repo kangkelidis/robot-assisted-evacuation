@@ -9,6 +9,7 @@ function to calculate Cohen's d for independent samples
 Inspired by: https://machinelearningmastery.com/effect-size-measures-in-python/
 """
 
+import os
 import textwrap
 
 import matplotlib  # type: ignore
@@ -24,17 +25,16 @@ import statsmodels.api as sm
 from scipy.stats import mannwhitneyu
 from src.load_config import get_target_scenario
 from utils.helper import (get_experiment_folder, get_scenario_index,
-                          get_scenario_name, setup_logger)
+                          setup_logger)
 from utils.paths import DATA_FOLDER, IMAGE_FOLDER
 
 PLOT_STYLE = 'seaborn-v0_8-darkgrid'
-EXPERIMENT_FOLDER_NAME = get_experiment_folder()
+EXPERIMENT_FOLDER_NAME = ""
 
 logger = setup_logger()
 
 
-def cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2):
-    # type: (float, float, float, float) -> float
+def cohen_d_from_metrics(mean_1: float, mean_2: float, std_dev_1: float, std_dev_2: float) -> float:
     """
     Calculate Cohen's d effect size from the means and standard deviations of two samples.
 
@@ -42,36 +42,36 @@ def cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2):
     difference between the two means divided by the pooled standard deviation.
 
     Args:
-        mean_1 (float): The mean of the first sample.
-        mean_2 (float): The mean of the second sample.
-        std_dev_1 (float): The standard deviation of the first sample.
-        std_dev_2 (float): The standard deviation of the second sample.
+        mean_1: The mean of the first sample.
+        mean_2: The mean of the second sample.
+        std_dev_1: The standard deviation of the first sample.
+        std_dev_2: The standard deviation of the second sample.
 
     Returns:
-        float: The Cohen's d effect size.
+        The Cohen's d effect size.
     """
     pooled_std_dev = np.sqrt((std_dev_1 ** 2 + std_dev_2 ** 2) / 2)
     return (mean_1 - mean_2) / pooled_std_dev
 
 
-def calculate_sample_size(mean_1, mean_2, std_dev_1, std_dev_2, alpha=0.05, power=0.8):
-    # type: (float, float, float, float, float, float) -> float
+def calculate_sample_size(mean_1: float, mean_2: float, std_dev_1: float, std_dev_2: float,
+                          alpha: float = 0.05, power: float = 0.8) -> float:
     """
-    Calculate the recommended sample size for a two-sample test.
+    Calculates the recommended sample size for a two-sample test.
 
     This function uses the `statsmodels` library to calculate the recommended sample size based on
     the provided means, standard deviations, alpha level, and desired power.
 
     Args:
-        mean_1 (float): The mean of the first sample.
-        mean_2 (float): The mean of the second sample.
-        std_dev_1 (float): The standard deviation of the first sample.
-        std_dev_2 (float): The standard deviation of the second sample.
-        alpha (float, optional): The desired alpha level (type I error rate). Defaults to 0.05.
-        power (float, optional): The desired statistical power. Defaults to 0.8.
+        mean_1: The mean of the first sample.
+        mean_2: The mean of the second sample.
+        std_dev_1: The standard deviation of the first sample.
+        std_dev_2: The standard deviation of the second sample.
+        alpha: The desired alpha level (type I error rate). Defaults to 0.05.
+        power: The desired statistical power. Defaults to 0.8.
 
     Returns:
-        float: The recommended sample size for each group.
+        The recommended sample size for each group.
     """
     analysis = sm.stats.TTestIndPower()  # type: sm.stats.TTestIndPower
     effect_size = cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2)
@@ -82,9 +82,10 @@ def calculate_sample_size(mean_1, mean_2, std_dev_1, std_dev_2, alpha=0.05, powe
     return result
 
 
-def test_hypothesis(first_scenario_column, second_scenario_column,
-                    results_dataframe, alternative="two-sided"):
-    # type: (str, str, pd.DataFrame, str) -> None
+def test_hypothesis(first_scenario_column: str,
+                    second_scenario_column: str,
+                    results_dataframe: pd.DataFrame,
+                    alternative: str = "two-sided") -> None:
     """
     Perform a Mann-Whitney U test to compare the distributions of two samples.
 
@@ -93,11 +94,11 @@ def test_hypothesis(first_scenario_column, second_scenario_column,
     significantly different. The results are printed to the console and also saved to a file.
 
     Args:
-        first_scenario_column (str): The name of the column containing the first sample.
-        second_scenario_column (str): The name of the column containing the second sample.
-        results_dataframe (pd.DataFrame): The DataFrame containing the sample data.
-        alternative (str, optional): The alternative hypothesis, either "two-sided", "less",
-                                     or "greater". Defaults to "two-sided".
+        first_scenario_column: The name of the column containing the first sample.
+        second_scenario_column: The name of the column containing the second sample.
+        results_dataframe: The DataFrame containing the sample data.
+        alternative: The alternative hypothesis, either "two-sided", "less", or "greater".
+                     Defaults to "two-sided".
     """
 
     first_scenario_data = results_dataframe[first_scenario_column].values  # type: List[int]
@@ -153,35 +154,32 @@ def test_hypothesis(first_scenario_column, second_scenario_column,
             f.write("\n")
 
 
-def get_metrics(experiment_results):
-    # type: (pd.DataFrame) -> pd.DataFrame
+def get_metrics(experiment_results: pd.DataFrame) -> pd.DataFrame:
     """
     Returns the metrics of the experiment results.
 
     Args:
-        experiment_results (pd.DataFrame): The DataFrame containing the experiment results.
+        experiment_results: The DataFrame containing the experiment results.
 
     Returns:
-        metrics_df (pd.DataFrame): The DataFrame containing the description of the results.
+        The DataFrame containing the description of the results.
     """
     metrics_df = experiment_results.describe()
     logger.info("\n%s\n", metrics_df)
     return metrics_df
 
 
-def plot_results(experiment_results):
-    # type: (pd.DataFrame) -> None
+def plot_results(data_for_violin: pd.DataFrame) -> None:
     """
     Plots the results of the experiment.
 
     Args:
-        experiment_results (pd.DataFrame): The DataFrame containing the experiment results.
+        data_for_violin: The DataFrame containing the experiment result data.
     """
-    experiment_results = process_data(experiment_results)
     plt.style.use(PLOT_STYLE)
     plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/violin_plot"
-    ax = sns.violinplot(data=experiment_results, order=None)
-    ax.set_title("title")
+    ax = sns.violinplot(data=data_for_violin, order=None)
+    ax.set_title("Scenarios Comparison")
     locs = ax.get_xticks()
     labels = [textwrap.fill(label.get_text(), 12) for label in ax.get_xticklabels()]
     ax.xaxis.set_major_locator(plt.FixedLocator(locs))
@@ -191,8 +189,7 @@ def plot_results(experiment_results):
     plt.clf()
 
 
-def process_data(experiment_results):
-    # type: (pd.DataFrame) -> pd.DataFrame
+def process_data(experiment_data: pd.DataFrame) -> pd.DataFrame:
     """
     Processes the data from the experiment results in order to plot them.
 
@@ -200,17 +197,16 @@ def process_data(experiment_results):
     has each scenario as a column.
 
     Args:
-        experiment_results (pd.DataFrame): DataFrame with all simulations' results.
+        experiment_data: DataFrame with all simulations' data.
 
     Returns:
-        processed_data (pd.DataFrame): DataFrame with ticks grouped by scenario.
+        processed_data: DataFrame with ticks grouped by scenario.
     """
-    # Split 'simulation_id' to extract the scenario name and simulation number
-    experiment_results['scenario'] = experiment_results['simulation_id'].apply(get_scenario_name)
-    experiment_results['sim_indx'] = experiment_results['simulation_id'].apply(get_scenario_index)
-    # Pivot the DataFrame using 'simulation_number' as the new index
-    processed_data = experiment_results.pivot(
-        index='sim_indx', columns='scenario', values='evacuation_ticks')
+    # Split 'simulation_id' to extract the simulation number
+    experiment_data['sim_index'] = experiment_data['simulation_id'].apply(get_scenario_index)
+    # Pivot the DataFrame using 'sim_index' as the new index
+    processed_data = experiment_data.pivot(
+        index='sim_index', columns='scenario', values='evacuation_ticks')
 
     processed_data_path = DATA_FOLDER + EXPERIMENT_FOLDER_NAME + "/processed_data.csv"
     processed_data.to_csv(processed_data_path)
@@ -237,26 +233,91 @@ def plot_num_of_robots(experiment_data: pd.DataFrame) -> None:
     plt.clf()
 
 
-def perform_analysis(data_file_path: str):
-    # type: (pd.DataFrame) -> None
+def plot_comparisons(experiment_data: pd.DataFrame) -> None:
+    """
+    Plots the comparisons between differences in the dataFrame.
+
+    Checks the dataFrame for columns that have different values and plots combinations.
+
+    Example:
+        - If the data has under num_robots values 1 and 2, the function will plot the difference
+          between the evacuation_ticks for those values.
+
+    Args:
+        experiment_data: The DataFrame containing the experiment data.
+    """
+    columns_to_check = ['strategy', 'num_of_robots', 'num_of_passengers',
+                        'num_of_staff', 'fall_length', 'fall_chance', 'room_type']
+
+    # Check for columns with different values
+    # if there are multiple non-unique values, plot a line with a different color for each value
+    multivalue_columns = []
+    for column in columns_to_check:
+        unique_values = experiment_data[column].unique()
+        if len(unique_values) > 1:
+            multivalue_columns.append(column)
+            plt.style.use(PLOT_STYLE)
+            plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + f"/{column}_comparison.png"
+            ax = sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks')
+            first_value = experiment_data[column].iloc[0]
+            num_samples = (experiment_data[column] == first_value).sum()
+            ax.set_title(f"Evacuation Ticks vs {column}. Sample size: {num_samples}")
+            plt.savefig(plt_path, bbox_inches='tight', pad_inches=0)
+            plt.clf()
+
+    # Plot a line for each non-unique value
+    if len(multivalue_columns) > 1:
+        long_format_data = pd.DataFrame(columns=['category', 'value', 'evacuation_ticks'])
+        
+        for column in multivalue_columns:
+            temp_df = experiment_data[[column, 'evacuation_ticks']].copy()
+            temp_df['category'] = column
+            temp_df.rename({column: 'value'}, axis=1, inplace=True)
+            long_format_data = pd.concat([long_format_data, temp_df], ignore_index=True)
+
+        # Plot
+        plt.style.use(PLOT_STYLE)
+        plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/combined_comparison.png"
+        ax = sns.lineplot(data=long_format_data, x='value', y='evacuation_ticks', hue='category')
+        ax.set_title("Evacuation Ticks Comparison")
+        plt.savefig(plt_path, bbox_inches='tight', pad_inches=0)
+        plt.clf()
+
+
+def setup_result_folders() -> None:
+    """
+    Makes sure the necessary folders are created for the analysis.
+    """
+    if not os.path.exists(IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME):
+        os.makedirs(IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME)
+
+
+def perform_analysis(experiment_folder_name: str) -> None:
     """
     Performs the analysis of the experiment results.
 
     Args:
-        experiment_results (pd.DataFrame): DataFrame with all simulations' results.
+        experiment_results: path to the CSV file containing the experiment results.
     """
-    experiment_data = pd.read_csv(data_file_path)
+    global EXPERIMENT_FOLDER_NAME
+    EXPERIMENT_FOLDER_NAME = experiment_folder_name
+    setup_result_folders()
+    file_path = DATA_FOLDER + experiment_folder_name + "/experiment_data.csv"
+    experiment_data = pd.read_csv(file_path)
+    processed_data = process_data(experiment_data)
 
-    plot_results(experiment_data)
+    plot_results(processed_data)
+
+    plot_comparisons(experiment_data)
 
     target_scenario = get_target_scenario()
-    scenarios = experiment_data['scenario'].unique().tolist()
+    scenarios = processed_data.columns.to_list()
     if target_scenario in scenarios:
         for alternative_scenario in scenarios:
             if alternative_scenario != target_scenario:
                 test_hypothesis(first_scenario_column=target_scenario,
                                 second_scenario_column=alternative_scenario,
-                                results_dataframe=experiment_data,
+                                results_dataframe=processed_data,
                                 alternative="less")
     else:
         logger.error(

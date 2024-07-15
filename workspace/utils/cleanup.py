@@ -44,9 +44,17 @@ def cleanup_workspace(directory: str) -> None:
     # Delete empty folders in the results folder
     for folder in [DATA_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER]:
         for folder in Path(folder).iterdir():
-            if folder.is_dir() and not list(folder.iterdir()):
-                print("Deleting empty folder: ", folder)
-                os.system(f"rm -r {folder}")
+            if folder.is_dir():
+                items = list(folder.iterdir())
+                if not items or len(items) == 1 and items[0].name.endswith('.json'):
+                    print("Deleting empty folder: ", folder)
+                    os.system(f"rm -r {folder}")
+
+    # Delete error log files from java
+    for file_name in os.listdir(directory):
+        if file_name.startswith("hs_err_pid"):
+            print("Deleting error log: ", file_name)
+            os.system("rm -r " + os.path.join(directory, file_name))
 
 
 if __name__ == '__main__':

@@ -14,6 +14,7 @@ from typing import Any, Iterable, Mapping, Union
 
 ParametersType = Mapping[str, Union[Any, Iterable[Any]]]
 
+from src.adaptation_strategy import AdaptationStrategy
 from src.simulation import Scenario
 from utils.helper import setup_logger
 
@@ -98,6 +99,8 @@ def batch_run(scenario: Scenario, parameters: ParametersType, num_samples: int) 
         for key, value in kwargs.items():
             if hasattr(new_scenario, key):
                 setattr(new_scenario, key, value)
+                if key == "adaptation_strategy":
+                    new_scenario.adaptation_strategy = AdaptationStrategy.get_strategy(value)
             else:
                 setattr(new_scenario.netlogo_params, key, value)
 
