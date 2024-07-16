@@ -21,7 +21,7 @@ from utils.helper import setup_logger
 logger = setup_logger()
 
 
-def _get_scenario_name(scenario: Scenario, kwargs: dict[str, Any]) -> str:
+def _create_scenario_name(scenario: Scenario, kwargs: dict[str, Any]) -> str:
     """
     Returns a name for the scenario based on the parameters.
 
@@ -32,9 +32,9 @@ def _get_scenario_name(scenario: Scenario, kwargs: dict[str, Any]) -> str:
     Returns:
         A name for the scenario based on the parameters.
     """
-    name = scenario.name + "-" + ''.join(
-        [f"-{key}={value}" for key, value in kwargs.items()])
-    name = name.replace("_", "-")
+    name = scenario.name + "@" + ''.join(
+        [f"{key}={value}$" for key, value in kwargs.items()])
+    name = name.replace("_", "-")[:-1]
     return name
 
 
@@ -93,7 +93,7 @@ def batch_run(scenario: Scenario, parameters: ParametersType, num_samples: int) 
 
     for kwargs in kwargs_list:
         new_scenario = scenario.duplicate()
-        new_scenario.name = _get_scenario_name(scenario, kwargs)
+        new_scenario.name = _create_scenario_name(scenario, kwargs)
         new_scenario.netlogo_params.num_of_samples = num_samples
 
         for key, value in kwargs.items():

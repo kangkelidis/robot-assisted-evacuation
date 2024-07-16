@@ -1,10 +1,13 @@
-from src.adaptation_strategy import AdaptationStrategy
+from src.adaptation_strategy import AdaptationStrategy, Survivor
 
 
 class AlwaysCallStaffStrategy(AdaptationStrategy):
     """
     Always calls for a staff member.
     """
-    def get_robot_action(self, candidate_helper, victim,
-                         helper_victim_distance, first_responder_victim_distance):
+    def get_robot_action(self,
+                         candidate_helper: Survivor,
+                         victim: Survivor,
+                         helper_victim_distance: float,
+                         first_responder_victim_distance: float) -> str:
         return self.CALL_STAFF_ROBOT_ACTION

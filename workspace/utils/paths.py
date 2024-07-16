@@ -8,7 +8,6 @@ from datetime import datetime
 WORKSPACE_FOLDER = "/home/workspace/"
 # Contains Netlogo installation files
 NETLOGO_HOME = "/home/netlogo_installation/"
-
 # Contains the core logic of the project
 SRC_FOLDER = WORKSPACE_FOLDER + "src/"
 # Core subdirectories
@@ -18,31 +17,24 @@ NETLOGO_FOLDER = WORKSPACE_FOLDER + "netlogo/"
 SIMULATIONS_FOLDER = WORKSPACE_FOLDER + "simulations/"
 # Contains the utility functions
 UTILS_FOLDER = WORKSPACE_FOLDER + "utils/"
-
 # Contains the logs
 LOGS_FOLDER = WORKSPACE_FOLDER + "logs/"
-
 # Contains the output of the simulations
 RESULTS_FOLDER = WORKSPACE_FOLDER + "results/"
-# Results subdirectories
-DATA_FOLDER = RESULTS_FOLDER + "data/"
+# To temporary store frames for video creation
 FRAMES_FOLDER = RESULTS_FOLDER + "frames/"
-IMAGE_FOLDER = RESULTS_FOLDER + "img/"
-VIDEO_FOLDER = RESULTS_FOLDER + "video/"
-
 # Contains the adaptation strategies
 STRATEGIES_FOLDER = WORKSPACE_FOLDER + "strategies/"
 # Contains the saved configurations and scenarios
 EXAMPLES_FOLDER = WORKSPACE_FOLDER + "examples/"
 # Path to the configuration file
 CONFIG_FILE = WORKSPACE_FOLDER + 'config.json'
-
 # Folder name for the directory to save the results of the current experiment
 EXPERIMENT_FOLDER_NAME = None
-RESULTS_CSV_FILE = "experiment_data.csv"
+RESULTS_CSV_FILE_NAME = "experiment_data.csv"
 
 
-def get_experiment_folder():
+def get_experiment_folder_name():
     """
     Returns the name of folder for the current experiment.
 
@@ -56,3 +48,13 @@ def get_experiment_folder():
     if EXPERIMENT_FOLDER_NAME is None:
         EXPERIMENT_FOLDER_NAME = datetime.now().strftime("%y%m%d_%H%M%S")
     return EXPERIMENT_FOLDER_NAME
+
+
+# Folder structure for the current experiment
+EXPERIMENT_FOLDER_PATH = RESULTS_FOLDER + get_experiment_folder_name() + "/"
+EXPERIMENT_FOLDER_STRUCT = {
+    'path': EXPERIMENT_FOLDER_PATH,
+    'data': EXPERIMENT_FOLDER_PATH + 'data/',
+    'img': EXPERIMENT_FOLDER_PATH + 'img/',
+    'video': EXPERIMENT_FOLDER_PATH + 'video/',
+}

@@ -141,7 +141,8 @@ def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink) -> int | None:
 def run_simulation(simulation_id: str,
                    simulation_seed: int,
                    simulation_params: NetLogoParams,
-                   netlogo_link: pyNetLogo.NetLogoLink) -> Result:
+                   netlogo_link: pyNetLogo.NetLogoLink,
+                   video_path: str) -> Result:
     """
     Runs a single simulation with the provided parameters and returns the results.
 
@@ -154,6 +155,7 @@ def run_simulation(simulation_id: str,
         simulation_seed: The seed for the simulation. To be used in Netlogo to create a random seed.
         simulation_params: The parameters to be set in NetLogo.
         neltogo_link: The link to the NetLogo model.
+        video_path: The path to save the video.
 
     Returns:
         result: The result object containing the simulation results.
@@ -166,7 +168,7 @@ def run_simulation(simulation_id: str,
     evacuation_time = round(endtime - start_time, 2)
 
     if simulation_params.enable_video:
-        generate_video(simulation_id)
+        generate_video(simulation_id, video_path)
 
     return Result(netlogo_seed=current_seed,
                   evacuation_ticks=evacuation_ticks,
@@ -175,7 +177,7 @@ def run_simulation(simulation_id: str,
 
 
 def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: str,
-                    index: int, q: Queue) -> None:
+                    index: int, q: Queue, video_path: str) -> None:
     """
     Used to run a batch of simulations in a dedicated Process.
 
@@ -190,8 +192,11 @@ def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: 
     netlogo_link = initialise_netlogo_link(netlogo_model_path)
 
     for simulation in simulation_batch:
-        result = run_simulation(
-            simulation['id'], simulation['seed'], simulation['params'], netlogo_link)
+        result = run_simulation(simulation['id'],
+                                simulation['seed'],
+                                simulation['params'],
+                                netlogo_link,
+                                video_path)
         # update the queue to indicate that the simulation has finished to the progress bar
         q.get()
         # Convert result object to dict excluding keys that start with robot_ as they are
@@ -227,7 +232,7 @@ def build_batches(simulations: list[Simulation], num_cpus: int) -> list[list[dic
         simulation_batches: The list of simulation batches.
     """
     # Initialize an empty list for each CPU
-    simulation_batches = [[] for _ in range(num_cpus)]
+    simulation_batches: list[list] = [[] for _ in range(num_cpus)]
     simulations_dict = [{'id': sim.id, 'seed': sim.seed, 'params': sim.netlogo_params}
                         for sim in simulations]
 
@@ -245,7 +250,9 @@ def build_batches(simulations: list[Simulation], num_cpus: int) -> list[list[dic
     return simulation_batches
 
 
-def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_path: str) -> None:
+def execute_parallel_simulations(simulations: list[Simulation],
+                                 netlogo_model_path: str,
+                                 video_path: str) -> None:
     """
     Executes the simulations in parallel using the available CPUs.
 
@@ -261,25 +268,17 @@ def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_pa
 
     logger.info(f"Setting up {len(simulations)} Simulations...")
 
-    # * could use safe list to keep track of the simulations that are left to run
-    q = Queue()
+    q: Queue = Queue()
     for simulation in simulations:
         q.put(simulation.id)
-    # * note: this could be optimized by moving simulation to a process that has finished its batch
-    # * from another that has many more simulations left to run
     try:
         processes = []
         for index, batch in enumerate(simulation_batches):
             process = Process(target=batch_processor,
-                              args=(batch, netlogo_model_path, index, q))
+                              args=(batch, netlogo_model_path, index, q, video_path))
             processes.append(process)
             process.start()
             logger.debug(f"Started batch {index + 1} with {len(batch)} simulations")
-
-        # * here we could monitor the alive processes and if one finished early we could
-        # * assign its simulation left to a NEW process
-        # * or stop the execution and let it start again, to avoid running less cores than available
-        # * do it if many simulations are left to run
 
         # Progress bar update
         logger.info(" ")
@@ -324,7 +323,7 @@ def build_simulation_pool(scenarios: list[Scenario]) -> list[Simulation]:
     return simulations_pool
 
 
-def save_simulations_results(scenarios: list[Scenario], experiment_folder_name: str) -> None:
+def save_simulations_results(scenarios: list[Scenario], data_folder_path: str) -> None:
     """
     Gather the results from each simulation and saves a csv for each scenario, in their
     respective folder under the current experiment folder.
@@ -332,7 +331,7 @@ def save_simulations_results(scenarios: list[Scenario], experiment_folder_name: 
 
     Args:
         scenarios: The scenarios to get the results from.
-        experiment_folder_name: The folder name to save the results.
+        data_folder_path: The path of the folder to save the results.
 
     Returns:
         experiments_data: A dataFrame with data from all the simulations
@@ -346,7 +345,7 @@ def save_simulations_results(scenarios: list[Scenario], experiment_folder_name: 
 
     # Save the data
     try:
-        data_path = f"{DATA_FOLDER}/{experiment_folder_name}/experiment_data.csv"
+        data_path = f"{data_folder_path}/experiment_data.csv"
         experiments_data.to_csv(data_path)
     except Exception as e:
         logger.error(f"Error saving results file: {e}")
@@ -386,7 +385,7 @@ def update_simulations_pool(simulations_pool) -> list[Simulation]:
 
 def start_experiments(config: dict[str, Any],
                       scenarios: list[Scenario],
-                      experiment_folder_name: str) -> None:
+                      experiment_folder: dict[str, str]) -> None:
     """
     Starts the simulations for the provided scenarios.
 
@@ -397,20 +396,18 @@ def start_experiments(config: dict[str, Any],
     Args:
         config: The configuration parameters for the simulations.
         scenarios: The scenarios to be executed.
-        experiment_folder_name: The name of the folder to save the results.
+        experiment_folder: A dictionary containing the paths in the experiment folder.
     """
     start_time = time.time()
 
-    netlogo_model_path = config.get('netlogoModelPath')
+    netlogo_model_path: str = config.get('netlogoModelPath', NETLOGO_FOLDER + "model.nlogo")
     simulations_pool = build_simulation_pool(scenarios)
     current_pool = simulations_pool[:]
     # Run the simulations until all are finished
-    # * The issue is that docker needs to use some cores and that may lead to some processes
-    # * terminating early and simulations not being run
     while current_pool:
-        execute_parallel_simulations(current_pool, netlogo_model_path)
+        execute_parallel_simulations(current_pool, netlogo_model_path, experiment_folder['video'])
         current_pool = update_simulations_pool(simulations_pool)
 
-    save_simulations_results(scenarios, experiment_folder_name)
+    save_simulations_results(scenarios, experiment_folder['data'])
     end_time = time.time()
     log_execution_time(start_time, end_time)

@@ -32,13 +32,11 @@ class OptimalStrategy(AdaptationStrategy):
         [0.063, 0.0315, 0.063, 0.084, 0.063, 0.084]
     ]
 
-    """
-
-    """
-    # TODO: as the number of passengers decreases,
-    # the probability of asking for staff help should increase
-    def get_robot_action(self, candidate_helper, victim,
-                         helper_victim_distance, first_responder_victim_distance):
+    def get_robot_action(self,
+                         candidate_helper: Survivor,
+                         victim: Survivor,
+                         helper_victim_distance: float,
+                         first_responder_victim_distance: float) -> str:
         if first_responder_victim_distance < helper_victim_distance:
             return self.CALL_STAFF_ROBOT_ACTION
 
@@ -62,6 +60,8 @@ class OptimalStrategy(AdaptationStrategy):
             col += 2
 
         helping_chance: float = self.help_matrix[row][col]
+        # ? how should this change as the number of passengers decreases,
+        # ? the probability of asking for staff help should increase
         if helping_chance > 0.2:
             return self.ASK_FOR_HELP_ROBOT_ACTION
         else:

@@ -2,53 +2,51 @@
 This module provides functionality for cleaning up the workspace
 from folders created by the NetLogo simulations.
 """
-# TODO: delete results dated folder if empty
 import os
-from pathlib import Path
+import shutil
+import sys
 
-from utils.paths import DATA_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER
+from utils.paths import FRAMES_FOLDER, RESULTS_FOLDER, WORKSPACE_FOLDER
 
 
-def is_netlogo_folder(path: str) -> bool:
+def signal_handler(sig, frame):
+    print("Server stopped")
+    cleanup_workspace()
+    sys.exit(0)
+
+
+def clear_empty_results_folders():
     """
-    Checks if the folder is created by NetLogo.
-
-    A NetLogo folder is a folder that contains the reporter commands for the simulation.
-
-    Args:
-        path: The path to check.
-
-    Returns:
-        True if the folder is created by NetLogo, False otherwise.
+    Deletes all the empty results folders.
     """
-    return os.path.isdir(path) and \
-        (os.path.isfile(os.path.join(path, "count turtles.txt")) or
-         os.path.isfile(os.path.join(path, "number_passengers - count agents + 1.txt")) or
-         os.path.isfile(os.path.join(path, "count agents with [ st_dead = 1 ].txt")) or
-         not os.listdir(path))
+    for folder in os.listdir(RESULTS_FOLDER):
+        if not os.path.isdir(os.path.join(RESULTS_FOLDER, folder)):
+            continue
+
+        experiment_folder_path = os.path.join(RESULTS_FOLDER, folder)
+        if experiment_folder_path == FRAMES_FOLDER[:-1]:
+            continue
+
+        # if all the sub-folders are empty, delete the experiment folder
+        all_empty = True
+        for subfolder in os.listdir(experiment_folder_path):
+            subfolder_path = os.path.join(experiment_folder_path, subfolder)
+            if os.path.isdir(subfolder_path) and os.listdir(subfolder_path):
+                all_empty = False  # Found a non-empty subfolder
+                break
+        if all_empty:
+            print("Deleting empty experiment folder: ", experiment_folder_path)
+            shutil.rmtree(experiment_folder_path)
 
 
-def cleanup_workspace(directory: str) -> None:
+def cleanup_workspace(directory: str = WORKSPACE_FOLDER) -> None:
     """
-    Deletes all the excess folders created by Netlogo and the tempfiles by the program.
+    Deletes all the excess folders created by Netlogo and by the program.
 
     Args:
         directory: The path to the directory to clean up.
     """
-    for file_name in os.listdir(directory):
-        path = os.path.join(directory, file_name)
-        if is_netlogo_folder(path):
-            print("Deleting folder: ", file_name)
-            os.system("rm -r " + path)
-
-    # Delete empty folders in the results folder
-    for folder in [DATA_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER]:
-        for folder in Path(folder).iterdir():
-            if folder.is_dir():
-                items = list(folder.iterdir())
-                if not items or len(items) == 1 and items[0].name.endswith('.json'):
-                    print("Deleting empty folder: ", folder)
-                    os.system(f"rm -r {folder}")
+    clear_empty_results_folders()
 
     # Delete error log files from java
     for file_name in os.listdir(directory):

@@ -2,23 +2,27 @@ from __future__ import annotations
 
 import logging
 import os
+import signal
 import sys
 import traceback
 from multiprocessing import Lock
 from typing import Any
 
-from flask import Flask, request
+from flask import Flask, request  # type: ignore
 
 workspace_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(workspace_path)
+
+from src.simulation import Scenario
+from utils.cleanup import signal_handler
 
 PORT = 5000
 BASE_URL = f'http://localhost:{PORT}'
 
 # List of scenario objects
-SCENARIOS = []
+SCENARIOS: list[Scenario] = []
 # Tracks the simulation IDs that have not finished yet
-UNFINISHED_SIMULATION_IDS = []
+UNFINISHED_SIMULATION_IDS: list[str] = []
 
 app = Flask(__name__)
 
@@ -40,9 +44,6 @@ def put_results():
     Called when the simulation ends.
     """
     from src.simulation import Simulation
-    from utils.helper import find_simulation_in, setup_logger
-
-    # logger = setup_logger()
 
     data = request.json
     simulation_id = data['simulation_id']
@@ -50,9 +51,8 @@ def put_results():
     global UNFINISHED_SIMULATION_IDS
     with lock:
         UNFINISHED_SIMULATION_IDS.remove(simulation_id)
-        simulation: Simulation = find_simulation_in(SCENARIOS, simulation_id)
+        simulation: Simulation = Simulation.find_by_id(SCENARIOS, simulation_id)
         simulation.result.update(data)
-        # logger.info(f"simulation data: {simulation.result.__dict__}")
 
     return "Results saved", 200
 
@@ -63,14 +63,13 @@ def passenger_response():
     Save the response of a passenger when asked to help in the corresponding simulation object.
     """
     from src.simulation import Simulation
-    from utils.helper import find_simulation_in
 
     data = request.json
     simulation_id: str = data["simulation_id"]
     response: str = data["response"]
 
     with lock:
-        simulation: Simulation = find_simulation_in(SCENARIOS, simulation_id)
+        simulation: Simulation = Simulation.find_by_id(SCENARIOS, simulation_id)
         simulation.add_response(response)
 
     return "Response saved", 200
@@ -84,8 +83,7 @@ def on_survivor_contact_handler():
     from src.adaptation_strategy import Survivor
     from src.on_contact import on_survivor_contact
     from src.simulation import Scenario, Simulation
-    from utils.helper import (find_scenario_by_name, find_simulation_in,
-                              get_scenario_name, setup_logger)
+    from utils.helper import setup_logger
 
     logger = setup_logger()
     data = request.json
@@ -97,9 +95,9 @@ def on_survivor_contact_handler():
     simulation_id = data["simulation_id"]
 
     logger.debug(f'PUT /on_survivor_contact called by {simulation_id}')
-    scenario_name = get_scenario_name(simulation_id)
-    scenario: Scenario = find_scenario_by_name(scenario_name, SCENARIOS)
-    simulation: Simulation = find_simulation_in(scenario, simulation_id)
+    scenario_name = Simulation.get_scenario_name(simulation_id)
+    scenario: Scenario = Scenario.find_by_name(scenario_name, SCENARIOS)
+    simulation: Simulation = Simulation.find_by_id(scenario, simulation_id)
 
     action = on_survivor_contact(candidate_helper, victim, helper_victim_distance,
                                  first_responder_victim_distance, scenario.adaptation_strategy)
@@ -117,15 +115,15 @@ def start():
         from src.load_config import load_config, load_scenarios
         from src.simulation import Scenario
         from src.simulation_manager import start_experiments
-        from utils.paths import CONFIG_FILE, DATA_FOLDER
+        from utils.paths import CONFIG_FILE
 
         data = request.json
-        experiment_folder_name = data["experiment_folder_name"]
+        experiment_folder: dict[str, str] = data["experiment_folder"]
 
         config: dict[str, Any] = load_config(CONFIG_FILE)
         scenarios: list[Scenario] = load_scenarios(config)
         # save the configuration file
-        file_path = os.path.join(DATA_FOLDER, experiment_folder_name, 'config.json')
+        file_path = os.path.join(experiment_folder['path'], 'config.json')
         with open(file_path, 'w') as file:
             json.dump(config, file, indent=5)
 
@@ -138,7 +136,7 @@ def start():
                 UNFINISHED_SIMULATION_IDS.append(simulation.id)
 
         # Run the experiments, and saves the results
-        start_experiments(config, scenarios, experiment_folder_name)
+        start_experiments(config, scenarios, experiment_folder)
     except BaseException as e:
         error_message = f"Error on server: {str(e)}\n{traceback.format_exc()}"
         return error_message, 500
@@ -149,6 +147,10 @@ def start():
 def main():
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
+    # cleanup the workspace when the server stops
+    signal.signal(signal.SIGINT, signal_handler)   # Handle Ctrl+C
+    signal.signal(signal.SIGTERM, signal_handler)  # Handle Docker stop
+    # start the server
     app.run(debug=False, port=PORT, use_reloader=False)
 
 

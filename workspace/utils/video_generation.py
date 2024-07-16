@@ -4,14 +4,13 @@ This module provides functionality for generating GIF animations from simulation
 
 
 import glob
-import os
 
-import natsort
+import natsort  # type: ignore
 from PIL import Image  # type: ignore
-from utils.paths import FRAMES_FOLDER, VIDEO_FOLDER, get_experiment_folder
+from utils.paths import FRAMES_FOLDER
 
 
-def generate_video(simulation_id: str, frame_duration: int = 200) -> None:
+def generate_video(simulation_id: str, video_path: str, frame_duration: int = 200) -> None:
     """ Generates a GIF animation from the frames of a simulation.
 
     It searches for the frames in the "frames" folder and creates an animation
@@ -19,6 +18,7 @@ def generate_video(simulation_id: str, frame_duration: int = 200) -> None:
 
     Args:
         simulation_id: The ID of the simulation.
+        video_path: The path to save the generated animation.
         frame_duration: The duration of each frame in milliseconds. Defaults to 200.
     """
     search_string = "{}view_{}_*png".format(FRAMES_FOLDER, simulation_id)
@@ -35,12 +35,7 @@ def generate_video(simulation_id: str, frame_duration: int = 200) -> None:
         frame_as_image = Image.open(frame_file)
         frames.append(frame_as_image)
 
-    experiment_folder_name = get_experiment_folder()
-    experiment_folder_path = os.path.join(VIDEO_FOLDER, experiment_folder_name)
-    if not os.path.exists(experiment_folder_path):
-        os.makedirs(experiment_folder_path)
-
-    output_file = experiment_folder_path + "/video_{}.gif".format(simulation_id)
+    output_file = video_path + f"/video_{simulation_id}.gif"
     first_frame = frames[0]
     first_frame.save(output_file, format="GIF", append_images=frames,
                      save_all=True, duration=frame_duration)

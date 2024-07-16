@@ -8,7 +8,7 @@ import json
 import os
 from typing import Any, Iterable
 
-import numpy as np
+import numpy as np  # type: ignore
 from src.batch_run import batch_run
 from src.simulation import Scenario
 from utils.helper import convert_dict_to_snake_case, setup_logger
@@ -189,6 +189,8 @@ def load_scenarios(config: dict[str, Any]) -> list[Scenario]:
         # Scenario params override global params
         scenario_params = {**global_params, **scenario_dict}
         scenario_params = convert_dict_to_snake_case(scenario_params)
+        # no need for it as all scenarios in the list are enabled
+        scenario_params.pop('enabled')
         scenario_obj.update(scenario_params)
 
         if _has_iterable_values(scenario_params):

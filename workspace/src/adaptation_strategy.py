@@ -79,7 +79,7 @@ class AdaptationStrategy(object):
 
     @staticmethod
     def get_strategy(strategy_name: str,
-                     strategies_folder: str = STRATEGIES_FOLDER) -> Optional[Self]:
+                     strategies_folder: str = STRATEGIES_FOLDER) -> Optional['AdaptationStrategy']:
         """
         Returns an instance of the specified adaptation strategy.
 

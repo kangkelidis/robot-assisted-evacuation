@@ -4,18 +4,18 @@
     "loadConfigFrom": null,
 
     "": ["The netlogo model to be used for the simulations.",
-        "This model must be in the core/netlogo folder."],
+        "This model must be in the src/netlogo folder."],
     "netlogoModeName": "model.nlogo",
 
     "": ["The scenario that will be used for the analysis.",
         "This scenario must be in the simulationScenarios array."],
-    "targetScenarioForAnalysis": "original--adaptation-strategy=OptimalStrategy",
+    "targetScenarioForAnalysis": "OptimalStrategy",
 
     "": ["Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
         "seed": 21,
-        "numOfSamples": 4,
+        "numOfSamples": 30,
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
@@ -36,7 +36,7 @@
             "description": "There are no SAR robots in the simulation.",
             "numOfRobots": 0,
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
         {
             "name": "staff-support",
@@ -62,7 +62,7 @@
             "numOfPassengers": 800,
             "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
             "numOfRobots": 1,
-            "numOfSamples": 10,
+            "numOfSamples": 1,
             "adaptationStrategy": "RandomStrategy",
             "enableVideo": false,
             "enabled": false
@@ -122,7 +122,8 @@
             "numOfSamples": 30,
             "enableVideo": false,
             "enabled": false
-        },        {
+        },
+        {
             "name": "test",
             "seed": 1234,
             "description": "How effective is the robot.",
@@ -132,17 +133,28 @@
             "adaptationStrategy": "OptimalStrategy",
             "numOfSamples": 1,
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
+        },
+        {
+            "name": "test",
+            "seed": 32,
+            "description": "How effective is the robot.",
+            "numOfRobots": {"start": 1, "end": 6, "step": 2},
+            "numOfStaff": 2,
+            "fallChance": 1,
+            "adaptationStrategy": ["OptimalStrategy", "RandomStrategy", "AlwaysCallStaffStrategy", "AlwaysAskHelpStrategy"],
+            "numOfSamples": 1,
+            "enableVideo": false,
+            "enabled": false
         },
         {
             "name": "original",
-            "seed": 0,
             "description": "Original 3 scenarios.",
             "numOfRobots": 1,
             "adaptationStrategy": ["OptimalStrategy", "AlwaysCallStaffStrategy", "AlwaysAskHelpStrategy"],
-            "numOfSamples": 10,
+            "numOfSamples": 30,
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         }
 
     ]

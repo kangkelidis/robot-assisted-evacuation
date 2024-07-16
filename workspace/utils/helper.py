@@ -85,83 +85,22 @@ def convert_camelCase_to_snake_case(camelCase_str: str) -> str:
     return ''.join(['_' + i.lower() if i.isupper() else i for i in camelCase_str]).lstrip('_')
 
 
-def generate_simulation_id(scenario_name: str, index: int) -> str:
-    """
-    Generates a simulation ID based on the scenario and index.
-
-    This function takes a scenario name and an index as input, and returns a
-    simulation ID in the format "scenario_index".
-
-    Args:
-        scenario_name: The name of the scenario.
-        index: The index of the simulation.
-
-    Returns:
-        The generated simulation ID.
-    """
-    scenario_name = scenario_name.replace("_", "-")
-    return scenario_name + "_" + str(index)
-
-
-def get_scenario_name(simulation_id: str) -> str:
-    """
-    Extracts the scenario name from a simulation ID.
-
-    This function takes a simulation ID as input and returns the scenario name
-    by splitting the ID on the "_" character and returning the first part.
-
-    Args:
-        simulation_id: The simulation ID.
-
-    Returns:
-        The scenario name.
-    """
-    if "_" not in simulation_id:
-        raise ValueError(f"simulation_id must contain an underscore ('_'). {simulation_id}")
-    return simulation_id.split("_")[0]
-
-
-def get_scenario_index(simulation_id: str) -> str:
-    """
-    Extracts the scenario index from a simulation ID.
-
-    This function takes a simulation ID as input and returns the scenario index
-    by splitting the ID on the "_" character and returning the second part.
-
-    Args:
-        simulation_id: The simulation ID.
-
-    Returns:
-        The scenario index.
-    """
-    if "_" not in simulation_id:
-        raise ValueError(f"simulation_id must contain an underscore ('_'). {simulation_id}")
-    return simulation_id.split("_")[1]
-
-
 def setup_folders() -> None:
     """
     Creates the necessary folders for the workspace.
 
     This function sets up the folder structure for the NetLogo simulation workspace.
-    It creates the RESULTS_FOLDER, LOGS_FOLDER, and various sub-folders for data,
+    It creates the RESULTS_FOLDER, LOGS_FOLDER, the experiments folder and sub-folders for data,
     frames, images, and videos. And creates a folder for the current experiment.
     """
-    if not os.path.exists(RESULTS_FOLDER):
-        os.makedirs(RESULTS_FOLDER)
-
-    if not os.path.exists(LOGS_FOLDER):
-        os.makedirs(LOGS_FOLDER)
-
-    experiment_folder_name = get_experiment_folder()
-    for folder in [DATA_FOLDER, FRAMES_FOLDER, IMAGE_FOLDER, VIDEO_FOLDER]:
+    for folder in [RESULTS_FOLDER, LOGS_FOLDER, FRAMES_FOLDER]:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    for folder in [DATA_FOLDER, IMAGE_FOLDER]:
-        experiment_folder_path = os.path.join(folder, experiment_folder_name)
-        if not os.path.exists(experiment_folder_path):
-            os.makedirs(experiment_folder_path)
+    # make the experiment folder and its sub-folders
+    for path in EXPERIMENT_FOLDER_STRUCT.values():
+        if not os.path.exists(path):
+            os.makedirs(path)
 
 
 def get_available_cpus() -> int:
@@ -206,45 +145,3 @@ def get_custom_bar_format() -> str:
         "Remaining: {{remaining}}, {{rate_fmt}}{{postfix}}]"
     ).format(green_color, reset_color)
     return custom_bar_format
-
-
-def find_scenario_by_name(scenario_name: str, scenarios: list['Scenario']) -> 'Scenario':
-    """
-    Returns the scenario with the given name from the list of scenarios.
-
-    Args:
-        scenario_name: The name of the scenario to find.
-        scenarios: The list of scenarios.
-
-    Returns:
-        The scenario object.
-    """
-    for scenario in scenarios:
-        if scenario.name == scenario_name:
-            return scenario
-    raise NameError(f"No matching scenario found for name {scenario_name} in {scenarios}")
-
-
-def find_simulation_in(scenario_s: Union[list['Scenario'], 'Scenario'],
-                       simulation_id: str) -> 'Simulation':
-    """
-    Returns the simulation with the given ID from the list of scenarios.
-
-    Args:
-        scenario_s: Either a list of scenarios or a single scenario.
-        simulation_id: The ID of the simulation to find.
-
-    Returns:
-        The Simulation object.
-    """
-    if isinstance(scenario_s, list):
-        scenario_name = get_scenario_name(simulation_id)
-        scenario_s = find_scenario_by_name(scenario_name, scenario_s)
-
-    simulation: Optional['Simulation'] = \
-        next((s for s in scenario_s.simulations if s.id == simulation_id), None)
-
-    if simulation is None:
-        raise NameError(f"No matching simulation found for ID {simulation_id}")
-
-    return simulation

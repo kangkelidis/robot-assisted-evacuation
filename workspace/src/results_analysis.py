@@ -15,21 +15,20 @@ import textwrap
 import matplotlib  # type: ignore
 
 matplotlib.use('Agg')
-from typing import List
+from typing import Optional
 
 import matplotlib.pyplot as plt  # type: ignore
-import numpy as np
+import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import seaborn as sns  # type: ignore
-import statsmodels.api as sm
-from scipy.stats import mannwhitneyu
+import statsmodels.api as sm  # type: ignore
+from scipy.stats import mannwhitneyu  # type: ignore
 from src.load_config import get_target_scenario
-from utils.helper import (get_experiment_folder, get_scenario_index,
-                          setup_logger)
-from utils.paths import DATA_FOLDER, IMAGE_FOLDER
+from src.simulation import Simulation
+from utils.helper import setup_logger
+from utils.paths import RESULTS_CSV_FILE_NAME
 
 PLOT_STYLE = 'seaborn-v0_8-darkgrid'
-EXPERIMENT_FOLDER_NAME = ""
 
 logger = setup_logger()
 
@@ -73,7 +72,7 @@ def calculate_sample_size(mean_1: float, mean_2: float, std_dev_1: float, std_de
     Returns:
         The recommended sample size for each group.
     """
-    analysis = sm.stats.TTestIndPower()  # type: sm.stats.TTestIndPower
+    analysis: sm.stats.TTestIndPower = sm.stats.TTestIndPower()
     effect_size = cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2)
     result = analysis.solve_power(effect_size=effect_size,
                                   alpha=alpha,
@@ -85,7 +84,8 @@ def calculate_sample_size(mean_1: float, mean_2: float, std_dev_1: float, std_de
 def test_hypothesis(first_scenario_column: str,
                     second_scenario_column: str,
                     results_dataframe: pd.DataFrame,
-                    alternative: str = "two-sided") -> None:
+                    experiment_folder_path: str,
+                    alternative: str = "two-sided",) -> None:
     """
     Perform a Mann-Whitney U test to compare the distributions of two samples.
 
@@ -97,17 +97,18 @@ def test_hypothesis(first_scenario_column: str,
         first_scenario_column: The name of the column containing the first sample.
         second_scenario_column: The name of the column containing the second sample.
         results_dataframe: The DataFrame containing the sample data.
+        img_folder: The path to the image folder.
         alternative: The alternative hypothesis, either "two-sided", "less", or "greater".
                      Defaults to "two-sided".
     """
 
-    first_scenario_data = results_dataframe[first_scenario_column].values  # type: List[int]
-    first_scenario_mean = np.mean(first_scenario_data).item()  # type:float
-    first_scenario_stddev = np.std(first_scenario_data).item()  # type:float
+    first_scenario_data = results_dataframe[first_scenario_column].values
+    first_scenario_mean = np.mean(first_scenario_data).item()
+    first_scenario_stddev = np.std(first_scenario_data).item()
 
-    second_scenario_data = results_dataframe[second_scenario_column].values  # type: List[float]
-    second_scenario_mean = np.mean(second_scenario_data).item()  # type:float
-    second_scenario_stddev = np.std(second_scenario_data).item()  # type:float
+    second_scenario_data = results_dataframe[second_scenario_column].values
+    second_scenario_mean = np.mean(second_scenario_data).item()
+    second_scenario_stddev = np.std(second_scenario_data).item()
 
     logger.info("{}->mean = {} std = {} len={}".format(
         first_scenario_column, first_scenario_mean,
@@ -131,12 +132,12 @@ def test_hypothesis(first_scenario_column: str,
         )
     )
 
-    threshold = 0.05  # type:float
+    threshold = 0.05
     u, p_value = mannwhitneyu(x=first_scenario_data, y=second_scenario_data,
                               alternative=alternative)
     logger.info("U={} , p={}".format(u, p_value))
 
-    hypothesis_file_path = DATA_FOLDER + EXPERIMENT_FOLDER_NAME + "/hypothesis_tests.txt"
+    hypothesis_file_path = experiment_folder_path + "hypothesis_tests.txt"
     if p_value > threshold:
         logger.info("FAILS TO REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
         # save the results
@@ -169,15 +170,16 @@ def get_metrics(experiment_results: pd.DataFrame) -> pd.DataFrame:
     return metrics_df
 
 
-def plot_results(data_for_violin: pd.DataFrame) -> None:
+def plot_results(data_for_violin: pd.DataFrame, img_folder: str) -> None:
     """
     Plots the results of the experiment.
 
     Args:
         data_for_violin: The DataFrame containing the experiment result data.
+        img_folder: The path to the image folder.
     """
     plt.style.use(PLOT_STYLE)
-    plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/violin_plot"
+    plt_path = img_folder + "violin_plot"
     ax = sns.violinplot(data=data_for_violin, order=None)
     ax.set_title("Scenarios Comparison")
     locs = ax.get_xticks()
@@ -189,7 +191,7 @@ def plot_results(data_for_violin: pd.DataFrame) -> None:
     plt.clf()
 
 
-def process_data(experiment_data: pd.DataFrame) -> pd.DataFrame:
+def process_data(experiment_data: pd.DataFrame, data_folder: str) -> pd.DataFrame:
     """
     Processes the data from the experiment results in order to plot them.
 
@@ -198,42 +200,27 @@ def process_data(experiment_data: pd.DataFrame) -> pd.DataFrame:
 
     Args:
         experiment_data: DataFrame with all simulations' data.
+        data_folder: The path to the folder where the processed data will be saved.
 
     Returns:
         processed_data: DataFrame with ticks grouped by scenario.
     """
     # Split 'simulation_id' to extract the simulation number
-    experiment_data['sim_index'] = experiment_data['simulation_id'].apply(get_scenario_index)
+    experiment_data['sim_index'] = experiment_data['simulation_id'].apply(Simulation.get_index)
     # Pivot the DataFrame using 'sim_index' as the new index
     processed_data = experiment_data.pivot(
         index='sim_index', columns='scenario', values='evacuation_ticks')
 
-    processed_data_path = DATA_FOLDER + EXPERIMENT_FOLDER_NAME + "/processed_data.csv"
+    processed_data_path = data_folder + "processed_data.csv"
     processed_data.to_csv(processed_data_path)
 
     metrics = get_metrics(processed_data)
-    metrics_path = DATA_FOLDER + EXPERIMENT_FOLDER_NAME + "/metrics.csv"
+    metrics_path = data_folder + "metrics.csv"
     metrics.to_csv(metrics_path)
     return processed_data
 
 
-def plot_num_of_robots(experiment_data: pd.DataFrame) -> None:
-    """
-    Plots the number of robots in the simulation.
-
-    Args:
-        experiment_data (pd.DataFrame): The DataFrame containing the experiment data.
-    """
-    plt.style.use(PLOT_STYLE)
-    plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/num_of_robots"
-    ax = sns.lineplot(
-        data=experiment_data, x='num_of_robots', y='evacuation_ticks', hue='num_of_staff')
-    ax.set_title("Evacuation Ticks vs Number of Robots")
-    plt.savefig(plt_path + ".png", bbox_inches='tight', pad_inches=0)
-    plt.clf()
-
-
-def plot_comparisons(experiment_data: pd.DataFrame) -> None:
+def plot_comparisons(experiment_data: pd.DataFrame, img_folder: str) -> None:
     """
     Plots the comparisons between differences in the dataFrame.
 
@@ -245,6 +232,7 @@ def plot_comparisons(experiment_data: pd.DataFrame) -> None:
 
     Args:
         experiment_data: The DataFrame containing the experiment data.
+        img_folder: The path to the image folder.
     """
     columns_to_check = ['strategy', 'num_of_robots', 'num_of_passengers',
                         'num_of_staff', 'fall_length', 'fall_chance', 'room_type']
@@ -257,58 +245,36 @@ def plot_comparisons(experiment_data: pd.DataFrame) -> None:
         if len(unique_values) > 1:
             multivalue_columns.append(column)
             plt.style.use(PLOT_STYLE)
-            plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + f"/{column}_comparison.png"
+            plt_path = img_folder + f"{column}_comparison.png"
             ax = sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks')
             first_value = experiment_data[column].iloc[0]
             num_samples = (experiment_data[column] == first_value).sum()
-            ax.set_title(f"Evacuation Ticks vs {column}. Sample size: {num_samples}")
+            ax.set_title(f"Evacuation Ticks vs {column.capitalize()}. Sample size: {num_samples}")
             plt.savefig(plt_path, bbox_inches='tight', pad_inches=0)
             plt.clf()
 
-    # Plot a line for each non-unique value
-    if len(multivalue_columns) > 1:
-        long_format_data = pd.DataFrame(columns=['category', 'value', 'evacuation_ticks'])
-        
-        for column in multivalue_columns:
-            temp_df = experiment_data[[column, 'evacuation_ticks']].copy()
-            temp_df['category'] = column
-            temp_df.rename({column: 'value'}, axis=1, inplace=True)
-            long_format_data = pd.concat([long_format_data, temp_df], ignore_index=True)
 
-        # Plot
-        plt.style.use(PLOT_STYLE)
-        plt_path = IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME + "/combined_comparison.png"
-        ax = sns.lineplot(data=long_format_data, x='value', y='evacuation_ticks', hue='category')
-        ax.set_title("Evacuation Ticks Comparison")
-        plt.savefig(plt_path, bbox_inches='tight', pad_inches=0)
-        plt.clf()
-
-
-def setup_result_folders() -> None:
-    """
-    Makes sure the necessary folders are created for the analysis.
-    """
-    if not os.path.exists(IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME):
-        os.makedirs(IMAGE_FOLDER + EXPERIMENT_FOLDER_NAME)
-
-
-def perform_analysis(experiment_folder_name: str) -> None:
+def perform_analysis(experiment_folder: dict[str, str],
+                     csv_file_path: Optional[str] = None) -> None:
     """
     Performs the analysis of the experiment results.
 
     Args:
-        experiment_results: path to the CSV file containing the experiment results.
+        experiment_folder: a dictionary containing the path to the
+                           experiment folder and its sub-folders.
+        csv_file_path: the path to the CSV file containing the experiment results.
     """
-    global EXPERIMENT_FOLDER_NAME
-    EXPERIMENT_FOLDER_NAME = experiment_folder_name
-    setup_result_folders()
-    file_path = DATA_FOLDER + experiment_folder_name + "/experiment_data.csv"
+    if csv_file_path:
+        file_path = csv_file_path
+    else:
+        file_path = experiment_folder['data'] + RESULTS_CSV_FILE_NAME
+
     experiment_data = pd.read_csv(file_path)
-    processed_data = process_data(experiment_data)
+    processed_data = process_data(experiment_data, experiment_folder['data'])
 
-    plot_results(processed_data)
+    plot_results(processed_data, experiment_folder['img'])
 
-    plot_comparisons(experiment_data)
+    plot_comparisons(experiment_data, experiment_folder["img"])
 
     target_scenario = get_target_scenario()
     scenarios = processed_data.columns.to_list()
@@ -318,6 +284,7 @@ def perform_analysis(experiment_folder_name: str) -> None:
                 test_hypothesis(first_scenario_column=target_scenario,
                                 second_scenario_column=alternative_scenario,
                                 results_dataframe=processed_data,
+                                experiment_folder_path=experiment_folder['path'],
                                 alternative="less")
     else:
         logger.error(
