@@ -13,14 +13,13 @@ from flask import Flask, request  # type: ignore
 workspace_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(workspace_path)
 
-from src.simulation import Scenario
 from utils.cleanup import signal_handler
 
 PORT = 5000
 BASE_URL = f'http://localhost:{PORT}'
 
 # List of scenario objects
-SCENARIOS: list[Scenario] = []
+SCENARIOS = []
 # Tracks the simulation IDs that have not finished yet
 UNFINISHED_SIMULATION_IDS: list[str] = []
 

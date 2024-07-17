@@ -85,6 +85,9 @@ def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
         else:
             scenario_names.add(scenario['name'])
 
+    if not scenario_names:
+        raise ValueError("No enabled scenarios found in configuration file.")
+
     if config['targetScenarioForAnalysis'] not in scenario_names:
         logger.warning(f"CAUTION: Target scenario for analysis not found in simulation scenarios: "
                        f"{config['targetScenarioForAnalysis']}")

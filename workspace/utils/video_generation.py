@@ -6,7 +6,7 @@ This module provides functionality for generating GIF animations from simulation
 import glob
 
 import natsort  # type: ignore
-from PIL import Image  # type: ignore
+from PIL import Image, ImageDraw  # type: ignore
 from utils.paths import FRAMES_FOLDER
 
 
@@ -31,9 +31,12 @@ def generate_video(simulation_id: str, video_path: str, frame_duration: int = 20
 
     print("Generating GIF from {} frames for simulation {}".format(number_of_frames, simulation_id))
     frames = []
-    for frame_file in frame_list:
+    for i, frame_file in enumerate(frame_list):
         frame_as_image = Image.open(frame_file)
         frames.append(frame_as_image)
+        draw = ImageDraw.Draw(frame_as_image)
+        label = f'tick:{i}'
+        draw.text((10, 10), label, fill='black')
 
     output_file = video_path + f"/video_{simulation_id}.gif"
     first_frame = frames[0]

@@ -9,18 +9,19 @@
 
     "": ["The scenario that will be used for the analysis.",
         "This scenario must be in the simulationScenarios array."],
-    "targetScenarioForAnalysis": "OptimalStrategy",
+    "targetScenarioForAnalysis": "near-optimal-support",
 
     "": ["Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
-        "seed": 21,
-        "numOfSamples": 30,
+        "seed": 0,
+        "netlogo_seed": null,
+        "numOfSamples": 1,
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
         "fallLength": 500,
-        "fallChance": 0.05,
+        "fallChance": 1,
         "maxNetlogoTicks": 2000,
         "roomType": 8,
         "enableVideo": false
@@ -44,7 +45,7 @@
             "numOfRobots": 1,
             "adaptationStrategy": "AlwaysCallStaffStrategy",
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
         {
             "name": "passenger-support",
@@ -52,7 +53,7 @@
             "numOfRobots": 1,
             "adaptationStrategy": "AlwaysAskHelpStrategy",
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
         {
             "name": "random-support",
@@ -70,11 +71,10 @@
         {
             "name": "near-optimal-support",
             "description": "Almost optimal",
-            "numOfSamples": 10,  
-            "numOfRobots": [1, 2],
-            "adaptationStrategy": ["RandomStrategy", "OptimalStrategy"],
+            "numOfRobots": 1,
+            "adaptationStrategy": "OptimalStrategy",
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
         {
             "name": "test",
@@ -154,8 +154,7 @@
             "adaptationStrategy": ["OptimalStrategy", "AlwaysCallStaffStrategy", "AlwaysAskHelpStrategy"],
             "numOfSamples": 30,
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         }
-
     ]
 }

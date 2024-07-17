@@ -427,7 +427,7 @@ to setup
   set _number_staff_members NUM_OF_STAFF
   set number_passengers NUM_OF_PASSENGERS
   
-  set-default-shape agents "person"
+  set-default-shape agents "circle-small"
   create-agents number_passengers [ move-to one-of patches with [ (pcolor = white or pcolor = orange) and count agents-here < 8 ] ]
   ask agents [
     set color PASSENGERS_COLOR
@@ -858,7 +858,9 @@ to write-csv-report
 end
 
 to-report evacuation-finished?
-  report count turtles with [color != DEAD_PASSENGERS_COLOR] =  0
+  ;sometimes there is a glitch where a couple of kids with a link move around for ever. seed is 398048796
+  ;report count turtles with [color != DEAD_PASSENGERS_COLOR] =  0
+  report count turtles with [color = PASSENGERS_COLOR] = 0
 end
 
 ;-----------------------------------------
@@ -1220,8 +1222,6 @@ to move-staff  ; staff behavior ;nw
 ;   if [pcolor] of patch-here = FIRE_COLOR or [pcolor] of patch-here = WALL_COLOR [move-to back_step]
 ;  ]
   if [pcolor] of patch-here = EXIT_COLOR and count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
-  ; v.2.11.2 remove staff if no passengers are left
-  if count agents with [color != DEAD_PASSENGERS_COLOR] = 0  [die]
 end
 
 to-report seed-simulation [current-seed]
@@ -1634,12 +1634,16 @@ to request-support
 end
 
 to search-fallen-passengers
+  ;let max_vision SAR_ROBOT_OBSERVATION_DISTANCE * 1000
   let list-fallen-passengers agents in-radius SAR_ROBOT_OBSERVATION_DISTANCE with [ st_fall = 1 and color != DEAD_PASSENGERS_COLOR and help-in-progress = FALSE]
 
   ifelse count list-fallen-passengers > 0 [
     let passenger-to-help one-of list-fallen-passengers
     set victim-found passenger-to-help
-
+    
+    ; Move the robot to the passenger-to-help's location
+    ;move-to passenger-to-help
+    ;set heading towards passenger-to-help
     ask passenger-to-help [
       set help-in-progress TRUE
     ]
@@ -1784,6 +1788,7 @@ to check-fall
        set st_fall 1
        set speed 0
        set color FALL_COLOR
+       set shape "face sad"
        set statistics_falls_total statistics_falls_total + 1
        set statistics_falls_average_per_passenger statistics_falls_total / (number_passengers - count agents with [color = DEAD_PASSENGERS_COLOR])
      ]
@@ -1966,6 +1971,7 @@ to check-get-up
 
       ;nw
       set color PASSENGERS_COLOR
+      set shape "circle-small"
     ]
   ]
 
@@ -3059,6 +3065,11 @@ false
 0
 Circle -7500403 true true 0 0 300
 Circle -16777216 true false 30 30 240
+
+circle-small
+true
+0
+Circle -7500403 true true 0 0 150
 
 container
 false
@@ -6560,8 +6571,8 @@ default
 link direction
 true
 0
-Line -7500403 true 150 150 90 180
-Line -7500403 true 150 150 210 180
+Line -7500403 true 150 150 90 100
+Line -7500403 true 150 150 210 100
 
 @#$#@#$#@
 0

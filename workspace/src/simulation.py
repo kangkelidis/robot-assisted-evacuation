@@ -40,7 +40,8 @@ class NetLogoParams(Updatable):
     Holds the NetLogo parameters for a simulation.
 
     Attributes:
-    - seed: The seed for the simulation.
+    - seed: The seed to create the seed for the Netlogo simulation.
+    - netlogo_seed: The seed for the NetLogo simulation.
     - num_of_samples: The number of simulations to run.
     - num_of_robots: The number of robots in the simulation.
     - num_of_passengers: The number of passengers in the simulation.
@@ -53,6 +54,7 @@ class NetLogoParams(Updatable):
     """
     def __init__(self):
         self.seed = 0
+        self.netlogo_seed = None
         self.num_of_samples = 30
         self.num_of_robots = 1
         self.num_of_passengers = 800
@@ -171,6 +173,9 @@ class Scenario(Updatable):
             A DataFrame containing the scenario data.
         """
         params = self.netlogo_params.__dict__
+        # rename for clarity
+        params['param_seed'] = params['seed']
+        del params['seed']
         info = {'scenario': self.name, 'strategy': self.adaptation_strategy}
 
         scenario_data = []
@@ -300,6 +305,9 @@ class Simulation(Updatable):
         #  use the netlogo random-seed if 0
         if self.netlogo_params.seed == 0:
             return 0
+        # Specific seed provided in config
+        if self.netlogo_params.netlogo_seed is not None:
+            return self.netlogo_params.netlogo_seed
 
         # Generate a seed based on the netlogo_params seed and the index
         random.seed(self.netlogo_params.seed * (index + 1))

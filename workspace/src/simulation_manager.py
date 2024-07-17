@@ -113,13 +113,14 @@ def initialise_netlogo_link(netlogo_model_path: str) -> pyNetLogo.NetLogoLink:
     return netlogo_link
 
 
-def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink) -> int | None:
+def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink, max_netlogo_ticks) -> int | None:
     """
     Runs the NetLogo model and returns the number of ticks it took for the evacuation to finish.
     If the evacuation does not finish, it returns None.
 
     Args:
         netlogo_link: The NetLogo link object.
+        max_netlogo_ticks: The maximum number of ticks to run the model.
 
     Returns:
         evacuation_ticks: The number of ticks it took for the evacuation to finish.
@@ -127,8 +128,10 @@ def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink) -> int | None:
     """
     evacuation_ticks = None
     try:
-        while not netlogo_link.report(EVACUATION_FINISHED_REPORTER):
+        count = 0
+        while not netlogo_link.report(EVACUATION_FINISHED_REPORTER) and count < max_netlogo_ticks:
             netlogo_link.command('go')
+            count += 1
         evacuation_ticks = netlogo_link.report('ticks')
     except NetLogoException as e:
         logger.error(f"NetLogo exception: {e}")
@@ -163,17 +166,20 @@ def run_simulation(simulation_id: str,
     start_time = time.time()
     current_seed: int = setup_simulation(simulation_id, simulation_seed, simulation_params,
                                          netlogo_link)
-    evacuation_ticks: Optional[int] = _run_netlogo_model(netlogo_link)
+    evacuation_ticks: Optional[int] = _run_netlogo_model(netlogo_link,
+                                                         simulation_params.max_netlogo_ticks)
     endtime = time.time()
     evacuation_time = round(endtime - start_time, 2)
 
     if simulation_params.enable_video:
         generate_video(simulation_id, video_path)
 
+    success: bool = evacuation_ticks is not None and \
+        evacuation_ticks < simulation_params.max_netlogo_ticks
     return Result(netlogo_seed=current_seed,
                   evacuation_ticks=evacuation_ticks,
                   evacuation_time=evacuation_time,
-                  success=evacuation_ticks is not None)
+                  success=success)
 
 
 def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: str,
@@ -268,9 +274,9 @@ def execute_parallel_simulations(simulations: list[Simulation],
 
     logger.info(f"Setting up {len(simulations)} Simulations...")
 
-    q: Queue = Queue()
-    for simulation in simulations:
-        q.put(simulation.id)
+    q = Queue()
+    for _ in simulations:
+        q.put(1)
     try:
         processes = []
         for index, batch in enumerate(simulation_batches):
@@ -278,7 +284,8 @@ def execute_parallel_simulations(simulations: list[Simulation],
                               args=(batch, netlogo_model_path, index, q, video_path))
             processes.append(process)
             process.start()
-            logger.debug(f"Started batch {index + 1} with {len(batch)} simulations")
+            logger.debug(f"Started batch {index + 1} with {len(batch)} simulations, "
+                         f"on processes: {process.pid}. {[sim['id'] for sim in batch]}")
 
         # Progress bar update
         logger.info(" ")
@@ -345,7 +352,7 @@ def save_simulations_results(scenarios: list[Scenario], data_folder_path: str) -
 
     # Save the data
     try:
-        data_path = f"{data_folder_path}/experiment_data.csv"
+        data_path = f"{data_folder_path}/{RESULTS_CSV_FILE_NAME}"
         experiments_data.to_csv(data_path)
     except Exception as e:
         logger.error(f"Error saving results file: {e}")

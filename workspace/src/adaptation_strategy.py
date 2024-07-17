@@ -6,7 +6,7 @@ import importlib
 import os
 import traceback
 from enum import Enum
-from typing import Optional, Self
+from typing import Optional
 
 from utils.helper import setup_logger
 from utils.paths import STRATEGIES_FOLDER
