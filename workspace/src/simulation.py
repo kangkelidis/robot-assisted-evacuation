@@ -65,6 +65,11 @@ class NetLogoParams(Updatable):
         self.room_type = 8
         self.enable_video = False
 
+    def duplicate(self):
+        new_obj = NetLogoParams()
+        new_obj.update(self.__dict__)
+        return new_obj
+
 
 class Result(Updatable):
     """
@@ -112,6 +117,8 @@ class Scenario(Updatable):
     - simulations: A list of Simulation objects for the scenario.
     - results: A list of Result objects for the scenario.
     - logger: A logger object for logging messages.
+    - simulation_indices_with_video: A set of indices of simulations with video enabled.
+    - simulation_ids_with_video: A list of ids that have video enabled.
     """
 
     @staticmethod
@@ -138,6 +145,9 @@ class Scenario(Updatable):
         self.adaptation_strategy: Optional[AdaptationStrategy] = None
         self.simulations: list[Simulation] = []
         self.results: list[Result] = []
+        self.logger = setup_logger()
+        self.simulation_indices_with_video: set[int] = set()
+        self.simulation_ids_with_video: list[str] = []
 
     def update(self, params: dict) -> None:
         super().update(params)
@@ -155,12 +165,59 @@ class Scenario(Updatable):
         new_scenario.netlogo_params.update(self.netlogo_params.__dict__)
         return new_scenario
 
+    def _check_video(self, simulation: Simulation) -> None:
+        """
+        Checks if video is enabled and sets the NetLogoParams in the simulation accordingly.
+
+        1. If false or not set, it sets the enable_video attribute to false.
+        2. If it is 'all' or true or a number bigger than length of simulations,
+             all simulations will have video enabled.
+        3. If it is a list of simulation indices, only those simulations will have video enabled.
+        4. If it is a number n, n random simulations will have video enabled,
+             If n is greater than len simulations, all simulations will have video enabled.
+        """
+        if simulation.netlogo_params.enable_video:
+            # case 2: enable_video is True or 'all'
+            if simulation.netlogo_params.enable_video is True or \
+                    simulation.netlogo_params.enable_video == 'all':
+                simulation.netlogo_params.enable_video = True
+                self.simulation_ids_with_video.append(simulation.id)
+
+            # case 3: enable_video is a list of simulation indices
+            elif isinstance(simulation.netlogo_params.enable_video, list):
+                if simulation.index in simulation.netlogo_params.enable_video:
+                    simulation.netlogo_params.enable_video = True
+                    self.simulation_ids_with_video.append(simulation.id)
+                else:
+                    simulation.netlogo_params.enable_video = False
+
+            # case 4: enable_video is a number
+            elif isinstance(simulation.netlogo_params.enable_video, int):
+                if simulation.netlogo_params.enable_video > self.netlogo_params.num_of_samples:
+                    simulation.netlogo_params.enable_video = True
+                    self.simulation_ids_with_video.append(simulation.id)
+                else:
+                    # run the first time only
+                    if len(self.simulation_indices_with_video) == 0:
+                        # randomly select n simulations to have video enabled
+                        self.simulation_indices_with_video = \
+                            set(random.sample(range(0, self.netlogo_params.num_of_samples),
+                                              simulation.netlogo_params.enable_video))
+                    if simulation.index in self.simulation_indices_with_video:
+                        simulation.netlogo_params.enable_video = True
+                        self.simulation_ids_with_video.append(simulation.id)
+
+            #  case 1: enable_video is False or invalid
+            else:
+                simulation.netlogo_params.enable_video = False
+
     def build_simulations(self) -> None:
         """
         Builds the simulation objects for this scenario and saves them in a list.
         """
         for simulation_index in range(self.netlogo_params.num_of_samples):
             simulation = Simulation(self.name, simulation_index, self.netlogo_params)
+            self._check_video(simulation)
             self.simulations.append(simulation)
         self.logger.debug(f"Finished building simulations for scenario: {self.name}. "
                           f"Size of list: {len(self.simulations)}")
@@ -194,6 +251,7 @@ class Simulation(Updatable):
 
     Attributes:
     - scenario_name: The name of the scenario.
+    - index: The index of the simulation.
     - id: The unique ID of the simulation.
     - netlogo_params: The NetLogo parameters for the simulation.
     - result: The Result object for the simulation.
@@ -282,10 +340,12 @@ class Simulation(Updatable):
 
     def __init__(self, scenario_name: str, index: int, netlogo_params: NetLogoParams) -> None:
         self.scenario_name = scenario_name
+        self.index = index
         self.id = Simulation.generate_id(scenario_name, index)
-        self.netlogo_params = netlogo_params
+        self.netlogo_params = netlogo_params.duplicate()
         self.result: Result = Result()
         self.seed = self.generate_seed(index)
+        # TODO not need, use the netlogo_params seed
         self.netlogo_seed = None
 
     def generate_seed(self, index) -> int:

@@ -51,6 +51,8 @@ def _build_kwargs(parameters: ParametersType) -> list[dict[str, Any]]:
     # Holds lists of tuples, where each tuple is a parameter name its value
     parameter_list: list[list[tuple[str, Any]]] = []
     for param, values in parameters.items():
+        if param == "enable_video":
+            continue
         if isinstance(values, Iterable) and not isinstance(values, str):
             all_values: list[tuple[str, Any]] = [(param, value) for value in values]
             parameter_list.append(all_values)

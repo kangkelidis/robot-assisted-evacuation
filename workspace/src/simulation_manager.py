@@ -7,7 +7,7 @@ It uses the pyNetLogo library, to configure simulation parameters and retrieve s
 
 import signal
 import time
-from multiprocessing import Process, Queue
+from multiprocessing import Pool, Process, Queue
 from typing import Any, Optional
 
 import pandas as pd  # type: ignore
@@ -155,8 +155,7 @@ def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink, max_netlogo_ticks,
 def run_simulation(simulation_id: str,
                    simulation_seed: int,
                    simulation_params: NetLogoParams,
-                   netlogo_link: pyNetLogo.NetLogoLink,
-                   video_path: str) -> Result:
+                   netlogo_link: pyNetLogo.NetLogoLink) -> Result:
     """
     Runs a single simulation with the provided parameters and returns the results.
 
@@ -169,7 +168,6 @@ def run_simulation(simulation_id: str,
         simulation_seed: The seed for the simulation. To be used in Netlogo to create a random seed.
         simulation_params: The parameters to be set in NetLogo.
         neltogo_link: The link to the NetLogo model.
-        video_path: The path to save the video.
 
     Returns:
         result: The result object containing the simulation results.
@@ -182,9 +180,6 @@ def run_simulation(simulation_id: str,
     endtime = time.time()
     evacuation_time = round(endtime - start_time, 2)
 
-    if simulation_params.enable_video:
-        generate_video(simulation_id, video_path)
-
     success: bool = evacuation_ticks is not None and \
         evacuation_ticks < simulation_params.max_netlogo_ticks
     return Result(netlogo_seed=current_seed,
@@ -194,7 +189,7 @@ def run_simulation(simulation_id: str,
 
 
 def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: str,
-                    index: int, q: Queue, video_path: str) -> None:
+                    index: int, q: Queue) -> None:
     """
     Used to run a batch of simulations in a dedicated Process.
 
@@ -212,8 +207,7 @@ def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: 
         result = run_simulation(simulation['id'],
                                 simulation['seed'],
                                 simulation['params'],
-                                netlogo_link,
-                                video_path)
+                                netlogo_link)
         # update the queue to indicate that the simulation has finished to the progress bar
         q.get()
         # Convert result object to dict excluding keys that start with robot_ as they are
@@ -267,9 +261,7 @@ def build_batches(simulations: list[Simulation], num_cpus: int) -> list[list[dic
     return simulation_batches
 
 
-def execute_parallel_simulations(simulations: list[Simulation],
-                                 netlogo_model_path: str,
-                                 video_path: str) -> None:
+def execute_parallel_simulations(simulations: list[Simulation], netlogo_model_path: str) -> None:
     """
     Executes the simulations in parallel using the available CPUs.
 
@@ -283,7 +275,7 @@ def execute_parallel_simulations(simulations: list[Simulation],
     num_cpus = get_available_cpus()
     simulation_batches = build_batches(simulations, num_cpus)
     logger.info(f"Setting up {len(simulations)} Simulations")
-
+    # Create a queue to track the progress of the simulations
     q = Queue()
     for _ in simulations:
         q.put(1)
@@ -291,15 +283,14 @@ def execute_parallel_simulations(simulations: list[Simulation],
         processes = []
         for index, batch in enumerate(simulation_batches):
             process = Process(target=batch_processor,
-                              args=(batch, netlogo_model_path, index, q, video_path))
+                              args=(batch, netlogo_model_path, index, q))
             processes.append(process)
             process.start()
             logger.debug(f"Started batch {index + 1} with {len(batch)} simulations, "
                          f"on processes: {process.pid}. {[sim['id'] for sim in batch]}")
-
-        active_cores = len(simulation_batches)
+        # used to track the progress of the simulations
         prev_size = len(simulations) + 1
-        prev_alive_processes: int = len(processes)
+        # used to print dots while waiting for the setting up to finish
         dot = 0
         pbar: PBar = PBar()
         while any(p.is_alive() for p in processes):
@@ -312,22 +303,6 @@ def execute_parallel_simulations(simulations: list[Simulation],
             # update the progress bar
             if size < len(simulations) and size != prev_size:
                 prev_size = pbar.update(len(simulations), size, prev_size)
-
-            # # keep track of the number of alive processes
-            # curr_alive_processes = sum(p.is_alive() for p in processes)
-            # if curr_alive_processes != prev_alive_processes:
-            #     logger.info(f"\033[A\033[A\033[A\033[AActive cores: {curr_alive_processes}\033[B")
-            #     # TODO: Implement a restart mechanism, if size of simulations left is large
-            #     # if curr_alive_processes < active_cores * 0.5 and len(simulations) - size > len(simulations) * 0.6:
-            #     #     logger.warning("Active cores are less than 50% of the total cores. Restarting.")
-            #     #     for process in processes:
-            #     #         try:
-            #     #             # raises error in netlogo, result is False
-            #     #             process.terminate()
-            #     #         except Exception as e:
-            #     #             logger.debug(f"terminating process: {e}")
-            #     #     return
-            #     prev_alive_processes = curr_alive_processes
 
         for process in processes:
             process.join()
@@ -357,7 +332,21 @@ def build_simulation_pool(scenarios: list[Scenario]) -> list[Simulation]:
     return simulations_pool
 
 
-def save_simulations_results(scenarios: list[Scenario], data_folder_path: str) -> None:
+def video_worker(args: tuple) -> None:
+    """
+    Worker function to generate videos in parallel.
+
+    Args:
+        args: A tuple containing the simulation id and the path to save the video.
+    """
+    simulation_id, video_folder_path = args
+    try:
+        generate_video(simulation_id, video_folder_path)
+    except Exception as e:
+        logger.error(f"Error generating video for {simulation_id}. {e}")
+
+
+def save_simulations_results(scenarios: list[Scenario], experiment_folder: dict) -> None:
     """
     Gather the results from each simulation and saves a csv for each scenario, in their
     respective folder under the current experiment folder.
@@ -370,9 +359,14 @@ def save_simulations_results(scenarios: list[Scenario], data_folder_path: str) -
     Returns:
         experiments_data: A dataFrame with data from all the simulations
     """
+    data_folder_path = experiment_folder['data']
+    video_folder_path = experiment_folder['video']
+
+    simulations_with_video: list[str] = []
     # Combine all the results
     experiments_data = pd.DataFrame()
     for scenario in scenarios:
+        simulations_with_video.extend(scenario.simulation_ids_with_video)
         scenario_data = scenario.get_data()
         experiments_data = pd.concat(
             [experiments_data, scenario_data], ignore_index=True)
@@ -383,6 +377,13 @@ def save_simulations_results(scenarios: list[Scenario], data_folder_path: str) -
         experiments_data.to_csv(data_path)
     except Exception as e:
         logger.error(f"Error saving results file: {e}")
+
+    # save potential videos
+    if simulations_with_video:
+        logger.info(f"Generating videos for {simulations_with_video}")
+        args_list = [(simulation_id, video_folder_path) for simulation_id in simulations_with_video]
+        with Pool(processes=get_available_cpus()) as pool:
+            pool.map(video_worker, args_list)
 
 
 def log_execution_time(start_time: float, end_time: float) -> None:
@@ -440,9 +441,9 @@ def start_experiments(config: dict[str, Any],
     current_pool = simulations_pool[:]
     # Run the simulations until all are finished
     while current_pool:
-        execute_parallel_simulations(current_pool, netlogo_model_path, experiment_folder['video'])
+        execute_parallel_simulations(current_pool, netlogo_model_path)
         current_pool = update_simulations_pool(simulations_pool)
 
-    save_simulations_results(scenarios, experiment_folder['data'])
+    save_simulations_results(scenarios, experiment_folder)
     end_time = time.time()
     log_execution_time(start_time, end_time)

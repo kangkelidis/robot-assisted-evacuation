@@ -19,9 +19,29 @@ RUN wget $NETLOGO_URL \
 # Install base utilities
 RUN apt-get update \
     && apt-get install -y build-essential \
+    libtool \
+    autoconf \
+    automake \
     && apt-get install -y wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+    # Download and compile Gambit from source
+ARG GAMBIT_VERSION=16.0.2
+WORKDIR /home/workspace/gambit
+RUN wget https://github.com/gambitproject/gambit/archive/refs/tags/v$GAMBIT_VERSION.tar.gz \
+    && tar xzf v$GAMBIT_VERSION.tar.gz \
+    && cd /home/workspace/gambit/gambit-$GAMBIT_VERSION \
+    && aclocal \
+    && autoconf \
+    && autoreconf -i \
+    && ./configure --disable-dependency-tracking\
+    && make \
+    && make install \
+    && cd .. \
+    && rm -rf v$GAMBIT_VERSION.tar.gz
+
+WORKDIR /
 
 # Install miniconda
 ENV CONDA_DIR /opt/conda
@@ -30,6 +50,12 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 
 # Put conda in path so we can use conda activate
 ENV PATH=$CONDA_DIR/bin:$PATH
+
+# instal pygambit
+# WORKDIR /home/workspace/gambit/gambit-$GAMBIT_VERSION/src 
+# RUN pip --user install Cython
+# RUN python setup.py build
+# RUN python setup.py install
 
 # Copy only environment.yml
 COPY ./env/environment.yml /home/env/environment.yml
@@ -48,5 +74,8 @@ WORKDIR "/home/workspace"
 # entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+RUN pip install pygambit==16.0.2
+RUN pip list
 
 ENTRYPOINT ["/entrypoint.sh"]

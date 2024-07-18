@@ -11,8 +11,6 @@ from typing import Optional
 from utils.helper import setup_logger
 from utils.paths import STRATEGIES_FOLDER
 
-logger = setup_logger()
-
 
 class Gender(Enum):
     """
@@ -73,7 +71,7 @@ class AdaptationStrategy(object):
         ASK_FOR_HELP_ROBOT_ACTION: The robot action to ask for help.
         CALL_STAFF_ROBOT_ACTION: The robot action to call staff.
     """
-
+    logger = setup_logger()
     ASK_FOR_HELP_ROBOT_ACTION = "ask-help"
     CALL_STAFF_ROBOT_ACTION = "call-staff"
 
@@ -104,7 +102,7 @@ class AdaptationStrategy(object):
                         strategy_instance = strategy_class()
                         return strategy_instance
         except Exception as e:
-            logger.error(f"Error in get_adaptation_strategy: {e}")
+            AdaptationStrategy.logger.error(f"Error in get_adaptation_strategy: {e}")
             traceback.print_exc()
         raise FileNotFoundError(f"Failed to get adaptation strategy {strategy_name}")
 

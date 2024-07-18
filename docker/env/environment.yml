@@ -43,6 +43,10 @@ dependencies:
   - xz
   - zlib
   - pip:
+    - pygambit==16.0.2
+    - keras
+    - tensorflow
+    - scikit-learn
     - matplotlib
     - pandas
     - scipy

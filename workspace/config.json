@@ -97,7 +97,7 @@
             "adaptationStrategy": "RandomStrategy",
             "numOfSamples": 10,
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         },
         {
             "name": "test-robots-fall-chance",
@@ -142,6 +142,15 @@
             "numOfSamples": 30,
             "enableVideo": false,
             "enabled": false
+        },
+        {
+            "name": "video-test",
+            "description": ".",
+            "numOfRobots": 1,
+            "adaptationStrategy": ["OptimalStrategy"],
+            "numOfSamples": 5,
+            "enableVideo": false,
+            "enabled": true
         }
 
     ]
