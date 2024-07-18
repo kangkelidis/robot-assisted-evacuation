@@ -5,8 +5,8 @@ It provides functionality to run simulations and save the results.
 It uses the pyNetLogo library, to configure simulation parameters and retrieve simulation results.
 """
 
+import signal
 import time
-import traceback
 from multiprocessing import Process, Queue
 from typing import Any, Optional
 
@@ -17,13 +17,15 @@ from pyNetLogo import NetLogoException
 from src.server import BASE_URL
 from src.simulation import NetLogoParams, Result, Scenario, Simulation
 from tqdm import tqdm  # type: ignore
-from utils.helper import (get_available_cpus, get_custom_bar_format,
-                          setup_logger)
+from utils.helper import (PBar, TimeoutException, get_available_cpus,
+                          print_dots, setup_logger, timeout_handler)
 from utils.netlogo_commands import *
 from utils.paths import *
 from utils.video_generation import generate_video
 
 logger = setup_logger()
+
+SIMULATION_TIMEOUT = 60  # seconds
 
 
 def execute_commands(simulation_id: str,
@@ -113,31 +115,40 @@ def initialise_netlogo_link(netlogo_model_path: str) -> pyNetLogo.NetLogoLink:
     return netlogo_link
 
 
-def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink, max_netlogo_ticks) -> int | None:
+def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink, max_netlogo_ticks,
+                       time_limit: float = SIMULATION_TIMEOUT) -> int | None:
     """
-    Runs the NetLogo model and returns the number of ticks it took for the evacuation to finish.
-    If the evacuation does not finish, it returns None.
+    Runs the NetLogo model with a time limit and returns the number of ticks it took for the
+    evacuation to finish. If the evacuation does not finish or exceeds the time limit,
+    it returns None.
 
     Args:
         netlogo_link: The NetLogo link object.
         max_netlogo_ticks: The maximum number of ticks to run the model.
+        time_limit: The time limit in seconds for running the model.
 
     Returns:
-        evacuation_ticks: The number of ticks it took for the evacuation to finish.
-                          None if it did not finish.
+        evacuation_ticks: The number of ticks it took for the evacuation to finish, or None.
     """
     evacuation_ticks = None
     try:
-        count = 0
-        while not netlogo_link.report(EVACUATION_FINISHED_REPORTER) and count < max_netlogo_ticks:
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(time_limit)
+        ticks = 0
+        while not netlogo_link.report(EVACUATION_FINISHED_REPORTER) and ticks < max_netlogo_ticks:
             netlogo_link.command('go')
-            count += 1
-        evacuation_ticks = netlogo_link.report('ticks')
+            ticks += 1
+        evacuation_ticks = ticks if ticks < max_netlogo_ticks else None
+        signal.alarm(0)
+    except TimeoutException:
+        logger.error("Simulation timed out")
     except NetLogoException as e:
         logger.error(f"NetLogo exception: {e}")
     # ! cannot catch the exception in the java environment
     except BaseException as e:
         logger.error(f"Exception: {e}")
+    finally:
+        signal.alarm(0)
     return evacuation_ticks
 
 
@@ -271,8 +282,7 @@ def execute_parallel_simulations(simulations: list[Simulation],
     """
     num_cpus = get_available_cpus()
     simulation_batches = build_batches(simulations, num_cpus)
-
-    logger.info(f"Setting up {len(simulations)} Simulations...")
+    logger.info(f"Setting up {len(simulations)} Simulations")
 
     q = Queue()
     for _ in simulations:
@@ -287,29 +297,46 @@ def execute_parallel_simulations(simulations: list[Simulation],
             logger.debug(f"Started batch {index + 1} with {len(batch)} simulations, "
                          f"on processes: {process.pid}. {[sim['id'] for sim in batch]}")
 
-        # Progress bar update
-        logger.info(" ")
-        pbar = tqdm(total=len(simulations), desc="Simulations Progress",
-                    bar_format=get_custom_bar_format())
+        active_cores = len(simulation_batches)
         prev_size = len(simulations) + 1
+        prev_alive_processes: int = len(processes)
+        dot = 0
+        pbar: PBar = PBar()
         while any(p.is_alive() for p in processes):
             size = q.qsize()
+
+            # print dots while waiting for the setting up to finish
+            if size == len(simulations):
+                dot = print_dots(dot, len(simulations))
+
+            # update the progress bar
             if size < len(simulations) and size != prev_size:
-                pbar.n = len(simulations) - size
-                pbar.update(prev_size - size)
-                print(pbar.display(), '\033[A', flush=True)
-                prev_size = size
+                prev_size = pbar.update(len(simulations), size, prev_size)
+
+            # # keep track of the number of alive processes
+            # curr_alive_processes = sum(p.is_alive() for p in processes)
+            # if curr_alive_processes != prev_alive_processes:
+            #     logger.info(f"\033[A\033[A\033[A\033[AActive cores: {curr_alive_processes}\033[B")
+            #     # TODO: Implement a restart mechanism, if size of simulations left is large
+            #     # if curr_alive_processes < active_cores * 0.5 and len(simulations) - size > len(simulations) * 0.6:
+            #     #     logger.warning("Active cores are less than 50% of the total cores. Restarting.")
+            #     #     for process in processes:
+            #     #         try:
+            #     #             # raises error in netlogo, result is False
+            #     #             process.terminate()
+            #     #         except Exception as e:
+            #     #             logger.debug(f"terminating process: {e}")
+            #     #     return
+            #     prev_alive_processes = curr_alive_processes
 
         for process in processes:
             process.join()
 
         q.close()
-        pbar.n = len(simulations) - size
-        pbar.refresh()
+        pbar.close(len(simulations), size)
         logger.info(f"\nFinished {len(simulations) - size} simulations.")
     except Exception as e:
         logger.error(f"Exception in parallel simulation: {e}")
-        traceback.print_exc()
 
 
 def build_simulation_pool(scenarios: list[Scenario]) -> list[Simulation]:
@@ -377,6 +404,7 @@ def update_simulations_pool(simulations_pool) -> list[Simulation]:
     responses = requests.get(BASE_URL + "/get_unfinished_simulations")
     data = responses.json()
     unfinished_simulations = data['ids']
+    unfinished_simulations = set(unfinished_simulations)
 
     new_pool = []
     for simulation in simulations_pool:

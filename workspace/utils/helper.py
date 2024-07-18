@@ -9,6 +9,7 @@ import os
 from multiprocessing import cpu_count
 from typing import Any, Optional, Union
 
+from tqdm import tqdm
 from utils.paths import *
 
 logger_imported = False
@@ -33,7 +34,7 @@ def setup_logger() -> logging.Logger:
     if not logger.handlers and logger_imported:
         # File handler for debug and above
         log_file = LOGS_FOLDER + 'simulation.log'
-        file_handler = ConcurrentRotatingFileHandler(log_file, "a", 512 * 1024, 5)
+        file_handler = ConcurrentRotatingFileHandler(log_file, "a", 2000 * 1024, 5)
         file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(file_formatter)
         file_handler.setLevel(logging.DEBUG)
@@ -145,3 +146,46 @@ def get_custom_bar_format() -> str:
         "Remaining: {{remaining}}, {{rate_fmt}}{{postfix}}]"
     ).format(green_color, reset_color)
     return custom_bar_format
+
+
+class TimeoutException(Exception):
+    pass
+
+
+def timeout_handler(signum, frame) -> None:
+    raise TimeoutException
+
+
+def print_dots(dot, total):
+    time = 10000
+    interval = 5
+    dot += 1
+    if dot == time:
+        logger.info(f"\033[A\033[KSetting up {total} Simulations\r")
+    elif dot == time * interval:
+        logger.info(f"\033[A\033[KSetting up {total} Simulations..\r")
+    elif dot == time * interval * 2:
+        logger.info(f"\033[A\033[KSetting up {total} Simulations....\r")
+    elif dot == time * interval * 3:
+        logger.info(f"\033[A\033[KSetting up {total} Simulations......\r")
+    elif dot > time * interval * 4:
+        dot = 0
+    return dot
+
+
+class PBar():
+    def __init__(self):
+        self.pbar = None
+
+    def update(self, total, size, prev_size):
+        if self.pbar is None:
+            self.pbar = tqdm(total=total, desc="Simulations Progress", bar_format=get_custom_bar_format())
+
+        self.pbar.n = total - size
+        self.pbar.update(prev_size - size)
+        print(self.pbar.display(), '\033[A', flush=True)
+        return size
+
+    def close(self, total, size):
+        self.pbar.n = total - size
+        self.pbar.refresh()

@@ -172,12 +172,15 @@ def get_metrics(experiment_results: pd.DataFrame) -> pd.DataFrame:
 
 def plot_results(data_for_violin: pd.DataFrame, img_folder: str) -> None:
     """
-    Plots the results of the experiment.
+    Plots the results of the experiment, if the number of scenarios is less than 7.
 
     Args:
         data_for_violin: The DataFrame containing the experiment result data.
         img_folder: The path to the image folder.
     """
+    if len(data_for_violin.columns) > 7:
+        return
+
     plt.style.use(PLOT_STYLE)
     plt_path = img_folder + "violin_plot"
     ax = sns.violinplot(data=data_for_violin, order=None)
@@ -238,7 +241,7 @@ def plot_comparisons(experiment_data: pd.DataFrame, img_folder: str) -> None:
                         'num_of_staff', 'fall_length', 'fall_chance', 'room_type']
 
     # Check for columns with different values
-    # if there are multiple non-unique values, plot a line with a different color for each value
+    # TODO: if there are multiple non-unique values, plot a line with a different color for each
     multivalue_columns = []
     for column in columns_to_check:
         unique_values = experiment_data[column].unique()

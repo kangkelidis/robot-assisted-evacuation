@@ -21,7 +21,7 @@ BASE_URL = f'http://localhost:{PORT}'
 # List of scenario objects
 SCENARIOS = []
 # Tracks the simulation IDs that have not finished yet
-UNFINISHED_SIMULATION_IDS: list[str] = []
+UNFINISHED_SIMULATION_IDS: set[str] = set()
 
 app = Flask(__name__)
 
@@ -33,7 +33,7 @@ def get_unfinished_simulations():
     """
     Returns a list of simulation IDs that have not finished yet.
     """
-    return {"ids": UNFINISHED_SIMULATION_IDS}, 200
+    return {"ids": list(UNFINISHED_SIMULATION_IDS)}, 200
 
 
 @app.route('/put_results', methods=['PUT'])
@@ -132,7 +132,7 @@ def start():
         global UNFINISHED_SIMULATION_IDS
         for scenario in scenarios:
             for simulation in scenario.simulations:
-                UNFINISHED_SIMULATION_IDS.append(simulation.id)
+                UNFINISHED_SIMULATION_IDS.add(simulation.id)
 
         # Run the experiments, and saves the results
         start_experiments(config, scenarios, experiment_folder)
