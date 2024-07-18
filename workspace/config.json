@@ -14,7 +14,7 @@
     "": ["Global parameters for every simulation. To override these parameters,",
         "for a specific scenario, add the same parameter in the scenario object."],
     "scenarioParams": {
-        "seed": 0,
+        "seed": 100,
         "netlogo_seed": null,
         "numOfSamples": 1,
         "numOfRobots": 1,
@@ -37,7 +37,7 @@
             "description": "There are no SAR robots in the simulation.",
             "numOfRobots": 0,
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
         {
             "name": "staff-support",
@@ -45,7 +45,7 @@
             "numOfRobots": 1,
             "adaptationStrategy": "AlwaysCallStaffStrategy",
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
         {
             "name": "passenger-support",
@@ -53,20 +53,7 @@
             "numOfRobots": 1,
             "adaptationStrategy": "AlwaysAskHelpStrategy",
             "enableVideo": false,
-            "enabled": false
-        },
-        {
-            "name": "random-support",
-            "seed": 12,
-            "fallLength": 500,
-            "fallChance": 0.05,
-            "numOfPassengers": 800,
-            "description": "The SAR will use its adaptation strategy to decide whether to ask help from a passenger or a staff member.",
-            "numOfRobots": 1,
-            "numOfSamples": 1,
-            "adaptationStrategy": "RandomStrategy",
-            "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
         {
             "name": "near-optimal-support",
@@ -74,8 +61,18 @@
             "numOfRobots": 1,
             "adaptationStrategy": "OptimalStrategy",
             "enableVideo": false,
-            "enabled": false
+            "enabled": true
         },
+        {
+            "name": "random-support",
+            "description": "Almost optimal",
+            "numOfRobots": 1,
+            "adaptationStrategy": "RandomStrategy",
+            "enableVideo": false,
+            "enabled": true
+        },
+
+        
         {
             "name": "test-fall-length",
             "seed": 1234,
@@ -144,13 +141,13 @@
             "enabled": false
         },
         {
-            "name": "video-test",
+            "name": "_",
             "description": ".",
             "numOfRobots": 1,
-            "adaptationStrategy": ["OptimalStrategy"],
+            "adaptationStrategy": ["OptimalStrategy", "RandomStrategy"],
             "numOfSamples": 5,
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         }
 
     ]

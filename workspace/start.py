@@ -48,4 +48,4 @@ def main() -> None:
 if __name__ == "__main__":
     main()
     # TODO add arguments to either run or analyse a given folder
-    # perform_analysis('240714_222344')
+    # perform_analysis(None, '240718_190918')

@@ -26,7 +26,7 @@ from scipy.stats import mannwhitneyu  # type: ignore
 from src.load_config import get_target_scenario
 from src.simulation import Simulation
 from utils.helper import setup_logger
-from utils.paths import RESULTS_CSV_FILE_NAME
+from utils.paths import RESULTS_CSV_FILE_NAME, RESULTS_FOLDER
 
 PLOT_STYLE = 'seaborn-v0_8-darkgrid'
 
@@ -223,6 +223,56 @@ def process_data(experiment_data: pd.DataFrame, data_folder: str) -> pd.DataFram
     return processed_data
 
 
+def plot_robot_actions(data: pd.DataFrame, img_folder: str) -> None:
+    """
+    Plots the robot actions for the different scenarios.
+
+    Args:
+        data: The DataFrame containing the experiment data.
+        img_folder: The path to the image folder.
+    """
+    plt.style.use(PLOT_STYLE)
+    plt_path = img_folder + "robot_actions.png"
+    # Replace NaN with 'NoStrategy'
+    data['strategy'] = data['strategy'].fillna('NoStrategy')
+    strategies = data['strategy'].unique()
+    true_counts = []
+    false_counts = []
+    call_staff_counts = []
+    # count the number of times each strategy appears in the data and store it a dictionary
+    strategy_counts = data['strategy'].value_counts().to_dict()
+
+    # Data Preparation
+    for strategy in strategies:
+        strategy_data = data[data['strategy'] == strategy]
+        true_counts.append(strategy_data['robot_responses'].apply(lambda x: 'true' in x).sum())
+        false_counts.append(strategy_data['robot_responses'].apply(lambda x: 'false' in x).sum())
+        call_staff_counts.append(
+            strategy_data['robot_actions'].apply(lambda x: 'call-staff' in x).sum())
+
+    # Plotting
+    x = range(len(strategies))  # the label locations
+    width = 0.1  # the width of the bars
+
+    fig, ax = plt.subplots()
+    ax.bar(x, false_counts, width, label='Refused to help')
+    ax.bar(x, true_counts, width, label='Accepted to help', bottom=false_counts)
+
+    ax.bar([p + width for p in x], call_staff_counts, width, label='Call-Staff Actions')
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Counts')
+    ax.set_title('Total Robot Responses and Actions by Strategy')
+    ax.set_xticks([p + width for p in x])
+    ax.set_xticklabels(
+        [f"{strategy}\n(n:{samples})" for strategy, samples in strategy_counts.items()],
+        rotation=45, ha='right')
+    ax.legend()
+    fig.tight_layout()
+    plt.savefig(plt_path)
+    plt.clf()
+
+
 def plot_comparisons(experiment_data: pd.DataFrame, img_folder: str) -> None:
     """
     Plots the comparisons between differences in the dataFrame.
@@ -258,26 +308,33 @@ def plot_comparisons(experiment_data: pd.DataFrame, img_folder: str) -> None:
 
 
 def perform_analysis(experiment_folder: dict[str, str],
-                     csv_file_path: Optional[str] = None) -> None:
+                     folder_name: Optional[str] = None) -> None:
     """
     Performs the analysis of the experiment results.
 
     Args:
         experiment_folder: a dictionary containing the path to the
                            experiment folder and its sub-folders.
-        csv_file_path: the path to the CSV file containing the experiment results.
+        folder_name: the name of the folder in results containing the experiment results.
     """
-    if csv_file_path:
-        file_path = csv_file_path
+    if folder_name:
+        experiment_folder_path = RESULTS_FOLDER + folder_name + '/'
+        imgs_folder_path = experiment_folder_path + 'img/'
+        data_folder_path = experiment_folder_path + 'data/'
+        csv_results_path = data_folder_path + RESULTS_CSV_FILE_NAME
     else:
-        file_path = experiment_folder['data'] + RESULTS_CSV_FILE_NAME
+        experiment_folder_path = experiment_folder['path']
+        imgs_folder_path = experiment_folder['img']
+        data_folder_path = experiment_folder['data']
+        csv_results_path = experiment_folder['data'] + RESULTS_CSV_FILE_NAME
 
-    experiment_data = pd.read_csv(file_path)
-    processed_data = process_data(experiment_data, experiment_folder['data'])
+    experiment_data = pd.read_csv(csv_results_path)
+    processed_data = process_data(experiment_data, data_folder_path)
 
-    plot_results(processed_data, experiment_folder['img'])
+    plot_results(processed_data, imgs_folder_path)
 
-    plot_comparisons(experiment_data, experiment_folder["img"])
+    plot_comparisons(experiment_data, imgs_folder_path)
+    plot_robot_actions(experiment_data, imgs_folder_path)
 
     target_scenario = get_target_scenario()
     scenarios = processed_data.columns.to_list()
@@ -287,7 +344,7 @@ def perform_analysis(experiment_folder: dict[str, str],
                 test_hypothesis(first_scenario_column=target_scenario,
                                 second_scenario_column=alternative_scenario,
                                 results_dataframe=processed_data,
-                                experiment_folder_path=experiment_folder['path'],
+                                experiment_folder_path=experiment_folder_path,
                                 alternative="less")
     else:
         logger.error(

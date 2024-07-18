@@ -15,5 +15,6 @@ class AdaptiveStrategy(AdaptationStrategy):
                          victim: Survivor,
                          helper_victim_distance: float,
                          first_responder_victim_distance: float) -> str:
-        
-        
+        Rational(1, 2)
+        NashSolution(np.array([[1, 2], [3, 4]]))
+        return None
