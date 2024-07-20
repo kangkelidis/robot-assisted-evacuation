@@ -6,6 +6,7 @@ class AlwaysAskHelpStrategy(AdaptationStrategy):
     Always ask for help from a passenger.
     """
     def get_robot_action(self,
+                         simulation_id: str,
                          candidate_helper: Survivor,
                          victim: Survivor,
                          helper_victim_distance: float,

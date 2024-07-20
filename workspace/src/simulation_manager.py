@@ -25,7 +25,7 @@ from utils.video_generation import generate_video
 
 logger = setup_logger()
 
-SIMULATION_TIMEOUT = 60  # seconds
+SIMULATION_TIMEOUT = 120  # seconds
 
 
 def execute_commands(simulation_id: str,
@@ -49,6 +49,7 @@ def execute_commands(simulation_id: str,
         SET_NUM_OF_STAFF_COMMAND: netlogo_params.num_of_staff,
         SET_FALL_LENGTH_COMMAND: netlogo_params.fall_length,
         SET_FALL_CHANCE_COMMAND: netlogo_params.fall_chance,
+        SET_ROBOT_PERSUASION_FACTOR: netlogo_params.robot_persuasion_factor,
         SET_FRAME_GENERATION_COMMAND: "TRUE" if netlogo_params.enable_video else "FALSE",
         SET_ROOM_ENVIRONMENT_TYPE: netlogo_params.room_type
     }
@@ -56,7 +57,7 @@ def execute_commands(simulation_id: str,
     try:
         for command, value in commands.items():
             netlogo_link.command(command.format(value))
-            logger.debug(f"Executed {command.format(value)}")
+            logger.debug(f"{simulation_id}: Executed {command.format(value)}")
 
     except Exception as e:
         logger.error(f"Commands failed for id: {simulation_id}. Exception: {e}")
@@ -141,7 +142,7 @@ def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink, max_netlogo_ticks,
         evacuation_ticks = ticks if ticks < max_netlogo_ticks else None
         signal.alarm(0)
     except TimeoutException:
-        logger.error("Simulation timed out")
+        logger.warning("Simulation timed out!")
     except NetLogoException as e:
         logger.error(f"NetLogo exception: {e}")
     # ! cannot catch the exception in the java environment

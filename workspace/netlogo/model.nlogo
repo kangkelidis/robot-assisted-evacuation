@@ -151,6 +151,7 @@ globals [; GLOBALS
          NUM_OF_STAFF
          FALL_CHANCE
          ROOM_ENVIRONMENT_INDX
+         ROBOT_PERSUASION_FACTOR
 
          g_st_others_belief_dangerous
          g_st_others_fear
@@ -860,7 +861,7 @@ end
 to-report evacuation-finished?
   ;sometimes there is a glitch where a couple of kids with a link move around for ever. seed is 398048796
   ;report count turtles with [color != DEAD_PASSENGERS_COLOR] =  0
-  report count turtles with [color = PASSENGERS_COLOR] = 0
+  report (count turtles with [color = PASSENGERS_COLOR] = 0) and (count turtles with [color = FALL_COLOR] = 0)
 end
 
 ;-----------------------------------------
@@ -1394,7 +1395,13 @@ to request-passanger-help
   ; accepts the request, they are assigned a help bonus (ROBOT_REQUEST_BONUS)
 
   let selected_fallen_person victim-found
-  let do-help offer-help? candidate-helper selected_fallen_person
+  ; v.2.11.2, passing the persuasion factor
+  let do-help false
+  ifelse ROBOT_PERSUASION_FACTOR = 1 [
+    set do-help offer-help? candidate-helper selected_fallen_person
+  ] [
+    set do-help sar-offer-help? candidate-helper selected_fallen_person ROBOT_PERSUASION_FACTOR
+  ]
 
   ; v.2.11.2
   let curl-command (word "curl -X POST http://localhost:5000/passenger_response -H \"Content-Type: application/json\" -d '{\"simulation_id\": \"" SIMULATION_ID "\", \"response\": \"" do-help "\"}'")
@@ -1816,6 +1823,41 @@ to-report get_social_identity [agent1 agent2] ;nw
 
   report soc_id
 end
+; v.2.11.2
+to-report sar-offer-help? [passenger selected_fallen_person persuasion_factor]
+  ; This reporter determines if a passanger (first parameter) with help a fellow survivor (second parameter).
+  ; Factor include social identity, gender, age.
+
+  let result FALSE
+
+  if ([st_age] of passenger != 0) and passenger != selected_fallen_person [                               ; only men, women, eldery help, children do not help (children follow the actions of the parent, do not decide themselves)
+
+    let social_identity get_social_identity passenger selected_fallen_person
+
+    let row 0                                    ; This is the row of the helping table in the config file,
+    if [st_gender] of passenger = 0 [set row 4]                 ; males are at rows 0 to 3 and women are at rows 4 to 7.
+    if social_identity = 0 [set row row + 2]     ; social_identity = 1 are at rows 0-1 (males) and 4-5(females)
+    if [st_age] of passenger = 2 [set row row + 1]              ;adults (st_age = 1) are at rows 0 and 2 (males) and rows 4 and 6 (females)
+    ; IS THIS CORRECT? SHOULD IT BE selected_fallen_person?
+    let col 0
+    if [st_gender] of selected_fallen_person = 0 [set col 3]                 ; males are at columns 0 to 2 and women are at columns 3 to 5.
+    if [st_age] of selected_fallen_person = 1    [set col col + 1]           ;adults (st_age = 1) are at colum 1 (males) and colum 4 (females)
+    if [st_age] of selected_fallen_person = 2    [set col col + 2]           ;eldery (st_age = 2) are at colum 2 (males) and colum 5 (females)
+
+
+    let helping_chance matrix:get helping_chance_matrix row col
+
+    let random-number random-float 1.0
+
+    ; v.2.11.2, adjust the helping chance based on how persuasive the robot is
+    if (random-number < helping_chance * persuasion_factor) [
+      set result TRUE
+    ]
+  ]
+
+  report result
+end
+
 
 to-report offer-help? [passenger selected_fallen_person]
   ; This reporter determines if a passanger (first parameter) with help a fellow survivor (second parameter).
@@ -1878,7 +1920,7 @@ to check-decide-to-help ;nw
 
   if count list_agents_falled > 0 [
     let selected_fallen_person one-of list_agents_falled
-
+    ; v.2.11.2
     let do-help offer-help? self selected_fallen_person
     ifelse do-help [
       set agent_to_help selected_fallen_person

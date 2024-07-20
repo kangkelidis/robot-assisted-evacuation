@@ -17,7 +17,7 @@ logger = setup_logger()
 
 def main() -> None:
     """
-    Main function .
+    Main function.
     """
     try:
         terminal_size = shutil.get_terminal_size(fallback=(80, 20))
@@ -48,4 +48,4 @@ def main() -> None:
 if __name__ == "__main__":
     main()
     # TODO add arguments to either run or analyse a given folder
-    # perform_analysis(None, '240718_190918')
+    # perform_analysis(None, '240720_121735')

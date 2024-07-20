@@ -78,9 +78,9 @@ def passenger_response():
 def on_survivor_contact_handler():
     """
     Called by the NetLogo model when the robot makes contact with a fallen victim.
+    Calls the get_robot_action method of the adaptation strategy to return the robot's action.
     """
     from src.adaptation_strategy import Survivor
-    from src.on_contact import on_survivor_contact
     from src.simulation import Scenario, Simulation
     from utils.helper import setup_logger
 
@@ -98,8 +98,13 @@ def on_survivor_contact_handler():
     scenario: Scenario = Scenario.find_by_name(scenario_name, SCENARIOS)
     simulation: Simulation = Simulation.find_by_id(scenario, simulation_id)
 
-    action = on_survivor_contact(candidate_helper, victim, helper_victim_distance,
-                                 first_responder_victim_distance, scenario.adaptation_strategy)
+    if scenario.adaptation_strategy is None:
+        raise ValueError("No adaptation strategy provided.")
+
+    action = scenario.adaptation_strategy.get_robot_action(
+        simulation_id, candidate_helper, victim,
+        helper_victim_distance, first_responder_victim_distance)
+
     with lock:
         simulation.add_action(action)
 

@@ -6,6 +6,7 @@ class AlwaysCallStaffStrategy(AdaptationStrategy):
     Always calls for a staff member.
     """
     def get_robot_action(self,
+                         simulation_id: str,
                          candidate_helper: Survivor,
                          victim: Survivor,
                          helper_victim_distance: float,

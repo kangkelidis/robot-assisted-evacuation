@@ -77,6 +77,7 @@ class AdaptationStrategy(object):
 
     @staticmethod
     def get_strategy(strategy_name: str,
+                     scenario,
                      strategies_folder: str = STRATEGIES_FOLDER) -> Optional['AdaptationStrategy']:
         """
         Returns an instance of the specified adaptation strategy.
@@ -86,6 +87,7 @@ class AdaptationStrategy(object):
 
         Args:
             strategy_name: The name of the strategy.
+            scenario: The scenario this adaptation strategy belongs to.
             strategies_folder: The folder containing the strategy files.
                                     Default is STRATEGIES_FOLDER form paths.py.
 
@@ -99,14 +101,18 @@ class AdaptationStrategy(object):
                     strategy_class = getattr(module, strategy_name)
 
                     if issubclass(strategy_class, AdaptationStrategy):
-                        strategy_instance = strategy_class()
+                        strategy_instance = strategy_class(scenario)
                         return strategy_instance
         except Exception as e:
             AdaptationStrategy.logger.error(f"Error in get_adaptation_strategy: {e}")
             traceback.print_exc()
         raise FileNotFoundError(f"Failed to get adaptation strategy {strategy_name}")
 
+    def __init__(self, scenario) -> None:
+        self.scenario = scenario
+
     def get_robot_action(self,
+                         simulation_id: str,
                          candidate_helper: Survivor,
                          victim: Survivor,
                          helper_victim_distance: float,

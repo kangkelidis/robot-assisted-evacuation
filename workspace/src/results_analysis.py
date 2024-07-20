@@ -170,31 +170,32 @@ def get_metrics(experiment_results: pd.DataFrame) -> pd.DataFrame:
     return metrics_df
 
 
-def plot_results(data_for_violin: pd.DataFrame, img_folder: str) -> None:
+def plot_results(data_for_violin: dict[str, pd.DataFrame], img_folder: str) -> None:
     """
     Plots the results of the experiment, if the number of scenarios is less than 7.
 
     Args:
-        data_for_violin: The DataFrame containing the experiment result data.
+        data_for_violin: A dictionary containing the data to plot and name of the column.
         img_folder: The path to the image folder.
     """
-    if len(data_for_violin.columns) > 7:
-        return
+    for name, violin_data in data_for_violin.items():
+        if len(violin_data.columns) > 10:
+            return
 
-    plt.style.use(PLOT_STYLE)
-    plt_path = img_folder + "violin_plot"
-    ax = sns.violinplot(data=data_for_violin, order=None)
-    ax.set_title("Scenarios Comparison")
-    locs = ax.get_xticks()
-    labels = [textwrap.fill(label.get_text(), 12) for label in ax.get_xticklabels()]
-    ax.xaxis.set_major_locator(plt.FixedLocator(locs))
-    ax.set_xticklabels(labels, rotation=45, ha='right')
-    plt.savefig(plt_path + ".png", bbox_inches='tight', pad_inches=0)
-    plt.savefig(plt_path + ".eps", bbox_inches='tight', pad_inches=0)
-    plt.clf()
+        plt.style.use(PLOT_STYLE)
+        plt_path = img_folder + name + "_violin_plot"
+        ax = sns.violinplot(data=violin_data, order=None)
+        ax.set_title(f"{name.capitalize()} Comparison")
+        locs = ax.get_xticks()
+        labels = [textwrap.fill(label.get_text(), 12) for label in ax.get_xticklabels()]
+        ax.xaxis.set_major_locator(plt.FixedLocator(locs))
+        ax.set_xticklabels(labels, rotation=45, ha='right')
+        plt.savefig(plt_path + ".png", bbox_inches='tight', pad_inches=0)
+        plt.savefig(plt_path + ".eps", bbox_inches='tight', pad_inches=0)
+        plt.clf()
 
 
-def process_data(experiment_data: pd.DataFrame, data_folder: str) -> pd.DataFrame:
+def process_data(experiment_data: pd.DataFrame, column: str, data_folder: str) -> pd.DataFrame:
     """
     Processes the data from the experiment results in order to plot them.
 
@@ -203,6 +204,7 @@ def process_data(experiment_data: pd.DataFrame, data_folder: str) -> pd.DataFram
 
     Args:
         experiment_data: DataFrame with all simulations' data.
+        column: The column to group the data by.
         data_folder: The path to the folder where the processed data will be saved.
 
     Returns:
@@ -211,14 +213,14 @@ def process_data(experiment_data: pd.DataFrame, data_folder: str) -> pd.DataFram
     # Split 'simulation_id' to extract the simulation number
     experiment_data['sim_index'] = experiment_data['simulation_id'].apply(Simulation.get_index)
     # Pivot the DataFrame using 'sim_index' as the new index
-    processed_data = experiment_data.pivot(
-        index='sim_index', columns='scenario', values='evacuation_ticks')
+    processed_data = experiment_data.pivot_table(
+        index='sim_index', columns=column, values='evacuation_ticks', aggfunc='mean')
 
-    processed_data_path = data_folder + "processed_data.csv"
+    processed_data_path = data_folder + column + "_processed_data.csv"
     processed_data.to_csv(processed_data_path)
 
     metrics = get_metrics(processed_data)
-    metrics_path = data_folder + "metrics.csv"
+    metrics_path = data_folder + column + "_metrics.csv"
     metrics.to_csv(metrics_path)
     return processed_data
 
@@ -263,7 +265,7 @@ def plot_robot_actions(data: pd.DataFrame, img_folder: str) -> None:
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Counts')
     ax.set_title('Total Robot Responses and Actions by Strategy')
-    ax.set_xticks([p + width for p in x])
+    ax.set_xticks(x)
     ax.set_xticklabels(
         [f"{strategy}\n(n:{samples})" for strategy, samples in strategy_counts.items()],
         rotation=45, ha='right')
@@ -329,21 +331,23 @@ def perform_analysis(experiment_folder: dict[str, str],
         csv_results_path = experiment_folder['data'] + RESULTS_CSV_FILE_NAME
 
     experiment_data = pd.read_csv(csv_results_path)
-    processed_data = process_data(experiment_data, data_folder_path)
+    scenario_processed_data = process_data(experiment_data, 'scenario', data_folder_path)
+    strategy_processed_data = process_data(experiment_data, 'strategy', data_folder_path)
 
-    plot_results(processed_data, imgs_folder_path)
+    plot_results({'scenario': scenario_processed_data, 'strategy': strategy_processed_data},
+                 imgs_folder_path)
 
     plot_comparisons(experiment_data, imgs_folder_path)
     plot_robot_actions(experiment_data, imgs_folder_path)
 
     target_scenario = get_target_scenario()
-    scenarios = processed_data.columns.to_list()
+    scenarios = scenario_processed_data.columns.to_list()
     if target_scenario in scenarios:
         for alternative_scenario in scenarios:
             if alternative_scenario != target_scenario:
                 test_hypothesis(first_scenario_column=target_scenario,
                                 second_scenario_column=alternative_scenario,
-                                results_dataframe=processed_data,
+                                results_dataframe=scenario_processed_data,
                                 experiment_folder_path=experiment_folder_path,
                                 alternative="less")
     else:

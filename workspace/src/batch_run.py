@@ -59,6 +59,7 @@ def _build_kwargs(parameters: ParametersType) -> list[dict[str, Any]]:
 
     all_kwargs: Iterable[tuple[tuple[str, Any]]] = itertools.product(*parameter_list)
     kwargs_list: list[dict[str, Any]] = [dict(kwargs) for kwargs in all_kwargs]
+    logger.debug(f"kargs_list: {kwargs_list}")
     return kwargs_list
 
 
@@ -102,7 +103,8 @@ def batch_run(scenario: Scenario, parameters: ParametersType, num_samples: int) 
             if hasattr(new_scenario, key):
                 setattr(new_scenario, key, value)
                 if key == "adaptation_strategy":
-                    new_scenario.adaptation_strategy = AdaptationStrategy.get_strategy(value)
+                    new_scenario.adaptation_strategy = \
+                        AdaptationStrategy.get_strategy(value, new_scenario)
             else:
                 setattr(new_scenario.netlogo_params, key, value)
 

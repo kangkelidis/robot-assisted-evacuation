@@ -1,5 +1,6 @@
 
 import random
+from typing import Union
 
 from src.adaptation_strategy import (AdaptationStrategy, Age, CulturalCluster,
                                      Gender, Survivor)
@@ -33,6 +34,7 @@ class OptimalStrategy(AdaptationStrategy):
     ]
 
     def get_robot_action(self,
+                         simulation_id: str,
                          candidate_helper: Survivor,
                          victim: Survivor,
                          helper_victim_distance: float,
@@ -60,9 +62,10 @@ class OptimalStrategy(AdaptationStrategy):
             col += 2
 
         helping_chance: float = self.help_matrix[row][col]
+        helping_chance *= self.scenario.netlogo_params.robot_persuasion_factor
         # ? how should this change as the number of passengers decreases,
         # ? the probability of asking for staff help should increase
-        if helping_chance > 0.2:
+        if random.random() < helping_chance:
             return self.ASK_FOR_HELP_ROBOT_ACTION
         else:
             return self.CALL_STAFF_ROBOT_ACTION

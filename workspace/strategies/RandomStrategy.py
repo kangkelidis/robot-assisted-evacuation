@@ -8,6 +8,7 @@ class RandomStrategy(AdaptationStrategy):
     Randomly choose between asking for help and calling staff.
     """
     def get_robot_action(self,
+                         simulation_id: str,
                          candidate_helper: Survivor,
                          victim: Survivor,
                          helper_victim_distance: float,

@@ -48,6 +48,7 @@ class NetLogoParams(Updatable):
     - num_of_staff: The number of staff in the simulation.
     - fall_length: The number of ticks of fall lasts in the simulation.
     - fall_chance: The chance of a fall happening in the simulation.
+    - robot_persuasion_factor: A multiplier to the helping chance in the Netlogo simulation.
     - max_netlogo_ticks: The maximum number of NetLogo ticks to run the simulation.
     - room_type: The type of room in the simulation.
     - enable_video: Whether to enable video recording of the simulation.
@@ -61,6 +62,7 @@ class NetLogoParams(Updatable):
         self.num_of_staff = 10
         self.fall_length = 500
         self.fall_chance = 0.05
+        self.robot_persuasion_factor = 1
         self.max_netlogo_ticks = 2000
         self.room_type = 8
         self.enable_video = False
@@ -154,7 +156,7 @@ class Scenario(Updatable):
         self.netlogo_params.update(params)
         strategy_name: Union[str, list, None] = params.get('adaptation_strategy', None)
         if isinstance(strategy_name, str):
-            self.adaptation_strategy = AdaptationStrategy.get_strategy(strategy_name)
+            self.adaptation_strategy = AdaptationStrategy.get_strategy(strategy_name, self)
 
     def duplicate(self) -> 'Scenario':
         new_scenario = Scenario()
@@ -163,6 +165,8 @@ class Scenario(Updatable):
         new_scenario.simulations = self.simulations[:]
         new_scenario.results = self.results[:]
         new_scenario.netlogo_params.update(self.netlogo_params.__dict__)
+        # update the adaptation strategy scenario attribute to the new scenario
+        new_scenario.adaptation_strategy.scenario = new_scenario
         return new_scenario
 
     def _check_video(self, simulation: Simulation) -> None:
@@ -396,6 +400,6 @@ class Simulation(Updatable):
             action_or_response: The action or response from the robot.
         """
         accepted_responses = ["true", AdaptationStrategy.CALL_STAFF_ROBOT_ACTION]
-        if action_or_response in accepted_responses:
+        if action_or_response in accepted_responses or self.result.robot_contacts == 0:
             self.result.robot_contacts += 1
             self.logger.debug(f"Contact with fallen victim: {self.result.robot_contacts}")
