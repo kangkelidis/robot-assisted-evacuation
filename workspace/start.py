@@ -1,7 +1,8 @@
 """
-This module serves as the entry point for running experiments in a simulation environment.
+This module serves as the entry point for running experiments.
 """
 
+import argparse
 import shutil
 import traceback
 
@@ -15,10 +16,19 @@ from utils.paths import EXPERIMENT_FOLDER_STRUCT, WORKSPACE_FOLDER
 logger = setup_logger()
 
 
-def main() -> None:
+def analyse_folder(folder_name: str) -> None:
     """
-    Main function.
+    Analyse the results of a given folder, in the results folder.
+
+    Args:
+        folder_name: The folder name to analyse.
     """
+    logger.info(f"Analysing folder: {folder_name}")
+    perform_analysis(None, folder_name)
+
+
+def run_experiment() -> None:
+    """ Calls the server to start the experiment and analyses the results. """
     try:
         terminal_size = shutil.get_terminal_size(fallback=(80, 20))
 
@@ -45,7 +55,23 @@ def main() -> None:
         logger.info("Done!")
 
 
+def main() -> None:
+    """
+    Main function. Parses the arguments and runs the experiment or analyses a given folder.
+    """
+    usage_text = "Usage: %(prog)s [--analyse FOLDER]"
+    parser = argparse.ArgumentParser(description='Run an experiment or analyse a given folder.',
+                                     usage=usage_text)
+    parser.add_argument('--analyse', nargs=1, type=str,
+                        help='Analyse the results in a given folder.')
+    args = parser.parse_args()
+
+    if args.analyse:
+        folder_name = args.analyse[0]
+        analyse_folder(folder_name)
+    else:
+        run_experiment()
+
+
 if __name__ == "__main__":
     main()
-    # TODO add arguments to either run or analyse a given folder
-    # perform_analysis(None, '240720_121735')

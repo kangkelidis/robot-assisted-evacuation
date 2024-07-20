@@ -242,7 +242,7 @@ def plot_robot_actions(data: pd.DataFrame, img_folder: str) -> None:
     false_counts = []
     call_staff_counts = []
     # count the number of times each strategy appears in the data and store it a dictionary
-    strategy_counts = data['strategy'].value_counts().to_dict()
+    strategy_counts = data['strategy'].value_counts().reindex(strategies).to_dict()
 
     # Data Preparation
     for strategy in strategies:
@@ -260,15 +260,16 @@ def plot_robot_actions(data: pd.DataFrame, img_folder: str) -> None:
     ax.bar(x, false_counts, width, label='Refused to help')
     ax.bar(x, true_counts, width, label='Accepted to help', bottom=false_counts)
 
-    ax.bar([p + width for p in x], call_staff_counts, width, label='Call-Staff Actions')
+    ax.bar([p + width for p in x], 
+           call_staff_counts, width, label='Call-Staff Actions', align='center')
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Counts')
     ax.set_title('Total Robot Responses and Actions by Strategy')
     ax.set_xticks(x)
     ax.set_xticklabels(
-        [f"{strategy}\n(n:{samples})" for strategy, samples in strategy_counts.items()],
-        rotation=45, ha='right')
+        [f"{strategy}\n(n:{strategy_counts[strategy]})" for strategy in strategies],
+        rotation=45, ha='center')
     ax.legend()
     fig.tight_layout()
     plt.savefig(plt_path)
