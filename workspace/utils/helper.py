@@ -157,6 +157,7 @@ def timeout_handler(signum, frame) -> None:
 
 
 def print_dots(dot, total):
+    """ Print dots to show progress. """
     time = 10000
     interval = 5
     dot += 1
@@ -179,7 +180,8 @@ class PBar():
 
     def update(self, total, size, prev_size):
         if self.pbar is None:
-            self.pbar = tqdm(total=total, desc="Simulations Progress", bar_format=get_custom_bar_format())
+            self.pbar = tqdm(total=total, desc="Simulations Progress",
+                             bar_format=get_custom_bar_format())
 
         self.pbar.n = total - size
         self.pbar.update(prev_size - size)

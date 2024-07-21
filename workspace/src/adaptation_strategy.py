@@ -124,6 +124,7 @@ class AdaptationStrategy(object):
         the NetLogo model will call this function to determine the robot's action.
 
         Args:
+            simulation_id: The simulation id.
             candidate_helper: The candidate helper.
             victim: The victim.
             helper_victim_distance: Distance between the candidate helper and the victim.

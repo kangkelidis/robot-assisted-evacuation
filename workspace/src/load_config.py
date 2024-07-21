@@ -120,6 +120,18 @@ def load_config(config_file_path: str) -> dict[str, Any]:
     return config
 
 
+def get_max_time() -> int:
+    """
+    Returns the maximum simulation time from the configuration file.
+    If not found, returns 120.
+    """
+    config = load_config(CONFIG_FILE)
+    try:
+        return int(config['maxSimulationTime'])
+    except Exception:
+        return 120
+
+
 def get_netlogo_model_path() -> str:
     config = load_config(CONFIG_FILE)
     return config['netlogoModelPath']

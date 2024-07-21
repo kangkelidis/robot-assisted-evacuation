@@ -39,6 +39,7 @@ class OptimalStrategy(AdaptationStrategy):
                          victim: Survivor,
                          helper_victim_distance: float,
                          first_responder_victim_distance: float) -> str:
+
         if first_responder_victim_distance < helper_victim_distance:
             return self.CALL_STAFF_ROBOT_ACTION
 

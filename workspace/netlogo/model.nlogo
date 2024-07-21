@@ -860,8 +860,8 @@ end
 
 to-report evacuation-finished?
   ;sometimes there is a glitch where a couple of kids with a link move around for ever. seed is 398048796
-  ;report count turtles with [color != DEAD_PASSENGERS_COLOR] =  0
-  report (count turtles with [color = PASSENGERS_COLOR] = 0) and (count turtles with [color = FALL_COLOR] = 0)
+  report count turtles with [color != DEAD_PASSENGERS_COLOR] =  0
+  ;report (count turtles with [color = PASSENGERS_COLOR] = 0) and (count turtles with [color = FALL_COLOR] = 0)
 end
 
 ;-----------------------------------------

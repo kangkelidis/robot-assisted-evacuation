@@ -97,7 +97,7 @@ def test_hypothesis(first_scenario_column: str,
         first_scenario_column: The name of the column containing the first sample.
         second_scenario_column: The name of the column containing the second sample.
         results_dataframe: The DataFrame containing the sample data.
-        img_folder: The path to the image folder.
+        experiment_folder_path: The path to the experiments folder.
         alternative: The alternative hypothesis, either "two-sided", "less", or "greater".
                      Defaults to "two-sided".
     """
@@ -179,17 +179,23 @@ def plot_results(data_for_violin: dict[str, pd.DataFrame], img_folder: str) -> N
         img_folder: The path to the image folder.
     """
     for name, violin_data in data_for_violin.items():
-        if len(violin_data.columns) > 10:
-            return
-
+        if len(violin_data.columns) > 20:
+            continue
+        violin_width = 4
+        total_fig_width = len(violin_data.columns) * violin_width
         plt.style.use(PLOT_STYLE)
+        plt.figure(figsize=(total_fig_width, 10))
         plt_path = img_folder + name + "_violin_plot"
-        ax = sns.violinplot(data=violin_data, order=None)
+
+        means = violin_data.mean().sort_values(ascending=False)
+        sorted_violin_data = violin_data[means.index]
+
+        ax = sns.violinplot(data=sorted_violin_data, order=None)
         ax.set_title(f"{name.capitalize()} Comparison")
         locs = ax.get_xticks()
-        labels = [textwrap.fill(label.get_text(), 12) for label in ax.get_xticklabels()]
+        labels = [textwrap.fill(label.get_text(), 30) for label in ax.get_xticklabels()]
         ax.xaxis.set_major_locator(plt.FixedLocator(locs))
-        ax.set_xticklabels(labels, rotation=45, ha='right')
+        ax.set_xticklabels(labels, ha='center')
         plt.savefig(plt_path + ".png", bbox_inches='tight', pad_inches=0)
         plt.savefig(plt_path + ".eps", bbox_inches='tight', pad_inches=0)
         plt.clf()
@@ -260,7 +266,7 @@ def plot_robot_actions(data: pd.DataFrame, img_folder: str) -> None:
     ax.bar(x, false_counts, width, label='Refused to help')
     ax.bar(x, true_counts, width, label='Accepted to help', bottom=false_counts)
 
-    ax.bar([p + width for p in x], 
+    ax.bar([p + width for p in x],
            call_staff_counts, width, label='Call-Staff Actions', align='center')
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
@@ -290,24 +296,63 @@ def plot_comparisons(experiment_data: pd.DataFrame, img_folder: str) -> None:
         experiment_data: The DataFrame containing the experiment data.
         img_folder: The path to the image folder.
     """
-    columns_to_check = ['strategy', 'num_of_robots', 'num_of_passengers',
+    columns_to_check = ['robot_persuasion_factor', 'num_of_robots', 'num_of_passengers',
                         'num_of_staff', 'fall_length', 'fall_chance', 'room_type']
+    unique_columns = {column: experiment_data[column].unique() for column in columns_to_check}
 
-    # Check for columns with different values
-    # TODO: if there are multiple non-unique values, plot a line with a different color for each
-    multivalue_columns = []
-    for column in columns_to_check:
-        unique_values = experiment_data[column].unique()
-        if len(unique_values) > 1:
-            multivalue_columns.append(column)
+    for column, values in unique_columns.items():
+        if len(values) > 1:
             plt.style.use(PLOT_STYLE)
-            plt_path = img_folder + f"{column}_comparison.png"
-            ax = sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks')
-            first_value = experiment_data[column].iloc[0]
-            num_samples = (experiment_data[column] == first_value).sum()
-            ax.set_title(f"Evacuation Ticks vs {column.capitalize()}. Sample size: {num_samples}")
-            plt.savefig(plt_path, bbox_inches='tight', pad_inches=0)
-            plt.clf()
+            plt.figure(figsize=(10, 6))
+            # Plot the column with a different color for each other column value if unique
+            for other_column, other_values in unique_columns.items():
+                if len(other_values) == 1:
+                    continue
+                # plot a column with unique values vs evacuation_ticks
+                if other_column == column:
+                    sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks')
+                    plt.xticks(values)
+                    plt_path = img_folder + f"{column}_comparison.png"
+                    plt.title(f"Evacuation Ticks vs {column.capitalize()}")
+                    plt.savefig(plt_path, bbox_inches='tight', pad_inches=0)
+                    plt.clf()
+                    continue
+                # plot the column but add a line for each other column with unique values
+                for value in other_values:
+                    subset = experiment_data[experiment_data[other_column] == value]
+                    sns.lineplot(data=subset, x=column, y='evacuation_ticks',
+                                 label=f"{other_column}={value}", errorbar=None)
+                # Plot the entire dataset for this column as a dotted line
+                sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks', label='Overall',
+                             linestyle='--', color='grey')
+                plt.xticks(values)
+                plt_path = img_folder + f"{column}({other_column})_comparison.png"
+                plt.title(f"Evacuation Ticks vs {column.capitalize()} ({other_column})")
+                plt.legend(title=other_column)
+                plt.savefig(plt_path, bbox_inches='tight', pad_inches=0)
+                plt.clf()
+
+    # for each parameter with a unique value, plot the evacuation_ticks for each strategy
+    strategies_df = experiment_data['strategy'].str.split('@', expand=True)
+    experiment_data['strategy'] = strategies_df[0].replace(np.nan, 'NoStrategy')
+    for column, values in unique_columns.items():
+        if not len(values) > 1:
+            continue
+        plt.style.use(PLOT_STYLE)
+        plt.figure(figsize=(10, 6))
+        for strategy in experiment_data['strategy'].unique():
+            subset = experiment_data[experiment_data['strategy'] == strategy]
+            sns.lineplot(data=subset, x=experiment_data[column], y='evacuation_ticks',
+                         label=f"{strategy}", errorbar=None)
+
+        sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks', label='Overall',
+                     linestyle='--', color='grey')
+        plt.xticks(values, rotation=45)
+        plt_path = img_folder + f"strategy_{column}_comparison.png"
+        plt.title(f"Evacuation Ticks vs {column} (strategy)")
+        plt.legend(title='strategy')
+        plt.savefig(plt_path, bbox_inches='tight', pad_inches=0)
+        plt.clf()
 
 
 def perform_analysis(experiment_folder: dict[str, str],
@@ -353,6 +398,5 @@ def perform_analysis(experiment_folder: dict[str, str],
                                 alternative="less")
     else:
         logger.error(
-            "Cannot test_hypothesis. Target scenario for analysis not in simulationScenarios, " +
-            "check targetScenarioForAnalysis in config.json.")
-        raise Exception('targetScenarioForAnalysis not in simulationScenarios')
+            f"Cannot test. Scenario: '{target_scenario}' for analysis not in simulationScenarios," +
+            " check targetScenarioForAnalysis in config.json.")

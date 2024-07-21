@@ -166,7 +166,8 @@ class Scenario(Updatable):
         new_scenario.results = self.results[:]
         new_scenario.netlogo_params.update(self.netlogo_params.__dict__)
         # update the adaptation strategy scenario attribute to the new scenario
-        new_scenario.adaptation_strategy.scenario = new_scenario
+        if new_scenario.adaptation_strategy:
+            new_scenario.adaptation_strategy.scenario = new_scenario
         return new_scenario
 
     def _check_video(self, simulation: Simulation) -> None:
@@ -179,6 +180,9 @@ class Scenario(Updatable):
         3. If it is a list of simulation indices, only those simulations will have video enabled.
         4. If it is a number n, n random simulations will have video enabled,
              If n is greater than len simulations, all simulations will have video enabled.
+
+        Args:
+            simulation: The simulation object to check.
         """
         if simulation.netlogo_params.enable_video:
             # case 2: enable_video is True or 'all'

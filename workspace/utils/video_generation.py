@@ -10,8 +10,6 @@ from PIL import Image, ImageDraw  # type: ignore
 from utils.paths import FRAMES_FOLDER
 
 
-# TODO this should be called from the server or start.py, each simulation in its params
-#  should have a flag to generate the video or not. should take a list of simulation ids with on
 def generate_video(simulation_id: str, video_path: str, frame_duration: int = 200) -> None:
     """ Generates a GIF animation from the frames of a simulation.
 

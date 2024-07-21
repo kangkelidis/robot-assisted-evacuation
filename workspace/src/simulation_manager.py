@@ -14,6 +14,7 @@ import pandas as pd  # type: ignore
 import pyNetLogo
 import requests
 from pyNetLogo import NetLogoException
+from src.load_config import get_max_time
 from src.server import BASE_URL
 from src.simulation import NetLogoParams, Result, Scenario, Simulation
 from tqdm import tqdm  # type: ignore
@@ -25,7 +26,7 @@ from utils.video_generation import generate_video
 
 logger = setup_logger()
 
-SIMULATION_TIMEOUT = 120  # seconds
+SIMULATION_TIMEOUT = get_max_time()
 
 
 def execute_commands(simulation_id: str,
@@ -117,7 +118,7 @@ def initialise_netlogo_link(netlogo_model_path: str) -> pyNetLogo.NetLogoLink:
 
 
 def _run_netlogo_model(netlogo_link: pyNetLogo.NetLogoLink, max_netlogo_ticks,
-                       time_limit: float = SIMULATION_TIMEOUT) -> int | None:
+                       time_limit: int = SIMULATION_TIMEOUT) -> int | None:
     """
     Runs the NetLogo model with a time limit and returns the number of ticks it took for the
     evacuation to finish. If the evacuation does not finish or exceeds the time limit,
@@ -201,6 +202,7 @@ def batch_processor(simulation_batch: list[dict[str, Any]], netlogo_model_path: 
         simulation_batch: A list of dictionaries containing the simulation id, seed and parameters.
         netlogo_model_path: The path to the NetLogo model.
         index: The index of the current batch.
+        q: The queue to track the progress of the simulations.
     """
     netlogo_link = initialise_netlogo_link(netlogo_model_path)
 
@@ -355,10 +357,7 @@ def save_simulations_results(scenarios: list[Scenario], experiment_folder: dict)
 
     Args:
         scenarios: The scenarios to get the results from.
-        data_folder_path: The path of the folder to save the results.
-
-    Returns:
-        experiments_data: A dataFrame with data from all the simulations
+        experiment_folder: A dictionary containing the paths in the experiment folder.
     """
     data_folder_path = experiment_folder['data']
     video_folder_path = experiment_folder['video']
