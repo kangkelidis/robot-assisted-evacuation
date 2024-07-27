@@ -74,6 +74,9 @@ def calculate_sample_size(mean_1: float, mean_2: float, std_dev_1: float, std_de
     """
     analysis: sm.stats.TTestIndPower = sm.stats.TTestIndPower()
     effect_size = cohen_d_from_metrics(mean_1, mean_2, std_dev_1, std_dev_2)
+    # If the results are identical, the effect size will be 0
+    if effect_size == 0:
+        return 0
     result = analysis.solve_power(effect_size=effect_size,
                                   alpha=alpha,
                                   power=power,

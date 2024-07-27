@@ -25,8 +25,6 @@ RESULTS_FOLDER = WORKSPACE_FOLDER + "results/"
 FRAMES_FOLDER = RESULTS_FOLDER + "frames/"
 # Contains the adaptation strategies
 STRATEGIES_FOLDER = WORKSPACE_FOLDER + "strategies/"
-# Contains the saved configurations and scenarios
-EXAMPLES_FOLDER = WORKSPACE_FOLDER + "examples/"
 # Path to the configuration file
 CONFIG_FILE = WORKSPACE_FOLDER + 'config.json'
 # Folder name for the directory to save the results of the current experiment

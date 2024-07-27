@@ -1,5 +1,5 @@
 {
-    "": ["Load a saved configuration. Use the name of the file in the examples folder.",
+    "": ["Load a saved configuration. Use the path to the configuration file.",
         "Use null to use this file."],
     "loadConfigFrom": null,
 
@@ -11,7 +11,7 @@
         "This scenario must be in the simulationScenarios array."],
     "targetScenarioForAnalysis": "adaptive-optimal",
 
-    "": ["The maximum time in seconds for the simulation to run.",
+    "": ["The maximum time in seconds a simulation can run.",
         "If the simulation takes longer than this time, it will be stopped."],
     "maxSimulationTime": 120,
 
@@ -24,8 +24,8 @@
         "numOfRobots": 1,
         "numOfPassengers": 800,
         "numOfStaff" : 10,
-        "fallLength": 500,
-        "fallChance": 0.05,
+        "fallLength": {"start": 100, "end": 1000, "step": 200},
+        "fallChance": [0.05, 0.5, 1],
         "robotPersuasionFactor": 1,
         "maxNetlogoTicks": 2000,
         "roomType": 8,
@@ -70,7 +70,7 @@
             "description": "Randomly choose between asking help from staff or passenger.",
             "adaptationStrategy": "RandomStrategy",
             "enableVideo": false,
-            "enabled": true
+            "enabled": false
         }
 
     ]

@@ -12,8 +12,7 @@ import numpy as np  # type: ignore
 from src.batch_run import batch_run
 from src.simulation import Scenario
 from utils.helper import convert_dict_to_snake_case, setup_logger
-from utils.paths import (CONFIG_FILE, EXAMPLES_FOLDER, NETLOGO_FOLDER,
-                         NETLOGO_HOME)
+from utils.paths import CONFIG_FILE, NETLOGO_FOLDER, NETLOGO_HOME
 
 logger = setup_logger()
 
@@ -51,9 +50,9 @@ def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
     Returns:
         config: The updated configuration dictionary.
     """
-    # Load a saved json configuration file from the example folder if specified
+    # Load a saved json configuration file from the provided path
     if config['loadConfigFrom']:
-        config_file_path = os.path.join(EXAMPLES_FOLDER, config['loadConfigFrom'])
+        config_file_path = config['loadConfigFrom']
         if not config_file_path.endswith('.json'):
             config_file_path += '.json'
         logger.debug(f"Loading configuration from {config_file_path}")
@@ -158,6 +157,7 @@ def _check_for_range(parameters: dict[str, Any]) -> dict[str, Any]:
     """
     for key, value in parameters.items():
         if isinstance(value, dict) and 'start' in value and 'end' in value:
+            # TODO: float numbers precision is not working properly, 0.450000000002
             parameters[key] = np.arange(value['start'], value['end'], value.get('step', 1)).tolist()
     return parameters
 
