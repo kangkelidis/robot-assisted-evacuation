@@ -1,0 +1,6 @@
+FAILS TO REJECT NULL HYPOTHESIS: MANN-WHITNEY RANK TEST: The distribution of adaptive-optimal times is THE SAME as the distribution of adaptive-random times
+ALTERNATIVE HYPOTHESIS: the distribution underlying adaptive-optimal is stochastically less than the distribution underlying adaptive-random
+REJECT NULL HYPOTHESIS: MANN-WHITNEY RANK TEST: The distribution of adaptive-optimal times is THE SAME as the distribution of no-support times
+ALTERNATIVE HYPOTHESIS: the distribution underlying adaptive-optimal is stochastically less than the distribution underlying no-support
+FAILS TO REJECT NULL HYPOTHESIS: MANN-WHITNEY RANK TEST: The distribution of adaptive-optimal times is THE SAME as the distribution of passenger-support times
+ALTERNATIVE HYPOTHESIS: the distribution underlying adaptive-optimal is stochastically less than the distribution underlying passenger-support

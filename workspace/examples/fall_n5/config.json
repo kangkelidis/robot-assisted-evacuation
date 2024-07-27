@@ -1,0 +1,65 @@
+{
+     "loadConfigFrom": null,
+     "netlogoModeName": "model.nlogo",
+     "targetScenarioForAnalysis": "adaptive-optimal@robot-persuasion-factor=2",
+     "scenarioParams": {
+          "seed": 8967,
+          "netlogo_seed": null,
+          "numOfSamples": 5,
+          "numOfRobots": 1,
+          "numOfPassengers": 800,
+          "numOfStaff": 10,
+          "fallLength": {
+               "start": 100,
+               "end": 1100,
+               "step": 100
+          },
+          "fallChance": {
+               "start": 0.05,
+               "end": 1,
+               "step": 0.1
+          },
+          "robotPersuasionFactor": 1,
+          "maxNetlogoTicks": 2000,
+          "roomType": 8,
+          "enableVideo": false
+     },
+     "simulationScenarios": [
+          {
+               "name": "no-support",
+               "description": "There are no SAR robots in the simulation.",
+               "numOfRobots": 0,
+               "enableVideo": false,
+               "enabled": true
+          },
+          {
+               "name": "staff-support",
+               "description": "The SAR always asks help from a staff member.",
+               "adaptationStrategy": "AlwaysCallStaffStrategy",
+               "enableVideo": false,
+               "enabled": true
+          },
+          {
+               "name": "passenger-support",
+               "description": "The SAR always asks help from a passenger.",
+               "adaptationStrategy": "AlwaysAskHelpStrategy",
+               "enableVideo": false,
+               "enabled": true
+          },
+          {
+               "name": "adaptive-optimal",
+               "description": "Almost optimal",
+               "adaptationStrategy": "OptimalStrategy",
+               "enableVideo": false,
+               "enabled": true
+          },
+          {
+               "name": "adaptive-random",
+               "description": "Randomly choose between asking help from staff or passenger.",
+               "adaptationStrategy": "RandomStrategy",
+               "enableVideo": false,
+               "enabled": true
+          }
+     ],
+     "netlogoModelPath": "/home/workspace/netlogo/model.nlogo"
+}

@@ -1,0 +1,42 @@
+{
+     "loadConfigFrom": null,
+     "netlogoModeName": "model.nlogo",
+     "targetScenarioForAnalysis": "adaptive-optimal@robot-persuasion-factor=2",
+     "scenarioParams": {
+          "seed": 100,
+          "netlogo_seed": null,
+          "numOfSamples": 100,
+          "numOfRobots": 1,
+          "numOfPassengers": 800,
+          "numOfStaff": 10,
+          "fallLength": 500,
+          "fallChance": 0.05,
+          "robotPersuasionFactor": 1,
+          "maxNetlogoTicks": 2000,
+          "roomType": 8,
+          "enableVideo": false
+     },
+     "simulationScenarios": [
+          {
+               "name": "adaptive-optimal",
+               "description": "Almost optimal",
+               "numOfRobots": {
+                    "start": 0,
+                    "end": 10,
+                    "step": 1
+               },
+               "numOfSamples": 5,
+               "fallChance": 1,
+               "numOfStaff": {
+                    "start": 0,
+                    "end": 10,
+                    "step": 1
+               },
+               "robotPersuasionFactor": 1,
+               "adaptationStrategy": "OptimalStrategy",
+               "enableVideo": false,
+               "enabled": true
+          }
+     ],
+     "netlogoModelPath": "/home/workspace/netlogo/model.nlogo"
+}

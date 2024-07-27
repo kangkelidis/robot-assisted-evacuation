@@ -7,7 +7,20 @@ See [Video]() showing installation and usage.
 <br>
 
 ## Table of contents
-**[`Installation`](#installation-10-minutes)** **[`Configuration`](#configuration-options)**  **[`Usage`](#usage)** **[`Results`](#result)** **[`Strategies`](#strategies)** **[`Modules`](#modules)** **[`Help`](#help)** **[`License`](#license-information)** 
+- **[`Installation`](#installation-10-minutes)**
+- **[`Configuration`](#configuration-options)**  
+    - **[`Basic`](#basic-parameters)** 
+    - **[`Scenario`](#scenario-parameters)** 
+    - **[`Combinations`](#combining-parameters)** 
+    - **[`Rooms`](#room-types)** 
+- **[`Usage`](#usage)** 
+    - **[`Results`](#results)** 
+    - **[`Examples`](#examples)** 
+- **[`Strategies`](#strategies)** 
+    - **[`Creating New Strategies`](#creating-new-strategies)** 
+- **[`Modules`](#modules)**
+- **[`Help`](#help)** 
+- **[`License`](#license-information)** 
 
 <br>
 
@@ -95,7 +108,7 @@ The `scenarioParams` section contains global parameters that are used for all si
 | `robotPersuasionFactor` | Any number | A multiplier to the helping chance that is used to determine whether a zero-responder will accept to help a fallen victim, when asked by the robot. |
 | `maxNetlogoTicks`     | Any positive integer | Maximum number of time steps the simulation can run. |
 | `roomType`| [0, 8] | Type of room being simulated. |
-| `enableVideo`| - false / true<br>- A list of indices (e.g., [0, 2, 5])<br>- A positive integer | Enable video for all simulations if true or 'all'. Enable video only for the specified simulations if a list of indices is provided. Enable video for n random simulations if a positive integer is provided. |
+| `enableVideo`| false / true,<br> A list of indices,<br> A positive integer | Enable video for all simulations if true or 'all'. Enable video only for the specified simulations if a list of indices is provided (e.g., [0, 2, 5]). Enable video for n random simulations if a positive integer is provided. |
 | **Scenario Specific** |
 | `name` | string | A name for the scenario, it is required and must be unique |
 | `description` | string | A description for the scenario |
@@ -105,7 +118,7 @@ The `scenarioParams` section contains global parameters that are used for all si
 
 <br>
 
-**Combining Parameters**
+### Combining Parameters
 
 The application has the ability to use lists and ranges to create combinations of parameters. It will automatically generate all possible combinations of the provided parameters and run `num_of_samples` simulations for each combination.
 
@@ -133,7 +146,7 @@ For each of these combinations, the program will run the specified number of sim
 
 
 ---
-#### Room Types
+### Room Types
 There are 8 different room types that the evacuation simulation can use.
 The PNGs for the rooms are located in `workspace/netlogo/rooms`
 
@@ -214,6 +227,9 @@ if you need to delete all the results folders run:
 ```
 ./clear-results.sh
 ```
+
+#### Examples
+The `examples` folder contains several example simulation experiment that demonstrate the capabilities of the Sousa Toolkit.
 
 <br>
 
