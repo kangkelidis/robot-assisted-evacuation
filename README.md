@@ -1,9 +1,23 @@
 # The Sousa Toolkit: A Socially-Aware Evaluation of Evacuation Support Systems
 
-This project provides a container-based simulation environment for the IMPACT+ NetLogo model. The Sousa Toolkit allows users to configure and run simulations of different evacuation scenarios, analyze the results, and compare the effectiveness of various adaptation strategies.
+This project is a Docker-based application that facilitates experimentation with the `IMPACT+` agent-based evacuation simulation model (<a href="https://www.researchgate.net/publication/379377435_The_IDEA_of_Us_An_Identity-Aware_Architecture_for_Autonomous_Systems" target="_blank">link to paper</a>). `IMPACT+` is an extension of the `IMPACT` NetLogo model (<a href="https://eprints.whiterose.ac.uk/122415/" target="_black">link to paper</a>), which simulates an evacuation from a transport hub and incorporates sociocultural, cognitive, and emotional factors. The key addition of `IMPACT+` is the introduction of an adaptable search and rescue (SAR) robot that is able to decide when it finds a fallen victim, whether to ask help from a nearby zero-responder or from a member of staff. The Toolkit aims to make it easier for researchers to configure and run simulations with various evacuation scenarios and adaptation strategies for the SAR robot.
 
-See [Video]() showing installation and usage.
+See demonstration [video]() showing installation and usage. Find accompanying paper <a href="" target="_black">here</a>.
 
+Video of an evacuation scenario simulation
+
+![Simulation Video](/examples/default-n50/video/video_adaptive-optimal_31.gif)<br>
+
+<small>
+black circles - passengers not evacuating,  
+pink circles - passengers evacuating, 
+orange circles - fallen passengers<br>
+green figures - staff, 
+blue figures - staff offering help<br>
+green car - SAR robot in search mode,
+purple car - SAR robot asking for help<br>
+red squares - fire, grey circles - dead people, blue squares - exit
+</small>
 <br>
 
 ## Table of contents
@@ -27,7 +41,7 @@ See [Video]() showing installation and usage.
 ## Installation (~10 minutes)
 
 To use the Sousa Toolkit, you'll need to have Docker installed on your machine. <br>
-Follow the instructions on the [Get Docker](https://docs.docker.com/get-docker/) | [Docker Docs](https://docs.docker.com/) website to install Docker.
+Follow the instructions on the <a href="https://docs.docker.com/get-docker/" target="_blank">Get Docker</a> | <a href="https://docs.docker.com/" target="_blank">Docker Docs</a> website to install Docker.
 
 <details>
 
@@ -35,11 +49,11 @@ Follow the instructions on the [Get Docker](https://docs.docker.com/get-docker/)
 
 <br>
 
-To build the image from source open your terminal, ensure that you are at the **robot-assisted-evacuation** directory and run:
-```
-chmod +x ./build-docker-container.sh
+To build the image from source open your terminal, ensure that you are at the parent directory and run:
+```bash
+chmod +x ./build-docker-image.sh
 
-./build-docker-container.sh
+./build-docker-image.sh
 ```
 > **_NOTE:_** Make sure docker engine is running
 
@@ -51,15 +65,15 @@ chmod +x ./build-docker-container.sh
 
 <br>    
 
-To download the docker image from the Docker Hub, you need to log in with a valid Docker Hub account. If you don't have an account, you can create one at [Docker Hub](https://app.docker.com/signup?).
+To download the docker image from the Docker Hub, you need to log in with a valid Docker Hub account. If you don't have an account, you can create one at <a href="https://app.docker.com/signup?" target="_blank">Docker Hub</a>.
 
 Steps to Log In to Docker Hub:
 1. Create a Docker Hub Account (if you don't have one):
 
-    - Go to [Docker Hub](https://hub.docker.com/).
+    - Go to <a href="https://hub.docker.com/" target="_blank">Docker Hub</a>.
     - Click on "Sign Up" and follow the instructions to create an account.
 3. Log in to Docker Hub: Open your terminal and run:
-    ```
+    ```bash
     docker login
     ```
     > **_NOTE:_** Make sure docker engine is running
@@ -67,7 +81,7 @@ Steps to Log In to Docker Hub:
     Enter your Docker Hub username and password when prompted.
 
 Then Pull the Docker Image:
-```
+```bash
 docker pull alexandroskangkelidis/robot-assisted-evacuation:v1.0
 ```
 </details>
@@ -94,6 +108,32 @@ The [config.json](./workspace/config.json) contains parameters that can be adjus
 
 ### Scenario Parameters
 The `scenarioParams` section contains global parameters that are used for all simulations. These parameters can be overridden by specifying the same parameter in the `simulationScenarios` section.
+
+```json
+    "scenarioParams": {
+        "seed": 42,
+        "netlogo_seed": null,
+        "numOfSamples": 10,
+        "numOfRobots": 1,
+        "numOfPassengers": 800,
+        "numOfStaff" : 10,
+        "fallLength": 500,
+        "fallChance": 0.05,
+        "robotPersuasionFactor": 1,
+        "maxNetlogoTicks": 2000,
+        "roomType": 8,
+        "enableVideo": 1
+    },
+    // List of scenarios, each can override parameters
+    "simulationScenarios" : [
+        {
+            "name": "no-support",
+            "description": "There are no SAR robots in the simulation.",
+            "numOfRobots": 0,
+            "enabled": true
+        },
+    ]
+```
 
 | Parameter | Values | Description |
 |---|---|---|
@@ -170,39 +210,43 @@ The PNGs for the rooms are located in `workspace/netlogo/rooms`
 
 ## Usage
 
-To start the application, ensure that you are at **robot-assisted-evacuation** directory and run:
-```
+To start the application, ensure that you are at the parent directory and run:
+```bash
 ./run-container.sh
 ```
 > **_NOTE:_**
 >Make sure you use the `chmod +x` command to add execute permissions to the file and avoid the "permission denied" error.
 
+> **_NOTE:_** Make sure docker engine is running
+
 If you downloaded the image from Docker Hub instead of building it locally, add `hub` after the script name. For example:
-```
+```bash
 ./run-container.sh hub
 ```
 
-To only analysis the results of an experiment saved in a folder use:
-```
+To only analyse the results of an experiment saved in a folder use:
+```bash
 ./run-container.sh [hub] --analyse FOLDER
 ``` 
 Replace FOLDER with the folder name, located in the results directory.
 <br>
 
 If you modify any part of the code you might need to rebuild the docker image before running it, run:
-```
+```bash
 ./build-docker-image.sh
 ```
 or just run:
-```
+```bash
 ./build-and-run.sh
 ```
 
 <br>
 
+The application will set up the simulations based on the configurations provided and then begin running the simulations in parallel. A progress bar will display the status and an estimate time to complete all simulations. Depending on the number of simulations, parameter values and hardware resources available, the simulations may take significant amount of time to complete. Running 100 simulations with the default configuration on a 14-cores CPU should take less than 5 minutes to complete.
+
 ### Results
 
-The application generates a `results` folder to store the output of the simulations. Each experiment's results are stored in a subfolder named using a timestamp. This subfolder contains the following:
+The application generates a `results` folder in the `workspace` directory, to store the output of the simulations. Each experiment's results are stored in a subfolder named using a timestamp. This subfolder contains the following:
 
 1. **Data Folder**: Contains CSV files with detailed results and metrics:
     - `experiment_data.csv`: Contains all the results and information for each simulation.
@@ -224,14 +268,12 @@ The application generates a `results` folder to store the output of the simulati
 5. **Hypothesis Test File**: `hypothesis_test.txt` contains the results of the statistical analysis.
 
 if you need to delete all the results folders run:
-```
+```bash
 ./clear-results.sh
 ```
 
 #### Examples
 The `examples` folder contains several example simulation experiment that demonstrate the capabilities of the Sousa Toolkit.
-
-<br>
 
 ---
 
@@ -308,7 +350,7 @@ An overview of the main modules.
 - **`server.py`**: A simple flask server, used to communicate with the NetLogo simulations. 
 - **`results_analysis.py`**: Responsible for analysing and plotting the results of the simulation experiments.
 - **`load_config.py`**: Responsible for loading and checking the JSON configuration file.
-- **`batch_run.py`**: Contains a methods to run a scenario using a different combination of parameters.
+- **`batch_run.py`**: Contains methods to run a scenario using a different combination of parameters.
 - **`adaptation_strategy.py`**: Contains the base class for adaptation strategies, which are used in the simulation to determine the robot's actions.
 
 
