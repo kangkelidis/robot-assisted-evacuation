@@ -1,6 +1,6 @@
-# The Sousa Toolkit: A Socially-Aware Evaluation of Evacuation Support Systems
+# SARA-ESP: Socially-Aware Robot-Assisted Evacuation Simulation Platform
 
-This project is a Docker-based application that facilitates experimentation with the `IMPACT+` agent-based evacuation simulation model (<a href="https://www.researchgate.net/publication/379377435_The_IDEA_of_Us_An_Identity-Aware_Architecture_for_Autonomous_Systems" target="_blank">link to paper</a>). `IMPACT+` is an extension of the `IMPACT` NetLogo model (<a href="https://eprints.whiterose.ac.uk/122415/" target="_black">link to paper</a>), which simulates an evacuation from a transport hub and incorporates sociocultural, cognitive, and emotional factors. The key addition of `IMPACT+` is the introduction of an adaptable search and rescue (SAR) robot that is able to decide when it finds a fallen victim, whether to ask help from a nearby zero-responder or from a member of staff. The Toolkit aims to make it easier for researchers to configure and run simulations with various evacuation scenarios and adaptation strategies for the SAR robot.
+This project is a Docker-based application that facilitates experimentation with the `IMPACT+` agent-based evacuation simulation model (<a href="https://www.researchgate.net/publication/379377435_The_IDEA_of_Us_An_Identity-Aware_Architecture_for_Autonomous_Systems" target="_blank">link to paper</a>). `IMPACT+` is an extension of the `IMPACT` NetLogo model (<a href="https://eprints.whiterose.ac.uk/122415/" target="_black">link to paper</a>), which simulates an evacuation from a transport hub and incorporates sociocultural, cognitive, and emotional factors. The key addition of `IMPACT+` is the introduction of an adaptable search and rescue (SAR) robot that is able to decide, when it finds a fallen victim, whether to ask help from a nearby zero-responder or from a member of staff. SARA-ESP aims to make it easier for researchers to configure, run and analyse simulations with various evacuation scenarios and adaptation strategies for the SAR robot.
 
 See demonstration [video]() showing installation and usage. Find accompanying paper <a href="" target="_black">here</a>.
 
@@ -8,7 +8,6 @@ Video of an evacuation scenario simulation
 
 ![Simulation Video](/examples/default-n50/video/video_adaptive-optimal_31.gif)<br>
 
-<small>
 black circles - passengers not evacuating,  
 pink circles - passengers evacuating, 
 orange circles - fallen passengers<br>
@@ -17,7 +16,7 @@ blue figures - staff offering help<br>
 green car - SAR robot in search mode,
 purple car - SAR robot asking for help<br>
 red squares - fire, grey circles - dead people, blue squares - exit
-</small>
+
 <br>
 
 ## Table of contents
@@ -40,7 +39,7 @@ red squares - fire, grey circles - dead people, blue squares - exit
 
 ## Installation (~10 minutes)
 
-To use the Sousa Toolkit, you'll need to have Docker installed on your machine. <br>
+To use SARA-ESP, you'll need to have Docker installed on your machine. <br>
 Follow the instructions on the <a href="https://docs.docker.com/get-docker/" target="_blank">Get Docker</a> | <a href="https://docs.docker.com/" target="_blank">Docker Docs</a> website to install Docker.
 
 <details>
@@ -273,7 +272,7 @@ if you need to delete all the results folders run:
 ```
 
 #### Examples
-The `examples` folder contains several example simulation experiment that demonstrate the capabilities of the Sousa Toolkit.
+The `examples` folder contains several example simulation experiment that demonstrate the capabilities of the tool.
 
 ---
 
