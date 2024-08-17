@@ -1,4 +1,4 @@
-sim_index,AlwaysAskHelpStrategy,AlwaysCallStaffStrategy,OptimalStrategy
+sim_index,AlwaysAskHelpStrategy,AlwaysCallStaffStrategy,HelpMatrixStrategy
 0,506.46666666666664,365.1333333333333,348.0
 1,332.2,350.3333333333333,375.8666666666667
 10,510.8,388.53333333333336,384.3333333333333

@@ -1,7 +1,7 @@
 {
      "loadConfigFrom": null,
      "netlogoModeName": "model.nlogo",
-     "targetScenarioForAnalysis": "adaptive-optimal@robot-persuasion-factor=2",
+     "targetScenarioForAnalysis": "adaptive-help@robot-persuasion-factor=2",
      "scenarioParams": {
           "seed": 100,
           "netlogo_seed": null,
@@ -18,8 +18,8 @@
      },
      "simulationScenarios": [
           {
-               "name": "adaptive-optimal",
-               "description": "Almost optimal",
+               "name": "adaptive-help",
+               "description": "Uses the help matrix from IMPACT+ to predict if the passenger will accept to help.",
                "numOfRobots": {
                     "start": 0,
                     "end": 10,
@@ -33,7 +33,7 @@
                     "step": 1
                },
                "robotPersuasionFactor": 1,
-               "adaptationStrategy": "OptimalStrategy",
+               "adaptationStrategy": "HelpMatrixStrategy",
                "enableVideo": false,
                "enabled": true
           }

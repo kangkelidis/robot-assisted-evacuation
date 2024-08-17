@@ -4,60 +4,20 @@ channels:
   - defaults
 dependencies:
   - python=3.12 
-  - blas=1.0=mkl
-  - ca-certificates
-  - certifi
-  - dbus
-  - expat
-  - flask
-  - fontconfig
-  - freetype
-  - glib
-  - gst-plugins-base
-  - gstreamer
-  - icu
-  - intel-openmp
-  - jpype1
-  - jpeg
-  - libffi
-  - libgcc-ng
-  - libgfortran-ng
-  - libgomp
-  - libpng
-  - libstdcxx-ng
-  - libuuid
-  - libxcb
-  - libxml2
-  - mkl
-  - ncurses
-  - natsort
-  - openssl
-  - pcre
   - pip
-  - python-dateutil
-  - pytz
-  - readline
-  - sqlite
-  - tk
-  - wheel
-  - xz
-  - zlib
+  - jpype1
   - pip:
-    - keras
-    - tensorflow
-    - scikit-learn
-    - matplotlib
-    - pandas
-    - scipy
-    - numpy
-    - seaborn
-    - statsmodels
-    - pathlib
-    - pillow
+    - concurrent_log_handler==0.9.25
+    - flask==3.0.3
+    - matplotlib==3.9.1.post1
+    - natsort==8.4.0
+    - numpy==2.0.1
+    - pandas==2.2.2
+    - pillow==10.4.0
     - pynetlogo==0.4.2
-    - typing
-    - concurrent-log-handler
-    - tqdm
-    - requests
-    - flask
+    - requests==2.32.3
+    - scipy==1.14.0
+    - seaborn==0.13.2
+    - statsmodels==0.14.2
+    - tqdm==4.66.4
 prefix: /anaconda3/envs/robot-assisted-evacuation

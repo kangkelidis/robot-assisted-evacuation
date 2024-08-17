@@ -1,0 +1,12 @@
+p value: 0.06579859397587819
+FAILS TO REJECT NULL HYPOTHESIS: MANN-WHITNEY RANK TEST: The distribution of adaptive-help times is THE SAME as the distribution of adaptive-random times
+ALTERNATIVE HYPOTHESIS: the distribution underlying adaptive-help is stochastically less than the distribution underlying adaptive-random
+p value: nan
+REJECT NULL HYPOTHESIS: MANN-WHITNEY RANK TEST: The distribution of adaptive-help times is THE SAME as the distribution of no-support times
+ALTERNATIVE HYPOTHESIS: the distribution underlying adaptive-help is stochastically less than the distribution underlying no-support
+p value: nan
+REJECT NULL HYPOTHESIS: MANN-WHITNEY RANK TEST: The distribution of adaptive-help times is THE SAME as the distribution of passenger-support times
+ALTERNATIVE HYPOTHESIS: the distribution underlying adaptive-help is stochastically less than the distribution underlying passenger-support
+p value: 0.246129994513194
+FAILS TO REJECT NULL HYPOTHESIS: MANN-WHITNEY RANK TEST: The distribution of adaptive-help times is THE SAME as the distribution of staff-support times
+ALTERNATIVE HYPOTHESIS: the distribution underlying adaptive-help is stochastically less than the distribution underlying staff-support

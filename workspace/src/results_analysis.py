@@ -145,6 +145,7 @@ def test_hypothesis(first_scenario_column: str,
         logger.info("FAILS TO REJECT NULL HYPOTHESIS: {}".format(null_hypothesis))
         # save the results
         with open(hypothesis_file_path, "a") as f:
+            f.write(f"p value: {p_value}\n")
             f.write("FAILS TO REJECT NULL HYPOTHESIS: {}\n".format(null_hypothesis))
             f.write(alternative_hypothesis)
             f.write("\n")
@@ -153,6 +154,7 @@ def test_hypothesis(first_scenario_column: str,
         logger.info(alternative_hypothesis)
         # save the results
         with open(hypothesis_file_path, "a") as f:
+            f.write(f"p value: {p_value}\n")
             f.write("REJECT NULL HYPOTHESIS: {}\n".format(null_hypothesis))
             f.write(alternative_hypothesis)
             f.write("\n")
@@ -326,8 +328,8 @@ def plot_comparisons(experiment_data: pd.DataFrame, img_folder: str) -> None:
                     sns.lineplot(data=subset, x=column, y='evacuation_ticks',
                                  label=f"{other_column}={value}", errorbar=None)
                 # Plot the entire dataset for this column as a dotted line
-                sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks', label='Overall',
-                             linestyle='--', color='grey')
+                sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks',
+                             label='Overall (with error band)', linestyle='--', color='grey')
                 plt.xticks(values)
                 plt_path = img_folder + f"{column}({other_column})_comparison.png"
                 plt.title(f"Evacuation Ticks vs {column.capitalize()} ({other_column})")
@@ -348,8 +350,8 @@ def plot_comparisons(experiment_data: pd.DataFrame, img_folder: str) -> None:
             sns.lineplot(data=subset, x=experiment_data[column], y='evacuation_ticks',
                          label=f"{strategy}", errorbar=None)
 
-        sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks', label='Overall',
-                     linestyle='--', color='grey')
+        sns.lineplot(data=experiment_data, x=column, y='evacuation_ticks',
+                     label='Overall (with error band)', linestyle='--', color='grey')
         plt.xticks(values, rotation=45)
         plt_path = img_folder + f"strategy_{column}_comparison.png"
         plt.title(f"Evacuation Ticks vs {column} (strategy)")

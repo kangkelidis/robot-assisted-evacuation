@@ -5,11 +5,11 @@
 
     "": ["The netlogo model to be used for the simulations.",
         "This model must be in the src/netlogo folder."],
-    "netlogoModeName": "model.nlogo",
+    "netlogoModelName": "model.nlogo",
 
     "": ["The scenario that will be used for the analysis.",
         "This scenario must be in the simulationScenarios array."],
-    "targetScenarioForAnalysis": "adaptive-optimal",
+    "targetScenarioForAnalysis": "adaptive-help",
 
     "": ["The maximum time in seconds a simulation can run.",
         "If the simulation takes longer than this time, it will be stopped."],
@@ -23,8 +23,8 @@
         "numOfSamples": 10,
         "numOfRobots": 1,
         "numOfPassengers": 800,
-        "numOfStaff" : 10,
-        "fallLength": 500,
+        "numOfStaff" : 8,
+        "fallLength": 360,
         "fallChance": 0.05,
         "robotPersuasionFactor": 1,
         "maxNetlogoTicks": 2000,
@@ -56,9 +56,9 @@
             "enabled": true
         },
         {
-            "name": "adaptive-optimal",
-            "description": "Almost optimal",
-            "adaptationStrategy": "OptimalStrategy",
+            "name": "adaptive-help",
+            "description": "Uses the help matrix to decide who to ask for help.",
+            "adaptationStrategy": "HelpMatrixStrategy",
             "enabled": true
         },
         {

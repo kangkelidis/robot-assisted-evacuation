@@ -1,4 +1,4 @@
-,AlwaysAskHelpStrategy,AlwaysCallStaffStrategy,OptimalStrategy
+,AlwaysAskHelpStrategy,AlwaysCallStaffStrategy,HelpMatrixStrategy
 count,30.0,30.0,30.0
 mean,499.750634920635,382.3933333333334,374.03111111111116
 std,61.290350195659904,36.174156648018794,46.611875004586196

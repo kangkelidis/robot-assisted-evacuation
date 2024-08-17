@@ -353,7 +353,7 @@ class Simulation(Updatable):
         self.netlogo_params = netlogo_params.duplicate()
         self.result: Result = Result()
         self.seed = self.generate_seed(index)
-        # TODO not need, use the netlogo_params seed
+        # TODO not needed, use the netlogo_params seed
         self.netlogo_seed = None
 
     def generate_seed(self, index) -> int:
@@ -404,6 +404,6 @@ class Simulation(Updatable):
             action_or_response: The action or response from the robot.
         """
         accepted_responses = ["true", AdaptationStrategy.CALL_STAFF_ROBOT_ACTION]
-        if action_or_response in accepted_responses or self.result.robot_contacts == 0:
+        if action_or_response in accepted_responses:
             self.result.robot_contacts += 1
             self.logger.debug(f"Contact with fallen victim: {self.result.robot_contacts}")

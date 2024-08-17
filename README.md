@@ -1,34 +1,28 @@
-# SARA-ESP: Socially-Aware Robot-Assisted Evacuation Simulation Platform
+# A platform to run Robot-Assisted Socially-Aware Evacuation Simulations
 
-This project is a Docker-based application that facilitates experimentation with the `IMPACT+` agent-based evacuation simulation model (<a href="https://www.researchgate.net/publication/379377435_The_IDEA_of_Us_An_Identity-Aware_Architecture_for_Autonomous_Systems" target="_blank">link to paper</a>). `IMPACT+` is an extension of the `IMPACT` NetLogo model (<a href="https://eprints.whiterose.ac.uk/122415/" target="_black">link to paper</a>), which simulates an evacuation from a transport hub and incorporates sociocultural, cognitive, and emotional factors. The key addition of `IMPACT+` is the introduction of an adaptable search and rescue (SAR) robot that is able to decide, when it finds a fallen victim, whether to ask help from a nearby zero-responder or from a member of staff. SARA-ESP aims to make it easier for researchers to configure, run and analyse simulations with various evacuation scenarios and adaptation strategies for the SAR robot.
+This project is a Docker-based application that facilitates experimentation with the <a href="https://dl.acm.org/doi/pdf/10.1145/3654439" target="_blank">`IMPACT+` agent-based evacuation simulation model</a>. Developed with NetLogo,`IMPACT+` is an extension of <a href="https://eprints.whiterose.ac.uk/122415/1/van%20der%20Wal%20et%20al.%20(2017)%20[TCCI].pdf" target="_black">`IMPACT`</a>, which simulates an evacuation from a transport hub and incorporates sociocultural, cognitive, and emotional factors. 
 
+The key addition of `IMPACT+` is the introduction of an adaptable search and rescue (SAR) robot that is able to decide, when it finds a fallen victim, whether to ask help from a nearby zero-responder (another passenger) or from a first-responder (member of staff). The SAR robot bases its decision on the zero-responders' social identity, ie. the likelihood that they will accept to offer help. Assuming that first-responders are scarce, getting help from a zero-responder can lead to faster evacuation times.
+
+This tool aims to make it easier for researchers to configure, run and analyse simulations with various evacuation scenarios and adaptation strategies for the SAR robot.
 See demonstration [video]() showing installation and usage. Find accompanying paper <a href="" target="_black">here</a>.
 
 Video of an evacuation scenario simulation
 
-![Simulation Video](/examples/default-n50/video/video_adaptive-optimal_31.gif)<br>
-
-black circles - passengers not evacuating,  
-pink circles - passengers evacuating, 
-orange circles - fallen passengers<br>
-green figures - staff, 
-blue figures - staff offering help<br>
-green car - SAR robot in search mode,
-purple car - SAR robot asking for help<br>
-red squares - fire, grey circles - dead people, blue squares - exit
+![Simulation Video](/examples/default_n100/video/video_adaptive-help_14.gif)<br>
 
 <br>
 
 ## Table of contents
 - **[`Installation`](#installation-10-minutes)**
+- **[`Usage`](#usage)** 
+    - **[`Results`](#results)** 
+    - **[`Examples`](#examples)** 
 - **[`Configuration`](#configuration-options)**  
     - **[`Basic`](#basic-parameters)** 
     - **[`Scenario`](#scenario-parameters)** 
     - **[`Combinations`](#combining-parameters)** 
     - **[`Rooms`](#room-types)** 
-- **[`Usage`](#usage)** 
-    - **[`Results`](#results)** 
-    - **[`Examples`](#examples)** 
 - **[`Strategies`](#strategies)** 
     - **[`Creating New Strategies`](#creating-new-strategies)** 
 - **[`Modules`](#modules)**
@@ -39,7 +33,7 @@ red squares - fire, grey circles - dead people, blue squares - exit
 
 ## Installation (~10 minutes)
 
-To use SARA-ESP, you'll need to have Docker installed on your machine. <br>
+To use this tool, you'll need to have Docker installed on your machine. <br>
 Follow the instructions on the <a href="https://docs.docker.com/get-docker/" target="_blank">Get Docker</a> | <a href="https://docs.docker.com/" target="_blank">Docker Docs</a> website to install Docker.
 
 <details>
@@ -89,124 +83,6 @@ docker pull alexandroskangkelidis/robot-assisted-evacuation:v1.0
 
 ---
 
-<br>
-
-## Configuration Options
-The [config.json](./workspace/config.json) contains parameters that can be adjusted to configure the simulations.
-
-### Basic Parameters
-| Parameter | Values | Description |
-|---|---|---|
-| `loadConfigFrom` | string, null | Use null to use this file  |
-| `netlogoModeName` | string | The NetLogo model to be used for the simulations, must be in the src/netlogo folder |
-| `targetScenarioForAnalysis` | string | The scenario that will be used for the analysis |
-| `maxSimulationTime` | Any positive integer | The maximum time in seconds a simulation can run |
----
-
-<br>
-
-### Scenario Parameters
-The `scenarioParams` section contains global parameters that are used for all simulations. These parameters can be overridden by specifying the same parameter in the `simulationScenarios` section.
-
-```json
-    "scenarioParams": {
-        "seed": 42,
-        "netlogo_seed": null,
-        "numOfSamples": 10,
-        "numOfRobots": 1,
-        "numOfPassengers": 800,
-        "numOfStaff" : 10,
-        "fallLength": 500,
-        "fallChance": 0.05,
-        "robotPersuasionFactor": 1,
-        "maxNetlogoTicks": 2000,
-        "roomType": 8,
-        "enableVideo": 1
-    },
-    // List of scenarios, each can override parameters
-    "simulationScenarios" : [
-        {
-            "name": "no-support",
-            "description": "There are no SAR robots in the simulation.",
-            "numOfRobots": 0,
-            "enabled": true
-        },
-    ]
-```
-
-| Parameter | Values | Description |
-|---|---|---|
-| `seed`                | 0, [-2147483648, 2147483647] | Generates the seed for simulations. Non-zero for consistent seeds, zero for random seeds. |
-| `netlogo_seed`        | null, [-2147483648, 2147483647] | The actual seed to be used by NetLogo. Used to repeat a simulation. Use null to auto generate |
-| `numOfSamples`        | Any positive integer | Number of simulations to run for each scenario. |
-| `numOfRobots`         | Any positive integer | Number of robots. |
-| `numOfPassengers`     | Any positive integer | Number passengers. |
-| `numOfStaff`          | Any positive integer | Number of staff members. |
-| `fallLength`          | Any positive integer | Time steps a passenger remains fallen. |
-| `fallChance`          | [0.0, 100.0] | Probability that a passenger will fall during evacuation. |
-| `robotPersuasionFactor` | Any number | A multiplier to the helping chance that is used to determine whether a zero-responder will accept to help a fallen victim, when asked by the robot. |
-| `maxNetlogoTicks`     | Any positive integer | Maximum number of time steps the simulation can run. |
-| `roomType`| [0, 8] | Type of room being simulated. |
-| `enableVideo`| false / true,<br> A list of indices,<br> A positive integer | Enable video for all simulations if true or 'all'. Enable video only for the specified simulations if a list of indices is provided (e.g., [0, 2, 5]). Enable video for n random simulations if a positive integer is provided. |
-| **Scenario Specific** |
-| `name` | string | A name for the scenario, it is required and must be unique |
-| `description` | string | A description for the scenario |
-| `adaptationStrategy` | string | The name of the strategy to use, a python file containing a strategy class with the same name must be in the strategies folder. |
-| `enabled` | true / false | Whether to use the scenario in the experiment. |
----
-
-<br>
-
-### Combining Parameters
-
-The application has the ability to use lists and ranges to create combinations of parameters. It will automatically generate all possible combinations of the provided parameters and run `num_of_samples` simulations for each combination.
-
-For example, given the following configuration:
-```json
-<!-- Use a list -->
-"numOfStaff": [2, 10],
-
-<!-- Use a range of values -->
-"fallChance": {
-    "start": 0.05,
-    "end": 1,
-    "step": 0.1
-},
-"num_of_samples": 5
-```
-The program will create combinations of numOfStaff and fallChance values, and for each combination, it will run 5 simulations.
-- numOfStaff = 2 and fallChance = 0.05
-- numOfStaff = 2 and fallChance = 0.15
-- ...
-- numOfStaff = 10 and fallChance = 0.95
-
-For each of these combinations, the program will run the specified number of simulations (`num_of_samples`). For each combination pair, a plot will be generated comparing the impact on the number of evacuation ticks.
-
-
-
----
-### Room Types
-There are 8 different room types that the evacuation simulation can use.
-The PNGs for the rooms are located in `workspace/netlogo/rooms`
-
-| Type | Filename                                         |
-|------|--------------------------------------------------|
-| 0    | room_square_2doors_up_down.png                   |
-| 1    | room_square_4doors_main_down.png                 |
-| 2    | room_square_2doors_left_right.png                |
-| 3    | room_square_4doors_main_left.png                 |
-| 4    | room_rectangle_2doors_left_right.png             |
-| 5    | room_rectangle_2doors_up_down.png                |
-| 6    | room_rectangle_4doors_main_down.png              |
-| 7    | room_rectangle_4doors_main_left.png              |
-| 8    | room_square_2doors_left_right_barriers.png       |
-
-<br>
-
----
-
-<br>
-
 ## Usage
 
 To start the application, ensure that you are at the parent directory and run:
@@ -250,15 +126,15 @@ The application generates a `results` folder in the `workspace` directory, to st
 1. **Data Folder**: Contains CSV files with detailed results and metrics:
     - `experiment_data.csv`: Contains all the results and information for each simulation.
     - `scenario_metrics.csv`: Contains the metrics for each scenario.
-    - `scenario_processed_data.csv`: Contains the evacuation ticks per scenario.
+    - `scenario_processed_data.csv`: Contains the evacuation time per scenario.
     - `strategy_metrics.csv`: Contains the metrics for each strategy.
-    - `strategy_processed_data.csv`: Contains the evacuation ticks per strategy.
+    - `strategy_processed_data.csv`: Contains the evacuation time per strategy.
 
 2. **Img Folder**: Contains various plots:
     - Violin plots for each scenario.
     - Violin plots for each strategy.
     - Robots actions plot.
-    - Plots for each pair of parameter combinations against the evacuation ticks.
+    - Plots for each pair of parameter combinations against the evacuation time.
 
 3. **Video Folder**: Contains any videos created during the simulations.
 
@@ -272,7 +148,121 @@ if you need to delete all the results folders run:
 ```
 
 #### Examples
-The `examples` folder contains several example simulation experiment that demonstrate the capabilities of the tool.
+The `examples` folder contains several example simulation experiments that demonstrate the capabilities of the tool.
+
+<br>
+
+---
+
+<br>
+
+## Configuration Options
+The [config.json](./workspace/config.json) contains parameters that can be adjusted to configure the simulations.
+
+### Basic Parameters
+| Parameter | Values | Description |
+|---|---|---|
+| `loadConfigFrom` | string | To use a different configuration file, provide the path to it. Leave empty to use this file  |
+| `netlogoModelName` | string | The NetLogo model to be used for the simulations, must be in the src/netlogo folder |
+| `targetScenarioForAnalysis` | string | The scenario that will be used for the analysis (e.g. "AlwaysCallStaffStrategy") |
+| `maxSimulationTime` | Any positive integer | The maximum time in seconds a simulation can run |
+---
+
+<br>
+
+### Scenario Parameters
+The `scenarioParams` section contains global parameters that are used for all simulations. These parameters can be overridden by specifying the same parameter in the `simulationScenarios` section.
+
+```json
+    "scenarioParams": {
+        "seed": 42,
+        "netlogo_seed": null,
+        "numOfSamples": 10,
+        "numOfRobots": 1,
+        "numOfPassengers": 800,
+        "numOfStaff" : 10,
+        "fallLength": 500,
+        "fallChance": 0.05,
+        "robotPersuasionFactor": 1,
+        "maxNetlogoTicks": 2000,
+        "roomType": 8,
+        "enableVideo": 1
+    },
+
+    "simulationScenarios" : [
+        {
+            "name": "no-support",
+            "description": "There are no SAR robots in the simulation.",
+            "numOfRobots": 0,
+            "enabled": true
+        },
+    ]
+```
+
+| Parameter | Values | Description |
+|---|---|---|
+| `seed`                | 0, [-2147483648, 2147483647] | Generates the seed for simulations. Non-zero for consistent seeds, zero for random seeds. |
+| `netlogo_seed`        | null, [-2147483648, 2147483647] | The actual seed to be used by NetLogo. Used to repeat a simulation. Use null to auto generate |
+| `numOfSamples`        | Any positive integer | Number of simulations to run for each scenario. |
+| `numOfRobots`         | Any positive integer | Number of robots. |
+| `numOfPassengers`     | Any positive integer | Number passengers. |
+| `numOfStaff`          | Any positive integer | Number of staff members. |
+| `fallLength`          | Any positive integer | Time steps a passenger remains fallen. |
+| `fallChance`          | [0.0, 100.0] | Probability that a passenger will fall during evacuation. |
+| `robotPersuasionFactor` | Any number | A multiplier to the helping chance that is used to determine whether a zero-responder will accept to help a fallen victim, when asked by the robot. |
+| `maxNetlogoTicks`     | Any positive integer | Maximum number of time steps the simulation can run. |
+| `roomType`| [0, 8] | Select the evacuation environment. see [room types](#room-types) |
+| `enableVideo`| false / true,<br> A list of indices,<br> A positive integer | Enable video for all simulations if true or 'all'. Enable video only for the specified simulations if a list of indices is provided (e.g. [0, 2, 5]). Enable video for n random simulations if a positive integer is provided. |
+| **Scenario Specific** |
+| `name` | string | A name for the scenario, it is required and must be unique |
+| `description` | string | A description for the scenario |
+| `adaptationStrategy` | string | The name of the strategy to use, a python file containing a strategy class with the same name must be in the strategies folder. |
+| `enabled` | true / false | Whether to use the scenario in the experiment. |
+---
+
+<br>
+
+### Combining Parameters
+
+The application has the ability to use lists and ranges to create combinations of parameters. It will automatically generate all possible combinations of the provided parameters and run `num_of_samples` simulations for each combination.
+
+For example, given the following configuration:
+```json
+"numOfStaff": [2, 10],
+
+"fallChance": {
+    "start": 0.05,
+    "end": 1,
+    "step": 0.1
+},
+"num_of_samples": 5
+```
+The program will create combinations of numOfStaff and fallChance values, and for each combination, it will run 5 simulations.
+- numOfStaff = 2 and fallChance = 0.05
+- numOfStaff = 2 and fallChance = 0.15
+- ...
+- numOfStaff = 10 and fallChance = 0.95
+
+For each of these combinations, the program will run the specified number of simulations (`num_of_samples`). For each combination pair, a plot will be generated comparing the impact on evacuation time.
+
+---
+### Room Types
+There are 8 different room types that the evacuation simulation can use.
+The PNGs for the rooms are located in `workspace/netlogo/rooms`
+
+| Type | Filename                                         |
+|------|--------------------------------------------------|
+| 0    | room_square_2doors_up_down.png                   |
+| 1    | room_square_4doors_main_down.png                 |
+| 2    | room_square_2doors_left_right.png                |
+| 3    | room_square_4doors_main_left.png                 |
+| 4    | room_rectangle_2doors_left_right.png             |
+| 5    | room_rectangle_2doors_up_down.png                |
+| 6    | room_rectangle_4doors_main_down.png              |
+| 7    | room_rectangle_4doors_main_left.png              |
+| 8    | room_square_2doors_left_right_barriers.png       |
+
+<br>
 
 ---
 
@@ -282,7 +272,7 @@ The `examples` folder contains several example simulation experiment that demons
 
 The application includes basic predefined strategies for the SAR robot. Each strategy defines the robot's action when encountering a fallen victim:
 - **`RandomStrategy.py`**: Randomly chooses between asking for help from a passenger or calling for staff assistance.
-- **`OptimalStrategy.py`**: A baseline strategy, uses the help matrix from the IMPACT+ model to predict if a zero responder will accept to offer help.
+- **`HelpMatrixStrategy.py`**: A baseline strategy, uses the help matrix from the IMPACT+ model to predict if a zero responder will accept to offer help.
 - **`AlwaysCallStaffStrategy.py`**: Always calls for a staff member to assist the victim.
 - **`AlwaysAskHelpStrategy.py`**: Always asks for help from a passenger.
 

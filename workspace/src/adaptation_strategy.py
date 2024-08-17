@@ -4,6 +4,7 @@ This module contains the base class for adaptation strategies.
 
 import importlib
 import os
+import random
 import traceback
 from enum import Enum
 from typing import Optional
@@ -110,6 +111,8 @@ class AdaptationStrategy(object):
 
     def __init__(self, scenario) -> None:
         self.scenario = scenario
+        if scenario.netlogo_params.seed != 0:
+            random.seed(scenario.netlogo_params.seed)
 
     def get_robot_action(self,
                          simulation_id: str,

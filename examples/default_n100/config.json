@@ -1,0 +1,53 @@
+{
+     "loadConfigFrom": null,
+     "netlogoModelName": "model.nlogo",
+     "targetScenarioForAnalysis": "adaptive-help",
+     "maxSimulationTime": 120,
+     "scenarioParams": {
+          "seed": 42,
+          "netlogo_seed": null,
+          "numOfSamples": 100,
+          "numOfRobots": 1,
+          "numOfPassengers": 800,
+          "numOfStaff": 8,
+          "fallLength": 500,
+          "fallChance": 0.05,
+          "robotPersuasionFactor": 1,
+          "maxNetlogoTicks": 2000,
+          "roomType": 8,
+          "enableVideo": 1
+     },
+     "simulationScenarios": [
+          {
+               "name": "no-support",
+               "description": "There are no SAR robots in the simulation.",
+               "numOfRobots": 0,
+               "enabled": true
+          },
+          {
+               "name": "staff-support",
+               "description": "The SAR always asks help from a staff member.",
+               "adaptationStrategy": "AlwaysCallStaffStrategy",
+               "enabled": true
+          },
+          {
+               "name": "passenger-support",
+               "description": "The SAR always asks help from a passenger.",
+               "adaptationStrategy": "AlwaysAskHelpStrategy",
+               "enabled": true
+          },
+          {
+               "name": "adaptive-help",
+               "description": "Uses the help matrix to decide who to ask for help.",
+               "adaptationStrategy": "HelpMatrixStrategy",
+               "enabled": true
+          },
+          {
+               "name": "adaptive-random",
+               "description": "Randomly choose between asking help from staff or passenger.",
+               "adaptationStrategy": "RandomStrategy",
+               "enabled": true
+          }
+     ],
+     "netlogoModelPath": "/home/workspace/netlogo/model.nlogo"
+}

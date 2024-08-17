@@ -1,7 +1,7 @@
 {
      "loadConfigFrom": null,
      "netlogoModeName": "model.nlogo",
-     "targetScenarioForAnalysis": "adaptive-optimal",
+     "targetScenarioForAnalysis": "adaptive-help",
      "maxSimulationTime": 120,
      "scenarioParams": {
           "seed": 8967,
@@ -48,9 +48,9 @@
                "enabled": true
           },
           {
-               "name": "adaptive-optimal",
-               "description": "Almost optimal",
-               "adaptationStrategy": "OptimalStrategy",
+               "name": "adaptive-help",
+               "description": "Uses the help matrix to decide who to ask for help.",
+               "adaptationStrategy": "HelpMatrixStrategy",
                "enableVideo": false,
                "enabled": true
           }

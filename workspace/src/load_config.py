@@ -58,13 +58,13 @@ def _get_params_from(config: dict[str, Any]) -> dict[str, Any]:
         logger.debug(f"Loading configuration from {config_file_path}")
         config = _load_json_file(config_file_path)
 
-    required_keys = ['loadConfigFrom', 'netlogoModeName', 'targetScenarioForAnalysis',
+    required_keys = ['loadConfigFrom', 'netlogoModelName', 'targetScenarioForAnalysis',
                      'scenarioParams', 'simulationScenarios']
     for key in required_keys:
         if key not in config:
             raise KeyError(f"Missing key in configuration file: {key}")
 
-    netlogo_model_path = os.path.join(NETLOGO_HOME, NETLOGO_FOLDER, config['netlogoModeName'])
+    netlogo_model_path = os.path.join(NETLOGO_HOME, NETLOGO_FOLDER, config['netlogoModelName'])
     if not os.path.exists(netlogo_model_path):
         raise IOError(f"NetLogo model path does not exist: {netlogo_model_path}")
     config['netlogoModelPath'] = netlogo_model_path

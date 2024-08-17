@@ -755,7 +755,8 @@ to go
  ask agents [ ; UPDATE ACTIONS
    ;nw prevent a not leader of a group be stopped/lost if the leader is die
    if st_leader = 0 and st_group_member = 1 [
-     if count link-neighbors with [st_leader = 1] = 0 [set st_group_member 0 set speed speed_bkp]
+    ; v2.11.2 - prevent a bug where a group member is stopped when the leader is dead
+     if count link-neighbors with [st_leader = 1] = 0 [set st_group_member 0 set speed speed_bkp if color = START_EVACUATE_COLOR [move-to-exit]]
    ]
 
 

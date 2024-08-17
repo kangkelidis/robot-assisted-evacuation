@@ -1,0 +1,67 @@
+{
+     "loadConfigFrom": null,
+     "netlogoModeName": "model.nlogo",
+     "targetScenarioForAnalysis": "adaptive-help",
+     "maxSimulationTime": 120,
+     "scenarioParams": {
+          "seed": 8967,
+          "netlogo_seed": null,
+          "numOfSamples": 20,
+          "numOfRobots": [
+               1,
+               2,
+               3,
+               4,
+               5
+          ],
+          "numOfPassengers": 800,
+          "numOfStaff": 10,
+          "fallLength": 500,
+          "fallChance": [
+               0.05,
+               0.2
+          ],
+          "robotPersuasionFactor": [
+               0,
+               1,
+               2,
+               1000
+          ],
+          "maxNetlogoTicks": 2000,
+          "roomType": 8,
+          "enableVideo": false
+     },
+     "simulationScenarios": [
+          {
+               "name": "no-support",
+               "description": "There are no SAR robots in the simulation.",
+               "numOfRobots": 0,
+               "enabled": true
+          },
+          {
+               "name": "staff-support",
+               "description": "The SAR always asks help from a staff member.",
+               "adaptationStrategy": "AlwaysCallStaffStrategy",
+               "enabled": true
+          },
+          {
+               "name": "passenger-support",
+               "description": "The SAR always asks help from a passenger.",
+               "adaptationStrategy": "AlwaysAskHelpStrategy",
+               "enabled": true
+          },
+          {
+               "name": "adaptive-help",
+               "description": "Uses the help matrix from IMPACT+ to predict if the passenger will accept to help.",
+               "adaptationStrategy": "HelpMatrixStrategy",
+               "enabled": true
+          },
+          {
+               "name": "adaptive-random",
+               "description": "Randomly choose between asking help from staff or passenger.",
+               "adaptationStrategy": "RandomStrategy",
+               "enabled": true
+          }
+     ],
+     "netlogoModelPath": "/home/workspace/netlogo/model.nlogo"
+}

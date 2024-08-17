@@ -1,9 +1,0 @@
-,adaptive-optimal@num-of-staff=10$fall-chance=0.05$robot-persuasion-factor=0,adaptive-optimal@num-of-staff=10$fall-chance=0.05$robot-persuasion-factor=1,adaptive-optimal@num-of-staff=10$fall-chance=0.05$robot-persuasion-factor=2,adaptive-optimal@num-of-staff=10$fall-chance=1$robot-persuasion-factor=0,adaptive-optimal@num-of-staff=10$fall-chance=1$robot-persuasion-factor=1,adaptive-optimal@num-of-staff=10$fall-chance=1$robot-persuasion-factor=2,adaptive-optimal@num-of-staff=2$fall-chance=0.05$robot-persuasion-factor=0,adaptive-optimal@num-of-staff=2$fall-chance=0.05$robot-persuasion-factor=1,adaptive-optimal@num-of-staff=2$fall-chance=0.05$robot-persuasion-factor=2,adaptive-optimal@num-of-staff=2$fall-chance=1$robot-persuasion-factor=0,adaptive-optimal@num-of-staff=2$fall-chance=1$robot-persuasion-factor=1,adaptive-optimal@num-of-staff=2$fall-chance=1$robot-persuasion-factor=2
-count,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0
-mean,322.9,320.03333333333336,323.23333333333335,372.7,421.6333333333333,442.3333333333333,325.5,327.23333333333335,332.93333333333334,402.93333333333334,422.96666666666664,454.6666666666667
-std,56.022994047703,56.42357255819491,56.73755876588844,107.84700210051723,138.901722472211,243.9668339999395,65.69823909884994,63.418524071459586,61.48447145324628,133.3654386634148,191.25420587366915,186.77431214747097
-min,220.0,220.0,220.0,245.0,261.0,263.0,226.0,226.0,250.0,250.0,250.0,260.0
-25%,278.0,276.75,278.0,280.75,323.0,320.0,271.0,279.0,289.25,302.5,302.25,311.25
-50%,316.0,313.5,316.5,327.5,376.0,366.0,314.0,314.0,316.5,378.5,319.0,422.5
-75%,354.75,354.75,355.0,446.75,527.0,513.5,373.75,371.75,373.75,500.75,546.5,554.75
-max,436.0,436.0,436.0,573.0,825.0,1536.0,510.0,510.0,510.0,765.0,1168.0,1069.0
