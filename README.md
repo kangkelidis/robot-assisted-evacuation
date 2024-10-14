@@ -1,11 +1,11 @@
-# A platform to run Robot-Assisted Socially-Aware Evacuation Simulations
+# A Simulation Toolkit for Evaluating Human-Robot Collaboration in Emergency Evacuations
 
 This project is a Docker-based application that facilitates experimentation with the <a href="https://dl.acm.org/doi/pdf/10.1145/3654439" target="_blank">`IMPACT+` agent-based evacuation simulation model</a>. Developed with NetLogo,`IMPACT+` is an extension of <a href="https://eprints.whiterose.ac.uk/122415/1/van%20der%20Wal%20et%20al.%20(2017)%20[TCCI].pdf" target="_black">`IMPACT`</a>, which simulates an evacuation from a transport hub and incorporates sociocultural, cognitive, and emotional factors. 
 
 The key addition of `IMPACT+` is the introduction of an adaptable search and rescue (SAR) robot that is able to decide, when it finds a fallen victim, whether to ask help from a nearby zero-responder (another passenger) or from a first-responder (member of staff). The SAR robot bases its decision on the zero-responders' social identity, ie. the likelihood that they will accept to offer help. Assuming that first-responders are scarce, getting help from a zero-responder can lead to faster evacuation times.
 
 This tool aims to make it easier for researchers to configure, run and analyse simulations with various evacuation scenarios and adaptation strategies for the SAR robot.
-See demonstration [video]() showing installation and usage. Find accompanying paper <a href="" target="_black">here</a>.
+See demonstration [video](https://youtu.be/iksSM_eW6hI) showing installation and usage. Find accompanying paper <a href="" target="_black">here</a>.
 
 Video of an evacuation scenario simulation
 
@@ -42,7 +42,12 @@ Follow the instructions on the <a href="https://docs.docker.com/get-docker/" tar
 
 <br>
 
-To build the image from source open your terminal, ensure that you are at the parent directory and run:
+To build the image from source, download the source code to your machine 
+```bash
+git clone https://github.com/kangkelidis/robot-assisted-evacuation.git
+```
+
+ensure that you are at the parent directory and run:
 ```bash
 chmod +x ./build-docker-image.sh
 
@@ -353,7 +358,7 @@ An overview of the main modules.
 
 Feel free to open an issue if something is not working as expected.
 
-[![GitHub Issues](https://img.shields.io/badge/GitHub-Issues-green?logo=github)](https://github.com/alekosomegas/robot-assisted-evacuation/issues)
+[![GitHub Issues](https://img.shields.io/badge/GitHub-Issues-green?logo=github)](https://github.com/kangkelidis/robot-assisted-evacuation/issues)
 
 <br>
 

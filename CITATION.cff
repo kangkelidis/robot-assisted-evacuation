@@ -1,21 +1,18 @@
-cff-version: 1.2.0
+cff-version: 1.1ß.0
 message: "If you use this software, please cite it as below."
 authors:
+- family-names: "Kangkelidis"
+  given-names: "Alexandros"
+  orcid: "https://orcid.org/0009-0000-6296-0902"
 - family-names: "Gavidia-Calderon"
   given-names: "Carlos"
   orcid: "https://orcid.org/0000-0002-6136-0566"
-- family-names: "Kordoni"
-  given-names: "Anastasia"
-  orcid: "https://orcid.org/0000-0001-9823-2341"
 - family-names: "Bennaceur"
   given-names: "Amel"
   orcid: "https://orcid.org/0000-0002-6124-9622"
-- family-names: "Levine"
-  given-names: "Mark"
-  orcid: "https://orcid.org/0000-0001-5696-6021"
 - family-names: "Nuseibeh"
   given-names: "Bashar"
   orcid: "https://orcid.org/0000-0002-3476-053X"
-title: "Identity-Aware Autonomous Systems : Agent-Based Model"
-date-released: 2022-09-28
-url: "https://github.com/cptanalatriste/robot-assisted-evacuation"
+title: "Yanapay: A Simulation Toolkit for Evaluating Human-AI Collaboration"
+date-released: 2024-10-11
+url: "https://github.com/kangkelidis/robot-assisted-evacuation"

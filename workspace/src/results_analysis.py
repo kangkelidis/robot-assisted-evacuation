@@ -1,7 +1,7 @@
 """
 Results Analysis Module
 
-This module is responsible for analyzing and plotting the results of the simulation experiments.
+This module is responsible for analysing and plotting the results of the simulation experiments.
 
 Using https://www.stat.ubc.ca/~rollin/stats/ssize/n2.html
 And https://www.statology.org/pooled-standard-deviation-calculator/
@@ -9,7 +9,6 @@ function to calculate Cohen's d for independent samples
 Inspired by: https://machinelearningmastery.com/effect-size-measures-in-python/
 """
 
-import os
 import textwrap
 
 import matplotlib  # type: ignore
