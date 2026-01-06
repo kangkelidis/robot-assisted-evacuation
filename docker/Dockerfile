@@ -1,4 +1,6 @@
-FROM openjdk:8-jdk
+# FROM openjdk:8-jdk
+
+FROM eclipse-temurin:17-jdk
 
 # Installing Netlogo
 ARG NETLOGO_VERSION=5.3.1
@@ -9,12 +11,12 @@ ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
     DISPLAY=:14
 
-RUN mkdir -p /home/netlogo_installation \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget libxrender1 libxtst6 build-essential libtool \
+    && mkdir -p /home/netlogo_installation \
     && wget $NETLOGO_URL \
     && tar xzf $NETLOGO_NAME-64.tgz -C /home/netlogo_installation --strip-components=1 \
     && rm $NETLOGO_NAME-64.tgz \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends libxrender1 libxtst6 build-essential libtool wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -31,7 +33,10 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 COPY ./env/environment.yml /home/env/environment.yml
 
 # Creating the conda environment
-RUN conda env create -f /home/env/environment.yml \
+RUN conda config --set channel_priority flexible \
+    && conda config --set auto_activate_base false \
+    && yes | conda tos accept \
+    && conda env create -f /home/env/environment.yml \
     && conda clean -afy
 
 COPY . /home/
