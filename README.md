@@ -5,7 +5,7 @@ This project is a Docker-based application that facilitates experimentation with
 The key addition of `IMPACT+` is the introduction of an adaptable search and rescue (SAR) robot that is able to decide, when it finds a fallen victim, whether to ask help from a nearby zero-responder (another passenger) or from a first-responder (member of staff). The SAR robot bases its decision on the zero-responders' social identity, ie. the likelihood that they will accept to offer help. Assuming that first-responders are scarce, getting help from a zero-responder can lead to faster evacuation times.
 
 This tool aims to make it easier for researchers to configure, run and analyse simulations with various evacuation scenarios and adaptation strategies for the SAR robot.
-See demonstration [video](https://youtu.be/iksSM_eW6hI) showing installation and usage. Find accompanying paper [here](/Yanapay%20A%20Simulation%20Toolkit%20for%20Evaluating%20Human%20AI%20Collaboration%20in%20Emergency%20Evacuations.pdf).
+See demonstration [video](https://youtu.be/EZPfQJ-65G4). 
 
 Video of an evacuation scenario simulation
 
